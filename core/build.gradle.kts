@@ -4,11 +4,8 @@ description = "The core compponents of DiCentra Aviator."
 
 plugins {
     id("maven-publish")
-    kotlin("jvm") version "2.0.21"
-}
-
-repositories {
-    mavenCentral()
+    kotlin("jvm")
+    kotlin("plugin.serialization")
 }
 
 publishing {
@@ -34,4 +31,8 @@ publishing {
             }
         }
     }
+}
+
+dependencies {
+    implementation(libs.kotlinx.serialization.json)
 }
