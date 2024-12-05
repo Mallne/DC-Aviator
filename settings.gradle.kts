@@ -15,7 +15,7 @@ dependencyResolutionManagement {
     }
 }
 
-include(":android-aviator")
 include(":aviator-ktor")
 include(":spring-webclient")
+include(":aviator-resource-server")
 include(":core")

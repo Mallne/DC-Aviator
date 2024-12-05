@@ -2,6 +2,7 @@ package cloud.mallne.dicentra.aviator.model
 
 import cloud.mallne.dicentra.aviator.core.IAviatorService
 import cloud.mallne.dicentra.aviator.core.InflatedServiceOptions
+import cloud.mallne.dicentra.aviator.core.ServiceArguments
 import cloud.mallne.dicentra.aviator.core.ServiceOptions
 import cloud.mallne.dicentra.aviator.core.model.IParameter
 import cloud.mallne.dicentra.aviator.core.model.Insides
@@ -11,8 +12,8 @@ object AviatorServiceUtils {
     inline fun <reified T : InflatedServiceOptions> optionBundle(options: ServiceOptions): T =
         InflatedServiceOptions.inflate<T>(options)
 
-    fun <Response> getAddress(
-        options: RequestServiceOptions<Response>,
+    fun getAddress(
+        parameters: ServiceArguments,
         serviceURL: String,
         pathParams: List<IParameter>
     ): String {
@@ -22,7 +23,7 @@ object AviatorServiceUtils {
             if (template != null) {
                 val param = pathParams.find { it.name == template }
                 if (param != null) {
-                    val vl = options.parameters[param.name]
+                    val vl = parameters[param.name]
                     if (vl != null) {
                         pi.replace("{$template}", vl)
                     }
@@ -35,7 +36,7 @@ object AviatorServiceUtils {
         val params =
             pathParams.filter { it.`in` == Insides.query }
         val optionsMap = params.mapNotNull {
-            val vl = options.parameters[it.name]
+            val vl = parameters[it.name]
             if (vl != null) {
                 it.name to vl
             } else {

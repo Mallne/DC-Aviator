@@ -1,7 +1,7 @@
 [versions]
 accompanistSystemuicontroller = "0.36.0"
 activityCompose = "1.9.3"
-androidGradlePlugin = "8.7.2"
+androidGradlePlugin = "8.7.3"
 androidSdk = "11.2.0"
 appcompat = "1.7.0"
 appUpdate = "2.1.0"
@@ -30,7 +30,10 @@ serialization = "1.7.3"
 appauth = "0.11.1"
 lifecycleRuntimeKtx = "2.8.7"
 composeBom = "2024.11.00"
-ktor = "3.0.1"
+ktor = "3.0.2"
+logback = "1.5.12"
+koin = "4.0.0"
+koin-annotations = "1.4.0"
 
 [libraries]
 appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
@@ -40,8 +43,27 @@ material = { module = "com.google.android.material:material", version.ref = "mat
 volley = { module = "com.android.volley:volley", version.ref = "volley" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
+ktor-server-core = { module = "io.ktor:ktor-server-core-jvm" }
+ktor-server-resources = { module = "io.ktor:ktor-server-resources-jvm" }
+ktor-server-request-validation = { module = "io.ktor:ktor-server-request-validation" }
+ktor-server-compression = { module = "io.ktor:ktor-server-compression-jvm" }
+ktor-server-forwarded-header = { module = "io.ktor:ktor-server-forwarded-header-jvm" }
+ktor-server-openapi = { module = "io.ktor:ktor-server-openapi" }
+ktor-server-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation-jvm" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json-jvm" }
+ktor-server-netty = { module = "io.ktor:ktor-server-netty-jvm" }
+ktor-server-config-yaml = { module = "io.ktor:ktor-server-config-yaml-jvm" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+koin-ktor = { module = "io.insert-koin:koin-ktor", version.ref = "koin" }
+koin-logger-slf4j = { module = "io.insert-koin:koin-logger-slf4j", version.ref = "koin" }
+koin-annotations = { module = "io.insert-koin:koin-annotations", version.ref = "koin-annotations" }
+koin-annotations-ksp = { module = "io.insert-koin:koin-ksp-compiler", version.ref = "koin-annotations" }
+
 
 [plugins]
 android-library = { id = "com.android.library", version.ref = "androidGradlePlugin" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+ktor = { id = "io.ktor.plugin", version.ref = "ktor" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+kjvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
