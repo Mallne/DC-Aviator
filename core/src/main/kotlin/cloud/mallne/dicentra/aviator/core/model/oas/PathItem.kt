@@ -1,7 +1,11 @@
 package cloud.mallne.dicentra.aviator.core.model.oas
 
+import cloud.mallne.dicentra.aviator.core.helper.toIndentedString
 import cloud.mallne.dicentra.aviator.core.model.oas.parameters.Parameter
 import cloud.mallne.dicentra.aviator.core.model.oas.servers.Server
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
+
 
 /**
  * PathItem
@@ -10,6 +14,7 @@ import cloud.mallne.dicentra.aviator.core.model.oas.servers.Server
  *
  * @see "https://github.com/OAI/OpenAPI-Specification/blob/3.1.0/versions/3.1.0.md.pathItemObject"
  */
+@Serializable
 class PathItem(
     var summary: String? = null,
     var description: String? = null,
@@ -24,7 +29,7 @@ class PathItem(
     var servers: MutableList<Server>? = null,
     var parameters: MutableList<Parameter>? = null,
     var `$ref`: String? = null,
-    var extensions: MutableMap<String, Any>? = null
+    var extensions: MutableMap<String, JsonObject>? = null
 ) {
 
     fun readOperations(): MutableList<Operation> {
@@ -186,17 +191,6 @@ class PathItem(
                 "    \$ref: " + toIndentedString(`$ref`) + "\n" +
                 "}"
         return sb
-    }
-
-    /**
-     * Convert the given object to string with each line indented by 4 spaces
-     * (except the first line).
-     */
-    private fun toIndentedString(o: Any?): String {
-        if (o == null) {
-            return "null"
-        }
-        return o.toString().replace("\n", "\n    ")
     }
 
     enum class HttpMethod {

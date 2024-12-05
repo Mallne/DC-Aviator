@@ -1,6 +1,9 @@
 package cloud.mallne.dicentra.aviator.core.model.oas
 
 import cloud.mallne.dicentra.aviator.core.helper.hashAll
+import cloud.mallne.dicentra.aviator.core.helper.toIndentedString
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 
 
 /**
@@ -10,14 +13,10 @@ import cloud.mallne.dicentra.aviator.core.helper.hashAll
  *
  * @see "https://github.com/OAI/OpenAPI-Specification/blob/3.1.0/versions/3.1.0.md.pathsObject"
  */
+@Serializable
 class Paths(
-    var extensions: MutableMap<String, Any>? = null
+    var extensions: MutableMap<String, JsonObject>? = null
 ) : LinkedHashMap<String, PathItem>() {
-
-    fun addPathItem(name: String, item: PathItem): Paths {
-        this.put(name, item)
-        return this
-    }
 
     override fun equals(o: Any?): Boolean {
         if (this === o) {
@@ -38,14 +37,6 @@ class Paths(
                 "    " + toIndentedString(super.toString()) + "\n" +
                 "}"
         return sb
-    }
-
-    /**
-     * Convert the given object to string with each line indented by 4 spaces
-     * (except the first line).
-     */
-    private fun toIndentedString(o: Any): String {
-        return o.toString().replace("\n", "\n    ")
     }
 }
 
