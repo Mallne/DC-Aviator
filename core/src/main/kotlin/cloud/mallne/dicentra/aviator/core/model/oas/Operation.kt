@@ -11,16 +11,9 @@ import cloud.mallne.dicentra.aviator.core.model.oas.servers.Server
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 
-/**
- * Operation
- *
- * @see "https://github.com/OAI/OpenAPI-Specification/blob/3.0.1/versions/3.0.1.md.operationObject"
- *
- * @see "https://github.com/OAI/OpenAPI-Specification/blob/3.1.0/versions/3.1.0.md.operationObject"
- */
 @Serializable
 class Operation(
-    var tags: MutableList<String?>? = null,
+    var tags: MutableList<String>? = null,
     var summary: String? = null,
     var description: String? = null,
     var externalDocs: ExternalDocumentation? = null,
@@ -28,12 +21,12 @@ class Operation(
     var parameters: MutableList<Parameter?>? = null,
     var requestBody: RequestBody? = null,
     var responses: ApiResponses? = null,
-    var callbacks: MutableMap<String?, Callback?>? = null,
+    var callbacks: MutableMap<String, Callback>? = null,
     var deprecated: Boolean? = null,
     var security: MutableList<SecurityRequirement?>? = null,
     var servers: MutableList<Server?>? = null,
-    var extensions: MutableMap<String?, JsonObject?>? = null
-) {
+    override var extensions: MutableMap<String?, JsonObject?>? = null
+): Extendable {
 
     override fun equals(o: Any?): Boolean {
         if (this === o) {

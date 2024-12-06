@@ -1,223 +1,55 @@
-package cloud.mallne.dicentra.aviator.core.model.oas.responses;
+package cloud.mallne.dicentra.aviator.core.model.oas.responses
 
-import io.swagger.v3.oas.models.annotations.OpenAPI31;
-import io.swagger.v3.oas.models.headers.Header;
-import io.swagger.v3.oas.models.links.Link;
-import io.swagger.v3.oas.models.media.Content;
+import cloud.mallne.dicentra.aviator.core.helper.hashAll
+import cloud.mallne.dicentra.aviator.core.helper.toIndentedString
+import cloud.mallne.dicentra.aviator.core.model.oas.headers.Header
+import cloud.mallne.dicentra.aviator.core.model.oas.links.Link
+import cloud.mallne.dicentra.aviator.core.model.oas.media.Content
+import cloud.mallne.dicentra.aviator.core.model.oas.media.MediaType
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
+@Serializable
+class ApiResponse(
+    var description: String,
+    var headers: MutableMap<String, Header>? = null,
+    var content: MutableMap<String, MediaType>? = null,
+    var links: MutableMap<String, Link>? = null,
+    var extensions: MutableMap<String, JsonObject>? = null,
+    var `$ref`: String? = null
+) {
 
-/**
- * ApiResponse
- *
- * @see "https://github.com/OAI/OpenAPI-Specification/blob/3.0.1/versions/3.0.1.md#responseObject"
- * @see "https://github.com/OAI/OpenAPI-Specification/blob/3.1.0/versions/3.1.0.md#responseObject"
- */
 
-public class ApiResponse {
-    private String description = null;
-    private Map<String, Header> headers = null;
-    private Content content = null;
-    private Map<String, Link> links = null;
-    private Map<String, Object> extensions = null;
-    private String $ref = null;
-
-    /**
-     * returns the description property from a ApiResponse instance.
-     *
-     * @return String description
-     **/
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public ApiResponse description(String description) {
-        this.description = description;
-        return this;
-    }
-
-    /**
-     * returns the headers property from a ApiResponse instance.
-     *
-     * @return headers
-     **/
-
-    public Map<String, Header> getHeaders() {
-        return headers;
-    }
-
-    public void setHeaders(Map<String, Header> headers) {
-        this.headers = headers;
-    }
-
-    public ApiResponse headers(Map<String, Header> headers) {
-        this.headers = headers;
-        return this;
-    }
-
-    public ApiResponse addHeaderObject(String name, Header header) {
-        if (this.headers == null) {
-            headers = new LinkedHashMap<>();
+    override fun equals(o: Any?): Boolean {
+        if (this === o) {
+            return true
         }
-        headers.put(name, header);
-        return this;
-    }
-
-    /**
-     * returns the content property from a ApiResponse instance.
-     *
-     * @return Content content
-     **/
-
-    public Content getContent() {
-        return content;
-    }
-
-    public void setContent(Content content) {
-        this.content = content;
-    }
-
-    public ApiResponse content(Content content) {
-        this.content = content;
-        return this;
-    }
-
-    /**
-     * returns the links property from a ApiResponse instance.
-     *
-     * @return Link links
-     **/
-
-    public Map<String, Link> getLinks() {
-        return links;
-    }
-
-    public void setLinks(Map<String, Link> links) {
-        this.links = links;
-    }
-
-    public ApiResponse links(Map<String, Link> links) {
-        this.links = links;
-        return this;
-    }
-
-    public ApiResponse addLink(String name, Link link) {
-        if (this.links == null) {
-            this.links = new LinkedHashMap<>();
+        if (o == null || javaClass != o.javaClass) {
+            return false
         }
-        this.links.put(name, link);
-        return this;
+        val apiResponse = o as ApiResponse
+        return this.description == apiResponse.description &&
+                this.headers == apiResponse.headers &&
+                this.content == apiResponse.content &&
+                this.links == apiResponse.links &&
+                this.extensions == apiResponse.extensions &&
+                this.`$ref` == apiResponse.`$ref`
     }
 
-    public ApiResponse link(String name, Link link) {
-        return this.addLink(name, link);
+    override fun hashCode(): Int {
+        return hashAll(description, headers, content, links, extensions, `$ref`)
     }
 
-    /**
-     * returns the $ref property from an ApiResponse instance.
-     *
-     * @return String $ref
-     **/
-    public String get$ref() {
-        return $ref;
+    override fun toString(): String {
+        val sb = """class ApiResponse {
+    description: ${toIndentedString(description)}
+    headers: ${toIndentedString(headers)}
+    content: ${toIndentedString(content)}
+    links: ${toIndentedString(links)}
+    extensions: ${toIndentedString(extensions)}
+    ${"$"}ref: ${toIndentedString(`$ref`)}
+}"""
+        return sb
     }
-
-    public void set$ref(String $ref) {
-        if ($ref != null && ($ref.indexOf('.') == -1 && $ref.indexOf('/') == -1)) {
-            $ref = "#/components/responses/" + $ref;
-        }
-        this.$ref = $ref;
-    }
-
-    public ApiResponse $ref(String $ref) {
-        set$ref($ref);
-        return this;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        ApiResponse apiResponse = (ApiResponse) o;
-        return Objects.equals(this.description, apiResponse.description) &&
-                Objects.equals(this.headers, apiResponse.headers) &&
-                Objects.equals(this.content, apiResponse.content) &&
-                Objects.equals(this.links, apiResponse.links) &&
-                Objects.equals(this.extensions, apiResponse.extensions) &&
-                Objects.equals(this.$ref, apiResponse.$ref);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(description, headers, content, links, extensions, $ref);
-    }
-
-    public Map<String, Object> getExtensions() {
-        return extensions;
-    }
-
-    public void setExtensions(Map<String, Object> extensions) {
-        this.extensions = extensions;
-    }
-
-    public void addExtension(String name, Object value) {
-        if (name == null || name.isEmpty() || !name.startsWith("x-")) {
-            return;
-        }
-        if (this.extensions == null) {
-            this.extensions = new LinkedHashMap<>();
-        }
-        this.extensions.put(name, value);
-    }
-
-    @OpenAPI31
-    public void addExtension31(String name, Object value) {
-        if (name != null && (name.startsWith("x-oas-") || name.startsWith("x-oai-"))) {
-            return;
-        }
-        addExtension(name, value);
-    }
-
-    public ApiResponse extensions(Map<String, Object> extensions) {
-        this.extensions = extensions;
-        return this;
-    }
-
-    @Override
-    public String toString() {
-
-        String sb = "class ApiResponse {\n" +
-                "    description: " + toIndentedString(description) + "\n" +
-                "    headers: " + toIndentedString(headers) + "\n" +
-                "    content: " + toIndentedString(content) + "\n" +
-                "    links: " + toIndentedString(links) + "\n" +
-                "    extensions: " + toIndentedString(extensions) + "\n" +
-                "    $ref: " + toIndentedString($ref) + "\n" +
-                "}";
-        return sb;
-    }
-
-    /**
-     * Convert the given object to string with each line indented by 4 spaces
-     * (except the first line).
-     */
-    private String toIndentedString(Object o) {
-        if (o == null) {
-            return "null";
-        }
-        return o.toString().replace("\n", "\n    ");
-    }
-
 }
 

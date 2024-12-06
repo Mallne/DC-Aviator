@@ -1,129 +1,38 @@
-package cloud.mallne.dicentra.aviator.core.model.oas;
+package cloud.mallne.dicentra.aviator.core.model.oas
 
-import io.swagger.v3.oas.models.annotations.OpenAPI31;
+import cloud.mallne.dicentra.aviator.core.helper.hashAll
+import cloud.mallne.dicentra.aviator.core.helper.toIndentedString
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 
-import java.util.Objects;
-
-/**
- * ExternalDocumentation
- *
- * @see "https://github.com/OAI/OpenAPI-Specification/blob/3.0.1/versions/3.0.1.md#externalDocumentationObject"
- * @see "https://github.com/OAI/OpenAPI-Specification/blob/3.1.0/versions/3.1.0.md#externalDocumentationObject"
- */
-
-public class ExternalDocumentation {
-    private String description = null;
-    private String url = null;
-    private java.util.Map<String, Object> extensions = null;
-
-    /**
-     * returns the description property from a ExternalDocumentation instance.
-     *
-     * @return String description
-     **/
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public ExternalDocumentation description(String description) {
-        this.description = description;
-        return this;
-    }
-
-    /**
-     * returns the url property from a ExternalDocumentation instance.
-     *
-     * @return String url
-     **/
-
-    public String getUrl() {
-        return url;
-    }
-
-    public void setUrl(String url) {
-        this.url = url;
-    }
-
-    public ExternalDocumentation url(String url) {
-        this.url = url;
-        return this;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
+@Serializable
+class ExternalDocumentation(
+    var description: String? = null,
+    var url: String,
+    var extensions: MutableMap<String, JsonObject>? = null
+) {
+    override fun equals(o: Any?): Boolean {
+        if (this === o) {
+            return true
         }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
+        if (o == null || javaClass != o.javaClass) {
+            return false
         }
-        ExternalDocumentation externalDocumentation = (ExternalDocumentation) o;
-        return Objects.equals(this.description, externalDocumentation.description) &&
-                Objects.equals(this.url, externalDocumentation.url) &&
-                Objects.equals(this.extensions, externalDocumentation.extensions);
+        val externalDocumentation = o as ExternalDocumentation
+        return this.description == externalDocumentation.description &&
+                this.url == externalDocumentation.url &&
+                this.extensions == externalDocumentation.extensions
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(description, url, extensions);
+    override fun hashCode(): Int {
+        return hashAll(description, url, extensions)
     }
-
-    public java.util.Map<String, Object> getExtensions() {
-        return extensions;
+    override fun toString(): String {
+        val sb = """class ExternalDocumentation {
+    description: ${toIndentedString(description)}
+    url: ${toIndentedString(url)}
+}"""
+        return sb
     }
-
-    public void setExtensions(java.util.Map<String, Object> extensions) {
-        this.extensions = extensions;
-    }
-
-    public void addExtension(String name, Object value) {
-        if (name == null || name.isEmpty() || !name.startsWith("x-")) {
-            return;
-        }
-        if (this.extensions == null) {
-            this.extensions = new java.util.LinkedHashMap<>();
-        }
-        this.extensions.put(name, value);
-    }
-
-    @OpenAPI31
-    public void addExtension31(String name, Object value) {
-        if (name != null && (name.startsWith("x-oas-") || name.startsWith("x-oai-"))) {
-            return;
-        }
-        addExtension(name, value);
-    }
-
-    public ExternalDocumentation extensions(java.util.Map<String, Object> extensions) {
-        this.extensions = extensions;
-        return this;
-    }
-
-    @Override
-    public String toString() {
-
-        String sb = "class ExternalDocumentation {\n" +
-                "    description: " + toIndentedString(description) + "\n" +
-                "    url: " + toIndentedString(url) + "\n" +
-                "}";
-        return sb;
-    }
-
-    /**
-     * Convert the given object to string with each line indented by 4 spaces
-     * (except the first line).
-     */
-    private String toIndentedString(Object o) {
-        if (o == null) {
-            return "null";
-        }
-        return o.toString().replace("\n", "\n    ");
-    }
-
 }
 

@@ -1,220 +1,67 @@
-package cloud.mallne.dicentra.aviator.core.model.oas.examples;
+package cloud.mallne.dicentra.aviator.core.model.oas.examples
 
-import io.swagger.v3.oas.models.annotations.OpenAPI31;
+import cloud.mallne.dicentra.aviator.core.helper.toIndentedString
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 
-import java.util.Objects;
+@Serializable
+class Example(
+    var summary: String? = null,
+    var description: String? = null,
+    var value: JsonElement? = null,
+    var externalValue: String? = null,
+    var `$ref`: String? = null,
+    var extensions: MutableMap<String, JsonObject>? = null
+) {
+    val valueSetFlag: Boolean
+        get() = value != null
 
-/**
- * Example
- *
- * @see "https://github.com/OAI/OpenAPI-Specification/blob/3.0.1/versions/3.0.1.md#exampleObject"
- * @see "https://github.com/OAI/OpenAPI-Specification/blob/3.1.0/versions/3.1.0.md#exampleObject"
- */
-
-public class Example {
-    private String summary = null;
-    private String description = null;
-    private Object value = null;
-    private String externalValue = null;
-    private String $ref = null;
-    private java.util.Map<String, Object> extensions = null;
-
-    private boolean valueSetFlag;
-
-    /**
-     * returns the summary property from a Example instance.
-     *
-     * @return String summary
-     **/
-
-    public String getSummary() {
-        return summary;
-    }
-
-    public void setSummary(String summary) {
-        this.summary = summary;
-    }
-
-    public Example summary(String summary) {
-        this.summary = summary;
-        return this;
-    }
-
-    /**
-     * returns the description property from a Example instance.
-     *
-     * @return String description
-     **/
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public Example description(String description) {
-        this.description = description;
-        return this;
-    }
-
-    /**
-     * returns the value property from a Example instance.
-     *
-     * @return Object value
-     **/
-
-    public Object getValue() {
-        return value;
-    }
-
-    public void setValue(Object value) {
-        this.value = value;
-        valueSetFlag = true;
-    }
-
-    public Example value(Object value) {
-        setValue(value);
-        return this;
-    }
-
-    /**
-     * returns the externalValue property from a Example instance.
-     *
-     * @return String externalValue
-     **/
-
-    public String getExternalValue() {
-        return externalValue;
-    }
-
-    public void setExternalValue(String externalValue) {
-        this.externalValue = externalValue;
-    }
-
-    public Example externalValue(String externalValue) {
-        this.externalValue = externalValue;
-        return this;
-    }
-
-    public String get$ref() {
-        return $ref;
-    }
-
-    public void set$ref(String $ref) {
-        if ($ref != null && ($ref.indexOf('.') == -1 && $ref.indexOf('/') == -1)) {
-            $ref = "#/components/examples/" + $ref;
+    override fun equals(o: Any?): Boolean {
+        if (this === o) {
+            return true
         }
-        this.$ref = $ref;
-    }
-
-    public Example $ref(String $ref) {
-        set$ref($ref);
-        return this;
-    }
-
-    public java.util.Map<String, Object> getExtensions() {
-        return extensions;
-    }
-
-    public void setExtensions(java.util.Map<String, Object> extensions) {
-        this.extensions = extensions;
-    }
-
-    public void addExtension(String name, Object value) {
-        if (name == null || name.isEmpty() || !name.startsWith("x-")) {
-            return;
-        }
-        if (this.extensions == null) {
-            this.extensions = new java.util.LinkedHashMap<>();
-        }
-        this.extensions.put(name, value);
-    }
-
-    @OpenAPI31
-    public void addExtension31(String name, Object value) {
-        if (name != null && (name.startsWith("x-oas-") || name.startsWith("x-oai-"))) {
-            return;
-        }
-        addExtension(name, value);
-    }
-
-    public Example extensions(java.util.Map<String, Object> extensions) {
-        this.extensions = extensions;
-        return this;
-    }
-
-    public boolean getValueSetFlag() {
-        return valueSetFlag;
-    }
-
-    public void setValueSetFlag(boolean valueSetFlag) {
-        this.valueSetFlag = valueSetFlag;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof Example example)) {
-            return false;
+        if (o !is Example) {
+            return false
         }
 
-        if (!Objects.equals(summary, example.summary)) {
-            return false;
+        if (summary != o.summary) {
+            return false
         }
-        if (!Objects.equals(description, example.description)) {
-            return false;
+        if (description != o.description) {
+            return false
         }
-        if (!Objects.equals(value, example.value)) {
-            return false;
+        if (value != o.value) {
+            return false
         }
-        if (!Objects.equals(externalValue, example.externalValue)) {
-            return false;
+        if (externalValue != o.externalValue) {
+            return false
         }
-        if (!Objects.equals($ref, example.$ref)) {
-            return false;
+        if (`$ref` != o.`$ref`) {
+            return false
         }
-        return Objects.equals(extensions, example.extensions);
-
+        return extensions == o.extensions
     }
 
-    @Override
-    public int hashCode() {
-        int result = summary != null ? summary.hashCode() : 0;
-        result = 31 * result + (description != null ? description.hashCode() : 0);
-        result = 31 * result + (value != null ? value.hashCode() : 0);
-        result = 31 * result + (externalValue != null ? externalValue.hashCode() : 0);
-        result = 31 * result + ($ref != null ? $ref.hashCode() : 0);
-        result = 31 * result + (extensions != null ? extensions.hashCode() : 0);
-        return result;
+    override fun hashCode(): Int {
+        var result = if (summary != null) summary.hashCode() else 0
+        result = 31 * result + (if (description != null) description.hashCode() else 0)
+        result = 31 * result + (if (value != null) value.hashCode() else 0)
+        result = 31 * result + (if (externalValue != null) externalValue.hashCode() else 0)
+        result = 31 * result + (if (`$ref` != null) `$ref`.hashCode() else 0)
+        result = 31 * result + (if (extensions != null) extensions.hashCode() else 0)
+        return result
     }
 
-    @Override
-    public String toString() {
-
-        String sb = "class Example {\n" +
-                "    summary: " + toIndentedString(summary) + "\n" +
-                "    description: " + toIndentedString(description) + "\n" +
-                "    value: " + toIndentedString(value) + "\n" +
-                "    externalValue: " + toIndentedString(externalValue) + "\n" +
-                "    $ref: " + toIndentedString($ref) + "\n" +
-                "}";
-        return sb;
+    override fun toString(): String {
+        val sb = """class Example {
+    summary: ${toIndentedString(summary)}
+    description: ${toIndentedString(description)}
+    value: ${toIndentedString(value)}
+    externalValue: ${toIndentedString(externalValue)}
+    ${"$"}ref: ${toIndentedString(`$ref`)}
+}"""
+        return sb
     }
-
-    /**
-     * Convert the given object to string with each line indented by 4 spaces
-     * (except the first line).
-     */
-    private String toIndentedString(Object o) {
-        if (o == null) {
-            return "null";
-        }
-        return o.toString().replace("\n", "\n    ");
-    }
-
 }
 

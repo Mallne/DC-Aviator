@@ -1,120 +1,43 @@
-package cloud.mallne.dicentra.aviator.core.model.oas.responses;
+package cloud.mallne.dicentra.aviator.core.model.oas.responses
 
-import io.swagger.v3.oas.models.annotations.OpenAPI31;
+import cloud.mallne.dicentra.aviator.core.helper.hashAll
+import cloud.mallne.dicentra.aviator.core.helper.toIndentedString
+import cloud.mallne.dicentra.aviator.core.model.oas.annotations.OpenAPI31
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 
-import java.util.LinkedHashMap;
-import java.util.Objects;
-
-/**
- * ApiResponses
- *
- * @see "https://github.com/OAI/OpenAPI-Specification/blob/3.0.1/versions/3.0.1.md#responsesObject"
- * @see "https://github.com/OAI/OpenAPI-Specification/blob/3.1.0/versions/3.1.0.md#responsesObject"
- */
-
-public class ApiResponses extends LinkedHashMap<String, ApiResponse> {
-
-    public static final String DEFAULT = "default";
-
-    private java.util.Map<String, Object> extensions = null;
-
-    public ApiResponses addApiResponse(String name, ApiResponse item) {
-        this.put(name, item);
-        return this;
-    }
-
-    /**
-     * returns the default property from a ApiResponses instance.
-     *
-     * @return ApiResponse _default
-     **/
-    @Deprecated
-    public ApiResponse getDefault() {
-        return this.get(DEFAULT);
-    }
-
-    @Deprecated
-    public void setDefault(ApiResponse _default) {
-        addApiResponse(DEFAULT, _default);
-    }
-
-    @Deprecated
-    public ApiResponses _default(ApiResponse _default) {
-        setDefault(_default);
-        return this;
-    }
-
-    public java.util.Map<String, Object> getExtensions() {
-        return extensions;
-    }
-
-    public void setExtensions(java.util.Map<String, Object> extensions) {
-        this.extensions = extensions;
-    }
-
-    public void addExtension(String name, Object value) {
-        if (name == null || name.isEmpty() || !name.startsWith("x-")) {
-            return;
+@Serializable
+class ApiResponses(
+    private var extensions: MutableMap<String, JsonObject>? = null
+) : LinkedHashMap<String, ApiResponse>() {
+    override fun equals(o: Any?): Boolean {
+        if (this === o) {
+            return true
         }
-        if (this.extensions == null) {
-            this.extensions = new LinkedHashMap<>();
-        }
-        this.extensions.put(name, value);
-    }
-
-    @OpenAPI31
-    public void addExtension31(String name, Object value) {
-        if (name != null && (name.startsWith("x-oas-") || name.startsWith("x-oai-"))) {
-            return;
-        }
-        addExtension(name, value);
-    }
-
-    public ApiResponses extensions(java.util.Map<String, Object> extensions) {
-        this.extensions = extensions;
-        return this;
-    }
-
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
+        if (o == null || javaClass != o.javaClass) {
+            return false
         }
         if (!super.equals(o)) {
-            return false;
+            return false
         }
-        ApiResponses apiResponses = (ApiResponses) o;
-        return Objects.equals(this.extensions, apiResponses.extensions);
+        val apiResponses = o as ApiResponses
+        return this.extensions == apiResponses.extensions
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), extensions);
+    override fun hashCode(): Int {
+        return hashAll(super.hashCode(), extensions)
     }
 
-    @Override
-    public String toString() {
-        String sb = "class ApiResponses {\n" +
-                "    " + toIndentedString(super.toString()) + "\n" +
-                "    extensions: " + toIndentedString(extensions) + "\n" +
-                "}";
-        return sb;
+    override fun toString(): String {
+        val sb = """class ApiResponses {
+    ${toIndentedString(super.toString())}
+    extensions: ${toIndentedString(extensions)}
+}"""
+        return sb
     }
 
-    /**
-     * Convert the given object to string with each line indented by 4 spaces
-     * (except the first line).
-     */
-    private String toIndentedString(Object o) {
-        if (o == null) {
-            return "null";
-        }
-        return o.toString().replace("\n", "\n    ");
+    companion object {
+        const val DEFAULT: String = "default"
     }
-
 }
 

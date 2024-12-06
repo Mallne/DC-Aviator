@@ -1,7 +1,3 @@
-package cloud.mallne.dicentra.aviator.core.model.oas.annotations;
+package cloud.mallne.dicentra.aviator.core.model.oas.annotations
 
-import java.lang.annotation.Inherited;
-
-@Inherited
-public @interface OpenAPI31 {
-}
+annotation class OpenAPI31

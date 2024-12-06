@@ -22,7 +22,7 @@ public class ByteArraySchema extends Schema<byte[]> {
 
     @Override
     public ByteArraySchema format(String format) {
-        super.setFormat(format);
+        super.format = format;
         return this;
     }
 

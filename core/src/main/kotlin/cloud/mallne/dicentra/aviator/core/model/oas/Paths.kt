@@ -3,20 +3,13 @@ package cloud.mallne.dicentra.aviator.core.model.oas
 import cloud.mallne.dicentra.aviator.core.helper.hashAll
 import cloud.mallne.dicentra.aviator.core.helper.toIndentedString
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 
-
-/**
- * Paths
- *
- * @see "https://github.com/OAI/OpenAPI-Specification/blob/3.0.1/versions/3.0.1.md.pathsObject"
- *
- * @see "https://github.com/OAI/OpenAPI-Specification/blob/3.1.0/versions/3.1.0.md.pathsObject"
- */
 @Serializable
 class Paths(
-    var extensions: MutableMap<String, JsonObject>? = null
-) : LinkedHashMap<String, PathItem>() {
+    override var extensions: MutableMap<String, JsonElement> = mutableMapOf(),
+) : LinkedHashMap<String, PathItem>(), Extendable {
 
     override fun equals(o: Any?): Boolean {
         if (this === o) {

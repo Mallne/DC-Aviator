@@ -1,323 +1,94 @@
-package cloud.mallne.dicentra.aviator.core.model.oas.headers;
+package cloud.mallne.dicentra.aviator.core.model.oas.headers
 
-import io.swagger.v3.oas.models.examples.Example;
-import io.swagger.v3.oas.models.media.Content;
-import io.swagger.v3.oas.models.media.Schema;
+import cloud.mallne.dicentra.aviator.core.helper.hashAll
+import cloud.mallne.dicentra.aviator.core.helper.toIndentedString
+import cloud.mallne.dicentra.aviator.core.model.oas.examples.Example
+import cloud.mallne.dicentra.aviator.core.model.oas.media.Content
+import cloud.mallne.dicentra.aviator.core.model.oas.media.Schema
+import cloud.mallne.dicentra.aviator.core.model.oas.parameters.Parameter
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
+@Serializable
+class Header(
+    var description: String? = null,
+    var `$ref`: String? = null,
+    var required: Boolean? = null,
+    var deprecated: Boolean? = null,
+    var style: StyleEnum = StyleEnum.SIMPLE,
+    var explode: Boolean? = null,
+    var schema: Schema? = null,
+    var examples: MutableMap<String, Example> = mutableMapOf(),
+    var example: JsonElement? = null,
+    var content: Content? = null,
+    var extensions: MutableMap<String, JsonObject>? = null
+) {
 
-/**
- * Header
- *
- * @see "https://github.com/OAI/OpenAPI-Specification/blob/3.0.1/versions/3.0.1.md#headerObject"
- * @see "https://github.com/OAI/OpenAPI-Specification/blob/3.1.0/versions/3.1.0.md#headerObject"
- */
 
-public class Header {
-    private String description = null;
-    private String $ref = null;
-    private Boolean required = null;
-    private Boolean deprecated = null;
-    private StyleEnum style = null;
-    private Boolean explode = null;
-    private Schema schema = null;
-    private Map<String, Example> examples = null;
-    private Object example = null;
-    private Content content = null;
-    private Map<String, Object> extensions = null;
-
-    /**
-     * returns the description property from a Header instance.
-     *
-     * @return String description
-     **/
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public Header description(String description) {
-        this.description = description;
-        return this;
-    }
-
-    /**
-     * returns the required property from a Header instance.
-     *
-     * @return Boolean required
-     **/
-
-    public Boolean getRequired() {
-        return required;
-    }
-
-    public void setRequired(Boolean required) {
-        this.required = required;
-    }
-
-    public Header required(Boolean required) {
-        this.required = required;
-        return this;
-    }
-
-    /**
-     * returns the deprecated property from a Header instance.
-     *
-     * @return Boolean deprecated
-     **/
-
-    public Boolean getDeprecated() {
-        return deprecated;
-    }
-
-    public void setDeprecated(Boolean deprecated) {
-        this.deprecated = deprecated;
-    }
-
-    public Header deprecated(Boolean deprecated) {
-        this.deprecated = deprecated;
-        return this;
-    }
-
-    /**
-     * returns the style property from a Header instance.
-     *
-     * @return StyleEnum style
-     **/
-
-    public StyleEnum getStyle() {
-        return style;
-    }
-
-    public void setStyle(StyleEnum style) {
-        this.style = style;
-    }
-
-    public Header style(StyleEnum style) {
-        this.style = style;
-        return this;
-    }
-
-    /**
-     * returns the explode property from a Header instance.
-     *
-     * @return Boolean explode
-     **/
-
-    public Boolean getExplode() {
-        return explode;
-    }
-
-    public void setExplode(Boolean explode) {
-        this.explode = explode;
-    }
-
-    public Header explode(Boolean explode) {
-        this.explode = explode;
-        return this;
-    }
-
-    /**
-     * returns the schema property from a Header instance.
-     *
-     * @return Schema schema
-     **/
-
-    public Schema getSchema() {
-        return schema;
-    }
-
-    public void setSchema(Schema schema) {
-        this.schema = schema;
-    }
-
-    public Header schema(Schema schema) {
-        this.schema = schema;
-        return this;
-    }
-
-    /**
-     * returns the examples property from a Header instance.
-     *
-     * @return Map&lt;String, Example&gt; examples
-     **/
-
-    public Map<String, Example> getExamples() {
-        return examples;
-    }
-
-    public void setExamples(Map<String, Example> examples) {
-        this.examples = examples;
-    }
-
-    public Header examples(Map<String, Example> examples) {
-        this.examples = examples;
-        return this;
-    }
-
-    public Header addExample(String key, Example examplesItem) {
-        if (this.examples == null) {
-            this.examples = new LinkedHashMap<>();
+    override fun equals(o: Any?): Boolean {
+        if (this === o) {
+            return true
         }
-        this.examples.put(key, examplesItem);
-        return this;
-    }
-
-    /**
-     * returns the example property from a Header instance.
-     *
-     * @return String example
-     **/
-
-    public Object getExample() {
-        return example;
-    }
-
-    public void setExample(Object example) {
-        this.example = example;
-    }
-
-    public Header example(Object example) {
-        this.example = example;
-        return this;
-    }
-
-    /**
-     * returns the content property from a Header instance.
-     *
-     * @return Content content
-     **/
-
-    public Content getContent() {
-        return content;
-    }
-
-    public void setContent(Content content) {
-        this.content = content;
-    }
-
-    public Header content(Content content) {
-        this.content = content;
-        return this;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
+        if (o == null || javaClass != o.javaClass) {
+            return false
         }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        Header header = (Header) o;
-        return Objects.equals(this.description, header.description) &&
-                Objects.equals(this.required, header.required) &&
-                Objects.equals(this.deprecated, header.deprecated) &&
-                Objects.equals(this.style, header.style) &&
-                Objects.equals(this.explode, header.explode) &&
-                Objects.equals(this.schema, header.schema) &&
-                Objects.equals(this.examples, header.examples) &&
-                Objects.equals(this.example, header.example) &&
-                Objects.equals(this.content, header.content) &&
-                Objects.equals(this.extensions, header.extensions) &&
-                Objects.equals(this.$ref, header.$ref);
+        val header = o as Header
+        return this.description == header.description &&
+                this.required == header.required &&
+                this.deprecated == header.deprecated &&
+                this.style == header.style &&
+                this.explode == header.explode &&
+                this.schema == header.schema &&
+                this.examples == header.examples &&
+                this.example == header.example &&
+                this.content == header.content &&
+                this.extensions == header.extensions &&
+                this.`$ref` == header.`$ref`
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(description, required, deprecated, style, explode, schema, examples, example, content, extensions, $ref);
+    override fun hashCode(): Int {
+        return hashAll(
+            description,
+            required,
+            deprecated,
+            style,
+            explode,
+            schema,
+            examples,
+            example,
+            content,
+            extensions,
+            `$ref`
+        )
     }
 
-    public Map<String, Object> getExtensions() {
-        return extensions;
-    }
-
-    public void setExtensions(Map<String, Object> extensions) {
-        this.extensions = extensions;
-    }
-
-    public void addExtension(String name, Object value) {
-        if (name == null || name.isEmpty() || !name.startsWith("x-")) {
-            return;
-        }
-        if (this.extensions == null) {
-            this.extensions = new LinkedHashMap<>();
-        }
-        this.extensions.put(name, value);
-    }
-
-    public Header extensions(Map<String, Object> extensions) {
-        this.extensions = extensions;
-        return this;
-    }
-
-    public String get$ref() {
-        return $ref;
-    }
-
-    public void set$ref(String $ref) {
-        if ($ref != null && ($ref.indexOf('.') == -1 && $ref.indexOf('/') == -1)) {
-            $ref = "#/components/headers/" + $ref;
-        }
-        this.$ref = $ref;
-    }
-
-    public Header $ref(String $ref) {
-        set$ref($ref);
-        return this;
-    }
-
-    @Override
-    public String toString() {
-        String sb = "class Header {\n" +
-                "    description: " + toIndentedString(description) + "\n" +
-                "    required: " + toIndentedString(required) + "\n" +
-                "    deprecated: " + toIndentedString(deprecated) + "\n" +
-                "    style: " + toIndentedString(style) + "\n" +
-                "    explode: " + toIndentedString(explode) + "\n" +
-                "    schema: " + toIndentedString(schema) + "\n" +
-                "    examples: " + toIndentedString(examples) + "\n" +
-                "    example: " + toIndentedString(example) + "\n" +
-                "    content: " + toIndentedString(content) + "\n" +
-                "    $ref: " + toIndentedString($ref) + "\n" +
-                "}";
-        return sb;
-    }
-
-    /**
-     * Convert the given object to string with each line indented by 4 spaces
-     * (except the first line).
-     */
-    private String toIndentedString(Object o) {
-        if (o == null) {
-            return "null";
-        }
-        return o.toString().replace("\n", "\n    ");
+    override fun toString(): String {
+        val sb = """class Header {
+    description: ${toIndentedString(description)}
+    required: ${toIndentedString(required)}
+    deprecated: ${toIndentedString(deprecated)}
+    style: ${toIndentedString(style)}
+    explode: ${toIndentedString(explode)}
+    schema: ${toIndentedString(schema)}
+    examples: ${toIndentedString(examples)}
+    example: ${toIndentedString(example)}
+    content: ${toIndentedString(content)}
+    ${"$"}ref: ${toIndentedString(`$ref`)}
+}"""
+        return sb
     }
 
     /**
      * Gets or Sets style
      */
-    public enum StyleEnum {
-        SIMPLE("simple");
+    enum class StyleEnum(private val value: String) {
+        @SerialName("simple") SIMPLE("simple");
 
-        private final String value;
-
-        StyleEnum(String value) {
-            this.value = value;
-        }
-
-        @Override
-        public String toString() {
-            return String.valueOf(value);
+        override fun toString(): String {
+            return value.toString()
         }
     }
-
 }
 

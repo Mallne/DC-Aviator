@@ -1,157 +1,42 @@
-package cloud.mallne.dicentra.aviator.core.model.oas.media;
+package cloud.mallne.dicentra.aviator.core.model.oas.media
 
-import io.swagger.v3.oas.models.annotations.OpenAPI31;
-import io.swagger.v3.oas.models.headers.Header;
+import cloud.mallne.dicentra.aviator.core.helper.hashAll
+import cloud.mallne.dicentra.aviator.core.model.oas.headers.Header
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
+@Serializable
+class Encoding(
+    var contentType: String? = null,
+    var headers: MutableMap<String, Header>? = null,
+    var style: StyleEnum? = null,
+    var explode: Boolean? = null,
+    var allowReserved: Boolean? = null,
+    var extensions: MutableMap<String, JsonObject>? = null
+) {
 
-/**
- * Encoding
- *
- * @see "https://github.com/OAI/OpenAPI-Specification/blob/3.0.1/versions/3.0.1.md#encodingObject"
- */
-
-public class Encoding {
-    private String contentType;
-    private Map<String, Header> headers;
-    private StyleEnum style;
-    private Boolean explode;
-    private Boolean allowReserved;
-    private Map<String, Object> extensions = null;
-
-    public Encoding() {
-    }
-
-    public Encoding contentType(String contentType) {
-        this.contentType = contentType;
-        return this;
-    }
-
-    public String getContentType() {
-        return contentType;
-    }
-
-    public void setContentType(String contentType) {
-        this.contentType = contentType;
-    }
-
-    public Encoding headers(Map<String, Header> headers) {
-        this.headers = headers;
-        return this;
-    }
-
-    public Map<String, Header> getHeaders() {
-        return headers;
-    }
-
-    public void setHeaders(Map<String, Header> headers) {
-        this.headers = headers;
-    }
-
-    public Encoding addHeader(String name, Header header) {
-        if (this.headers == null) {
-            this.headers = new LinkedHashMap<>();
+    override fun equals(o: Any?): Boolean {
+        if (this === o) {
+            return true
         }
-        this.headers.put(name, header);
-        return this;
-    }
-
-    public Encoding style(StyleEnum style) {
-        this.style = style;
-        return this;
-    }
-
-    public StyleEnum getStyle() {
-        return style;
-    }
-
-    public void setStyle(StyleEnum style) {
-        this.style = style;
-    }
-
-    public Encoding explode(Boolean explode) {
-        this.explode = explode;
-        return this;
-    }
-
-    public Boolean getExplode() {
-        return explode;
-    }
-
-    public void setExplode(Boolean explode) {
-        this.explode = explode;
-    }
-
-    public Encoding allowReserved(Boolean allowReserved) {
-        this.allowReserved = allowReserved;
-        return this;
-    }
-
-    public Boolean getAllowReserved() {
-        return allowReserved;
-    }
-
-    public void setAllowReserved(Boolean allowReserved) {
-        this.allowReserved = allowReserved;
-    }
-
-    public Map<String, Object> getExtensions() {
-        return extensions;
-    }
-
-    public void setExtensions(Map<String, Object> extensions) {
-        this.extensions = extensions;
-    }
-
-    public void addExtension(String name, Object value) {
-        if (name == null || name.isEmpty() || !name.startsWith("x-")) {
-            return;
+        if (o == null || javaClass != o.javaClass) {
+            return false
         }
-        if (this.extensions == null) {
-            this.extensions = new LinkedHashMap<>();
-        }
-        this.extensions.put(name, value);
+        val encoding = o as Encoding
+        return this.contentType == encoding.contentType &&
+                this.headers == encoding.headers &&
+                this.style == encoding.style &&
+                this.explode == encoding.explode &&
+                this.extensions == encoding.extensions &&
+                this.allowReserved == encoding.allowReserved
     }
 
-    @OpenAPI31
-    public void addExtension31(String name, Object value) {
-        if (name != null && (name.startsWith("x-oas-") || name.startsWith("x-oai-"))) {
-            return;
-        }
-        addExtension(name, value);
+    override fun hashCode(): Int {
+        return hashAll(contentType, headers, style, explode, allowReserved, extensions)
     }
 
-    public Encoding extensions(Map<String, Object> extensions) {
-        this.extensions = extensions;
-        return this;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        Encoding encoding = (Encoding) o;
-        return Objects.equals(this.contentType, encoding.contentType) &&
-                Objects.equals(this.headers, encoding.headers) &&
-                Objects.equals(this.style, encoding.style) &&
-                Objects.equals(this.explode, encoding.explode) &&
-                Objects.equals(this.extensions, encoding.extensions) &&
-                Objects.equals(this.allowReserved, encoding.allowReserved);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(contentType, headers, style, explode, allowReserved, extensions);
-    }
-
-    @Override
-    public String toString() {
+    override fun toString(): String {
         return "Encoding{" +
                 "contentType='" + contentType + '\'' +
                 ", headers=" + headers +
@@ -159,33 +44,24 @@ public class Encoding {
                 ", explode=" + explode +
                 ", allowReserved=" + allowReserved +
                 ", extensions=" + extensions +
-                '}';
+                '}'
     }
 
-    public enum StyleEnum {
-        FORM("form"),
-        SPACE_DELIMITED("spaceDelimited"),
-        PIPE_DELIMITED("pipeDelimited"),
-        DEEP_OBJECT("deepObject");
+    enum class StyleEnum(private val value: String) {
+        @SerialName("form") FORM("form"),
+        @SerialName("spaceDelimited") SPACE_DELIMITED("spaceDelimited"),
+        @SerialName("pipeDelimited") PIPE_DELIMITED("pipeDelimited"),
+        @SerialName("deepObject") DEEP_OBJECT("deepObject");
 
-        private final String value;
-
-        StyleEnum(String value) {
-            this.value = value;
-        }
-
-        public static StyleEnum fromString(String value) {
-            for (StyleEnum e : values()) {
-                if (e.value.equals(value)) {
-                    return e;
+        companion object {
+            fun fromString(value: String): StyleEnum? {
+                for (e in entries) {
+                    if (e.value == value) {
+                        return e
+                    }
                 }
+                return null
             }
-            return null;
-        }
-
-        @Override
-        public String toString() {
-            return String.valueOf(value);
         }
     }
 }

@@ -4,20 +4,13 @@ import cloud.mallne.dicentra.aviator.core.helper.toIndentedString
 import cloud.mallne.dicentra.aviator.core.model.oas.parameters.Parameter
 import cloud.mallne.dicentra.aviator.core.model.oas.servers.Server
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 
-
-/**
- * PathItem
- *
- * @see "https://github.com/OAI/OpenAPI-Specification/blob/3.0.1/versions/3.0.1.md.pathItemObject"
- *
- * @see "https://github.com/OAI/OpenAPI-Specification/blob/3.1.0/versions/3.1.0.md.pathItemObject"
- */
 @Serializable
 class PathItem(
-    var summary: String? = null,
-    var description: String? = null,
+    override var summary: String? = null,
+    override var description: String? = null,
     var get: Operation? = null,
     var put: Operation? = null,
     var post: Operation? = null,
@@ -28,9 +21,9 @@ class PathItem(
     var trace: Operation? = null,
     var servers: MutableList<Server>? = null,
     var parameters: MutableList<Parameter>? = null,
-    var `$ref`: String? = null,
-    var extensions: MutableMap<String, JsonObject>? = null
-) {
+    override var `$ref`: String? = null,
+    override var extensions: MutableMap<String, JsonElement> = mutableMapOf()
+): Referenceable, Extendable {
 
     fun readOperations(): MutableList<Operation> {
         val allOperations: MutableList<Operation> = ArrayList<Operation>()

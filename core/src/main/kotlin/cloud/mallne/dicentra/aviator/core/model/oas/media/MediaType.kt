@@ -1,211 +1,50 @@
-package cloud.mallne.dicentra.aviator.core.model.oas.media;
+package cloud.mallne.dicentra.aviator.core.model.oas.media
 
-import io.swagger.v3.oas.models.annotations.OpenAPI31;
-import io.swagger.v3.oas.models.examples.Example;
-import io.swagger.v3.oas.models.media.Encoding;
-import io.swagger.v3.oas.models.media.Schema;
+import cloud.mallne.dicentra.aviator.core.helper.hashAll
+import cloud.mallne.dicentra.aviator.core.helper.toIndentedString
+import cloud.mallne.dicentra.aviator.core.model.oas.examples.Example
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
+@Serializable
+class MediaType(
+    var schema: Schema? = null,
+    var examples: MutableMap<String, Example>? = null,
+    var example: JsonObject? = null,
+    var encoding: MutableMap<String, Encoding>? = null,
+    var extensions: MutableMap<String, JsonObject>? = null,
+) {
 
-/**
- * MediaType
- *
- * @see "https://github.com/OAI/OpenAPI-Specification/blob/3.0.1/versions/3.0.1.md#mediaTypeObject"
- */
+    val exampleSetFlag: Boolean
+        get() = this.example != null
 
-public class MediaType {
-    private Schema schema = null;
-    private Map<String, Example> examples = null;
-    private Object example = null;
-    private Map<String, Encoding> encoding = null;
-    private Map<String, Object> extensions = null;
-
-    private boolean exampleSetFlag;
-
-    /**
-     * returns the schema property from a MediaType instance.
-     *
-     * @return Schema schema
-     **/
-
-    public Schema getSchema() {
-        return schema;
-    }
-
-    public void setSchema(Schema schema) {
-        this.schema = schema;
-    }
-
-    public MediaType schema(Schema schema) {
-        this.schema = schema;
-        return this;
-    }
-
-    /**
-     * returns the examples property from a MediaType instance.
-     *
-     * @return Map&lt;String, Example&gt; examples
-     **/
-
-    public Map<String, Example> getExamples() {
-        return examples;
-    }
-
-    public void setExamples(Map<String, Example> examples) {
-        this.examples = examples;
-    }
-
-    public MediaType examples(Map<String, Example> examples) {
-        this.examples = examples;
-        return this;
-    }
-
-    public MediaType addExamples(String key, Example examplesItem) {
-        if (this.examples == null) {
-            this.examples = new LinkedHashMap<>();
+    override fun equals(o: Any?): Boolean {
+        if (this === o) {
+            return true
         }
-        this.examples.put(key, examplesItem);
-        return this;
-    }
-
-    /**
-     * returns the example property from a MediaType instance.
-     *
-     * @return String example
-     **/
-
-    public Object getExample() {
-        return example;
-    }
-
-    public void setExample(Object example) {
-        if (this.schema == null) {
-            this.example = example;
-            this.exampleSetFlag = true;
-            return;
+        if (o == null || javaClass != o.javaClass) {
+            return false
         }
-        this.example = this.schema.cast(example);
-        if (!(example != null && this.example == null)) {
-            this.exampleSetFlag = true;
-        }
+        val mediaType = o as MediaType
+        return this.schema == mediaType.schema &&
+                this.examples == mediaType.examples &&
+                this.example == mediaType.example &&
+                this.encoding == mediaType.encoding &&
+                this.extensions == mediaType.extensions
     }
 
-    public MediaType example(Object example) {
-        setExample(example);
-        return this;
+    override fun hashCode(): Int {
+        return hashAll(schema, examples, example, encoding, extensions)
     }
 
-    /**
-     * returns the encoding property from a MediaType instance.
-     *
-     * @return Encoding encoding
-     **/
-
-    public Map<String, Encoding> getEncoding() {
-        return encoding;
+    override fun toString(): String {
+        val sb = """class MediaType {
+    schema: ${toIndentedString(schema)}
+    examples: ${toIndentedString(examples)}
+    example: ${toIndentedString(example)}
+    encoding: ${toIndentedString(encoding)}
+}"""
+        return sb
     }
-
-    public void setEncoding(Map<String, Encoding> encoding) {
-        this.encoding = encoding;
-    }
-
-    public MediaType encoding(Map<String, Encoding> encoding) {
-        this.encoding = encoding;
-        return this;
-    }
-
-    public MediaType addEncoding(String key, Encoding encodingItem) {
-        if (this.encoding == null) {
-            this.encoding = new LinkedHashMap<>();
-        }
-        this.encoding.put(key, encodingItem);
-        return this;
-    }
-
-    public boolean getExampleSetFlag() {
-        return exampleSetFlag;
-    }
-
-    public void setExampleSetFlag(boolean exampleSetFlag) {
-        this.exampleSetFlag = exampleSetFlag;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        MediaType mediaType = (MediaType) o;
-        return Objects.equals(this.schema, mediaType.schema) &&
-                Objects.equals(this.examples, mediaType.examples) &&
-                Objects.equals(this.example, mediaType.example) &&
-                Objects.equals(this.encoding, mediaType.encoding) &&
-                Objects.equals(this.extensions, mediaType.extensions);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(schema, examples, example, encoding, extensions);
-    }
-
-    public Map<String, Object> getExtensions() {
-        return extensions;
-    }
-
-    public void setExtensions(Map<String, Object> extensions) {
-        this.extensions = extensions;
-    }
-
-    public void addExtension(String name, Object value) {
-        if (name == null || name.isEmpty() || !name.startsWith("x-")) {
-            return;
-        }
-        if (this.extensions == null) {
-            this.extensions = new LinkedHashMap<>();
-        }
-        this.extensions.put(name, value);
-    }
-
-    @OpenAPI31
-    public void addExtension31(String name, Object value) {
-        if (name != null && (name.startsWith("x-oas-") || name.startsWith("x-oai-"))) {
-            return;
-        }
-        addExtension(name, value);
-    }
-
-    public MediaType extensions(Map<String, Object> extensions) {
-        this.extensions = extensions;
-        return this;
-    }
-
-    @Override
-    public String toString() {
-
-        String sb = "class MediaType {\n" +
-                "    schema: " + toIndentedString(schema) + "\n" +
-                "    examples: " + toIndentedString(examples) + "\n" +
-                "    example: " + toIndentedString(example) + "\n" +
-                "    encoding: " + toIndentedString(encoding) + "\n" +
-                "}";
-        return sb;
-    }
-
-    /**
-     * Convert the given object to string with each line indented by 4 spaces
-     * (except the first line).
-     */
-    private String toIndentedString(Object o) {
-        if (o == null) {
-            return "null";
-        }
-        return o.toString().replace("\n", "\n    ");
-    }
-
 }
 

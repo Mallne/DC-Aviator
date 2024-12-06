@@ -8,31 +8,25 @@ import cloud.mallne.dicentra.aviator.core.model.oas.servers.Server
 import cloud.mallne.dicentra.aviator.core.model.oas.tags.Tag
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 
-/**
- * OpenAPI
- *
- * @see "https://github.com/OAI/OpenAPI-Specification/blob/3.0.1/versions/3.0.1.md"
- *
- * @see "https://github.com/OAI/OpenAPI-Specification/blob/3.1.0/versions/3.1.0.md"
- */
 @Serializable
 class OpenAPI(
-    var openapi: String? = "3.0.1",
-    var info: Info? = null,
+    var openapi: String = "3.1.0",
+    var info: Info,
     var externalDocs: ExternalDocumentation? = null,
     var servers: MutableList<Server>? = null,
     var security: MutableList<SecurityRequirement>? = null,
     var tags: MutableList<Tag>? = null,
     var paths: Paths? = null,
     var components: Components? = null,
-    var extensions: MutableMap<String, JsonObject>? = null,
+    override var extensions: MutableMap<String, JsonElement> = mutableMapOf(),
     var jsonSchemaDialect: String? = null,
     @Transient
     var specVersion: SpecVersion? = SpecVersion.V30,
     var webhooks: MutableMap<String, PathItem>? = null
-) {
+): Extendable {
 
 
     override fun equals(o: Any?): Boolean {

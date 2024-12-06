@@ -1,126 +1,43 @@
-package cloud.mallne.dicentra.aviator.core.model.oas.callbacks;
+package cloud.mallne.dicentra.aviator.core.model.oas.callbacks
 
-import io.swagger.v3.oas.models.PathItem;
-import io.swagger.v3.oas.models.annotations.OpenAPI31;
+import cloud.mallne.dicentra.aviator.core.helper.hashAll
+import cloud.mallne.dicentra.aviator.core.helper.toIndentedString
+import cloud.mallne.dicentra.aviator.core.model.oas.PathItem
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
-import java.util.LinkedHashMap;
-import java.util.Objects;
+@Serializable
+class Callback(
+    private var extensions: MutableMap<String, JsonElement>? = null,
+    private var `$ref`: String? = null
+) : LinkedHashMap<String, PathItem>() {
 
-/**
- * Callback
- *
- * @see "https://github.com/OAI/OpenAPI-Specification/blob/3.0.1/versions/3.0.1.md#callbackObject"
- * @see "https://github.com/OAI/OpenAPI-Specification/blob/3.1.0/versions/3.1.0.md#callbackObject"
- */
 
-public class Callback extends LinkedHashMap<String, PathItem> {
-    private java.util.Map<String, Object> extensions = null;
-    private String $ref = null;
-
-    public Callback() {
-    }
-
-    /**
-     * @since 2.0.3
-     */
-    public String get$ref() {
-        return $ref;
-    }
-
-    /**
-     * @since 2.0.3
-     */
-    public void set$ref(String $ref) {
-        if ($ref != null && ($ref.indexOf('.') == -1 && $ref.indexOf('/') == -1)) {
-            $ref = "#/components/callbacks/" + $ref;
+    override fun equals(o: Any?): Boolean {
+        if (this === o) {
+            return true
         }
-        this.$ref = $ref;
-    }
-
-    /**
-     * @since 2.0.3
-     */
-    public Callback $ref(String $ref) {
-        set$ref($ref);
-        return this;
-    }
-
-    public Callback addPathItem(String name, PathItem item) {
-        this.put(name, item);
-        return this;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
+        if (o == null || javaClass != o.javaClass) {
+            return false
         }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
+        val callback = o as Callback
+        if (`$ref` != callback.`$ref`) {
+            return false
         }
-        Callback callback = (Callback) o;
-        if (!Objects.equals($ref, callback.$ref)) {
-            return false;
-        }
-        return Objects.equals(this.extensions, callback.extensions) &&
-                super.equals(o);
+        return this.extensions == callback.extensions &&
+                super.equals(o)
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(extensions, $ref, super.hashCode());
+    override fun hashCode(): Int {
+        return hashAll(extensions, `$ref`, super.hashCode())
     }
 
-    public java.util.Map<String, Object> getExtensions() {
-        return extensions;
+    override fun toString(): String {
+        val sb = """class Callback {
+    ${"$"}ref: ${toIndentedString(`$ref`)}
+    ${toIndentedString(super.toString())}
+}"""
+        return sb
     }
-
-    public void setExtensions(java.util.Map<String, Object> extensions) {
-        this.extensions = extensions;
-    }
-
-    public void addExtension(String name, Object value) {
-        if (name == null || name.isEmpty() || !name.startsWith("x-")) {
-            return;
-        }
-        if (this.extensions == null) {
-            this.extensions = new LinkedHashMap<>();
-        }
-        this.extensions.put(name, value);
-    }
-
-    @OpenAPI31
-    public void addExtension31(String name, Object value) {
-        if (name != null && (name.startsWith("x-oas-") || name.startsWith("x-oai-"))) {
-            return;
-        }
-        addExtension(name, value);
-    }
-
-    public Callback extensions(java.util.Map<String, Object> extensions) {
-        this.extensions = extensions;
-        return this;
-    }
-
-    @Override
-    public String toString() {
-        String sb = "class Callback {\n" +
-                "    $ref: " + toIndentedString($ref) + "\n" +
-                "    " + toIndentedString(super.toString()) + "\n" +
-                "}";
-        return sb;
-    }
-
-    /**
-     * Convert the given object to string with each line indented by 4 spaces
-     * (except the first line).
-     */
-    private String toIndentedString(Object o) {
-        if (o == null) {
-            return "null";
-        }
-        return o.toString().replace("\n", "\n    ");
-    }
-
 }
 
