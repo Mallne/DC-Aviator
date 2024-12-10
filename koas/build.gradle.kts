@@ -1,16 +1,15 @@
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
-group = "cloud.mallne.dicentra.aviator"
-version = "1.0.0-SNAPSHOT"
-description = "The core compponents of DiCentra Aviator."
-
 plugins {
     alias(libs.plugins.kmp)
     alias(libs.plugins.android.library)
     alias(libs.plugins.mavenPublish)
     alias(libs.plugins.kotlin.serialization)
 }
+
+group = "cloud.mallne.dicentra.aviator"
+version = "1.0.0-SNAPSHOT"
 
 kotlin {
     jvm()
@@ -31,7 +30,6 @@ kotlin {
             dependencies {
                 implementation(libs.kotlinx.serialization.json)
                 implementation(libs.ktor.http)
-                api(project(":koas"))
             }
         }
     }
@@ -54,7 +52,7 @@ mavenPublishing {
                 version = project.version.toString()
 
                 pom {
-                    name = "Dicentra Aviator Core"
+                    name = "Dicentra Aviator Koas"
                     description =
                         "An Kotlin Multiplatform OpenAPI specification and parser utilizing kotlinx.serialization"
                     inceptionYear = "2024"

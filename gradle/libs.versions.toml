@@ -3,6 +3,8 @@ accompanistSystemuicontroller = "0.36.0"
 activityCompose = "1.9.3"
 androidGradlePlugin = "8.7.3"
 androidSdk = "11.2.0"
+android-minSdk = "24"
+android-compileSdk = "34"
 appcompat = "1.7.0"
 appUpdate = "2.1.0"
 browser = "1.8.0"
@@ -11,7 +13,6 @@ dependencyAnalysis = "2.0.1"
 gson = "2.11.0"
 hiltAndroid = "2.52"
 hiltNavigationCompose = "1.2.0"
-kotlinStdlib = "2.0.21"
 kotlinxCoroutinesCore = "1.9.0"
 kxml2 = "2.3.0"
 libraryBase = "2.1.0"
@@ -23,7 +24,7 @@ navigationCompose = "2.8.4"
 playServicesLocation = "21.3.0"
 ui = "1.7.5"
 volley = "1.2.1"
-kotlin = "2.0.21"
+kotlin = "2.1.0"
 realm = "2.1.0"
 ksp = "2.0.21-1.0.28"
 serialization = "1.7.3"
@@ -42,6 +43,7 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 material = { module = "com.google.android.material:material", version.ref = "material" }
 volley = { module = "com.android.volley:volley", version.ref = "volley" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-http = { module = "io.ktor:ktor-http", version.ref = "ktor" }
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-server-core = { module = "io.ktor:ktor-server-core-jvm" }
 ktor-server-resources = { module = "io.ktor:ktor-server-resources-jvm" }
@@ -67,3 +69,5 @@ ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 ktor = { id = "io.ktor.plugin", version.ref = "ktor" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kjvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kmp = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+mavenPublish = { id = "com.vanniktech.maven.publish", version = "0.29.0" }

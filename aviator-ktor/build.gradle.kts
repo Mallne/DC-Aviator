@@ -4,7 +4,7 @@ description = "DiCentra Aviator preconfigured for Spring Reactive."
 
 plugins {
     id("maven-publish")
-    kotlin("jvm")
+    alias(libs.plugins.kjvm)
     alias(libs.plugins.kotlin.serialization)
 }
 
