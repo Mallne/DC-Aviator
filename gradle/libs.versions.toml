@@ -26,7 +26,7 @@ ui = "1.7.5"
 volley = "1.2.1"
 kotlin = "2.1.0"
 realm = "2.1.0"
-ksp = "2.0.21-1.0.28"
+ksp = "2.1.0-1.0.29"
 serialization = "1.7.3"
 appauth = "0.11.1"
 lifecycleRuntimeKtx = "2.8.7"
@@ -70,4 +70,4 @@ ktor = { id = "io.ktor.plugin", version.ref = "ktor" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kjvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kmp = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
-mavenPublish = { id = "com.vanniktech.maven.publish", version = "0.29.0" }
+mavenPublish = { id = "com.vanniktech.maven.publish", version = "0.30.0" }
