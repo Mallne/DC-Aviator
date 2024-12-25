@@ -1,0 +1,50 @@
+### Version of the Aviator Parser
+GET http://localhost:8080/version
+
+### Testdata
+GET http://localhost:8080/test
+
+### Parse Test Data
+POST http://localhost:8080/parse
+Content-Type: application/json
+Accept: application/json
+
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Application API",
+    "description": "Application API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://0.0.0.0:8080"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "description": "Hello World!",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "Example#1": {
+                    "value": "Hello World!"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+###

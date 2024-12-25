@@ -6,4 +6,4 @@ ktor:
     port: 8080
 
 dicentra:
-  behind-proxy: ${BEHIND_PROXY}
+  behind-proxy: "${BEHIND_PROXY:FALSE}"

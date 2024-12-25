@@ -37,5 +37,5 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.cio)
-    implementation(project(":core"))
+    api(project(":core"))
 }

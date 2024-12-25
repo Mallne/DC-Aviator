@@ -13,10 +13,13 @@ import cloud.mallne.dicentra.aviator.koas.responses.Link
 import cloud.mallne.dicentra.aviator.koas.responses.Response
 import cloud.mallne.dicentra.aviator.koas.security.SecurityScheme
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KeepGeneratedSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.*
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 
 /**
  * Holds a set of reusable objects for different aspects of the OAS. All objects defined within the
@@ -24,7 +27,7 @@ import kotlinx.serialization.json.*
  * properties outside the components object.
  */
 @Serializable(Components.Companion.Serializer::class)
-@OptIn(InternalSerializationApi::class, ExperimentalSerializationApi::class)
+@OptIn(ExperimentalSerializationApi::class)
 @KeepGeneratedSerializer
 data class Components(
     val schemas: Map<String, ReferenceOr<Schema>> = emptyMap(),

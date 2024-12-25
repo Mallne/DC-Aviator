@@ -1,15 +1,15 @@
 package cloud.mallne.dicentra.aviator.core
 
-import cloud.mallne.dicentra.aviator.core.model.IParameter
-import cloud.mallne.dicentra.aviator.core.model.IServer
+import cloud.mallne.dicentra.aviator.koas.parameters.Parameter
+import cloud.mallne.dicentra.aviator.koas.servers.Server
 
 interface IAviatorService {
     val serviceLocator: IServiceLocator
     val options: ServiceOptions
     val requestType: RequestType
-    val server: IServer
+    val server: Server
     val path: String
-    val pathParams: List<IParameter>
+    val pathParams: List<Parameter>
     val serviceURL: String
         get() = server.url + path
 }

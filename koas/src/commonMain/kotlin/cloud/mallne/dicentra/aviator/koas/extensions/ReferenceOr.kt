@@ -1,5 +1,6 @@
 package cloud.mallne.dicentra.aviator.koas.extensions
 
+import cloud.mallne.dicentra.aviator.koas.extensions.ReferenceOr.Reference
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -45,21 +46,23 @@ sealed interface ReferenceOr<out A> {
 
         fun <A> value(value: A): ReferenceOr<A> = Value(value)
 
-        internal class Serializer<T>(private val dataSerializer: KSerializer<T>) :
+
+        //TODO-low Why the actual Fuck does the param have to be nullable???????????
+        internal class Serializer<T>(private val dataSerializer: KSerializer<T>?) :
             KSerializer<ReferenceOr<T>> {
 
             private val refDescriptor =
                 buildClassSerialDescriptor("Reference") { element<String>(RefKey) }
 
             override val descriptor: SerialDescriptor =
-                buildClassSerialDescriptor("cloud.mallne.dicentra.aviator.koas.Referenced") {
+                buildClassSerialDescriptor("cloud.mallne.dicentra.aviator.koas.extensions.Reference") {
                     element("Ref", refDescriptor)
-                    element("description", dataSerializer.descriptor)
+                    dataSerializer?.descriptor?.let { element("description", it) }
                 }
 
             override fun serialize(encoder: Encoder, value: ReferenceOr<T>) {
                 when (value) {
-                    is Value -> encoder.encodeSerializableValue(dataSerializer, value.value)
+                    is Value -> encoder.encodeSerializableValue(dataSerializer!!, value.value)
                     is Reference -> encoder.encodeSerializableValue(Reference.serializer(), value)
                 }
             }
@@ -69,7 +72,7 @@ sealed interface ReferenceOr<out A> {
                 val json = decoder.decodeSerializableValue(JsonElement.Companion.serializer())
                 return if ((json as JsonObject).contains(RefKey))
                     Reference(json[RefKey]!!.jsonPrimitive.content)
-                else Value(decoder.json.decodeFromJsonElement(dataSerializer, json))
+                else Value(decoder.json.decodeFromJsonElement(dataSerializer!!, json))
             }
         }
     }

@@ -4,9 +4,9 @@ import cloud.mallne.dicentra.aviator.core.IAviatorService
 import cloud.mallne.dicentra.aviator.core.InflatedServiceOptions
 import cloud.mallne.dicentra.aviator.core.RequestType
 import cloud.mallne.dicentra.aviator.core.ServiceOptions
+import cloud.mallne.dicentra.aviator.koas.parameters.Parameter
+import cloud.mallne.dicentra.aviator.koas.servers.Server
 import cloud.mallne.dicentra.aviator.model.AviatorServiceUtils
-import cloud.mallne.dicentra.aviator.model.Parameter
-import cloud.mallne.dicentra.aviator.model.Server
 import cloud.mallne.dicentra.aviator.model.ServiceLocator
 import io.ktor.client.*
 import io.ktor.client.request.*

@@ -4,9 +4,8 @@ import cloud.mallne.dicentra.aviator.core.IAviatorService
 import cloud.mallne.dicentra.aviator.core.InflatedServiceOptions
 import cloud.mallne.dicentra.aviator.core.ServiceArguments
 import cloud.mallne.dicentra.aviator.core.ServiceOptions
-import cloud.mallne.dicentra.aviator.core.model.IParameter
-import cloud.mallne.dicentra.aviator.core.model.Insides
 import cloud.mallne.dicentra.aviator.exceptions.ServiceException
+import cloud.mallne.dicentra.aviator.koas.parameters.Parameter
 
 object AviatorServiceUtils {
     inline fun <reified T : InflatedServiceOptions> optionBundle(options: ServiceOptions): T =
@@ -15,7 +14,7 @@ object AviatorServiceUtils {
     fun getAddress(
         parameters: ServiceArguments,
         serviceURL: String,
-        pathParams: List<IParameter>
+        pathParams: List<Parameter>
     ): String {
         val pathItems = serviceURL.split("/")
         val pis = pathItems.map { pi ->
@@ -34,7 +33,7 @@ object AviatorServiceUtils {
 
         //fabricate the Query String
         val params =
-            pathParams.filter { it.`in` == Insides.query }
+            pathParams.filter { it.input == Parameter.Input.Query }
         val optionsMap = params.mapNotNull {
             val vl = parameters[it.name]
             if (vl != null) {
@@ -57,11 +56,11 @@ object AviatorServiceUtils {
     }
 
     fun validatePathParams(service: IAviatorService) {
-        if (!service.pathParams.all { it.`in` == Insides.path || it.`in` == Insides.query }) throw ServiceException(
+        if (!service.pathParams.all { it.input == Parameter.Input.Path || it.input == Parameter.Input.Query }) throw ServiceException(
             "Not all path params are specified as such"
         )
 
-        val pathParms = service.pathParams.filter { it.`in` == Insides.path }
+        val pathParms = service.pathParams.filter { it.input == Parameter.Input.Path }
         val paths = service.path.split("/")
         val params = paths.mapNotNull { template(it) }
         if (params.size > pathParms.size) throw ServiceException("Not all path params are specified")

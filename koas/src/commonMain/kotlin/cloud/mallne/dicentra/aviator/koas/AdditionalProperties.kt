@@ -8,7 +8,12 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.json.*
+import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.booleanOrNull
 import kotlin.jvm.JvmInline
 
 @Serializable(with = AdditionalProperties.Companion.Serializer::class)
@@ -32,7 +37,7 @@ sealed interface AdditionalProperties {
                     json is JsonObject ->
                         PSchema(
                             decoder.json.decodeFromJsonElement(
-                                ReferenceOr.Companion.serializer(Schema.serializer()),
+                                ReferenceOr.serializer(Schema.serializer()),
                                 json
                             )
                         )
@@ -47,7 +52,7 @@ sealed interface AdditionalProperties {
                     is Allowed -> encoder.encodeBoolean(value.value)
                     is PSchema ->
                         encoder.encodeSerializableValue(
-                            ReferenceOr.Companion.serializer(Schema.serializer()),
+                            ReferenceOr.serializer(Schema.serializer()),
                             value.value
                         )
                 }
