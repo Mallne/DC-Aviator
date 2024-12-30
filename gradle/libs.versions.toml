@@ -31,9 +31,9 @@ serialization = "1.7.3"
 appauth = "0.11.1"
 lifecycleRuntimeKtx = "2.8.7"
 composeBom = "2024.11.00"
-ktor = "3.0.2"
-logback = "1.5.12"
-koin = "4.0.0"
+ktor = "3.0.3"
+logback = "1.5.15"
+koin = "4.0.1"
 koin-annotations = "1.4.0"
 
 [libraries]
