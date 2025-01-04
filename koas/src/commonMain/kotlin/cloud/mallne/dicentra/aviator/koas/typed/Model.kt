@@ -1,24 +1,28 @@
 package cloud.mallne.dicentra.aviator.koas.typed
 
+import cloud.mallne.dicentra.aviator.koas.extensions.Extendable
 import cloud.mallne.dicentra.aviator.koas.parameters.Parameter
 import io.ktor.http.*
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 
+@Serializable
 data class Route(
     val operationId: String?,
     val summary: String?,
     val path: String,
-    val method: HttpMethod,
+    val method: @Serializable(Serializers.HttpMethodSerializer::class) HttpMethod,
     val body: Bodies,
     val input: List<Input>,
     val returnType: Returns,
-    val extensions: Map<String, JsonElement>,
+    override val extensions: Map<String, JsonElement>,
     val nested: List<Model>
-) {
+) : Extendable {
+    @Serializable
     data class Bodies(
         /** Request bodies are optional by default! */
         val required: Boolean,
-        val types: Map<ContentType, Body>,
+        val types: Map<@Serializable(Serializers.ContentTypeSerializer::class) ContentType, Body>,
         val extensions: Map<String, JsonElement>
     ) : Map<ContentType, Body> by types {
         fun jsonOrNull(): Body.Json? =
@@ -91,6 +95,7 @@ data class Route(
     }
 
     // A Parameter can be isNullable, required while the model is not!
+    @Serializable
     data class Input(
         val name: String,
         val type: Model,
@@ -99,8 +104,9 @@ data class Route(
         val description: String?
     )
 
+    @Serializable
     data class Returns(
-        val types: Map<HttpStatusCode, ReturnType>,
+        val types: Map<@Serializable(Serializers.HttpStatusCodeSerializer::class) HttpStatusCode, ReturnType>,
         val extensions: Map<String, JsonElement>
     ) : Map<HttpStatusCode, ReturnType> by types {
         constructor(
@@ -110,6 +116,7 @@ data class Route(
     }
 
     // Required, isNullable ???
+    @Serializable
     data class ReturnType(val type: Model, val extensions: Map<String, JsonElement>)
 }
 
@@ -124,31 +131,38 @@ data class Route(
  * us the best logical structure, and makes it easier to compare code and spec. Every type that
  * needs to generate a name has a [NamingContext], see [NamingContext] for more details.
  */
+@Serializable
 sealed interface Model {
     val description: String?
 
+    @Serializable
     sealed interface Primitive : Model {
+        @Serializable
         data class Int(
             val default: kotlin.Int?,
             override val description: kotlin.String?,
             val constraint: Constraints.Number?
         ) : Primitive
 
+        @Serializable
         data class Double(
             val default: kotlin.Double?,
             override val description: kotlin.String?,
             val constraint: Constraints.Number?
         ) : Primitive
 
+        @Serializable
         data class Boolean(val default: kotlin.Boolean?, override val description: kotlin.String?) :
             Primitive
 
+        @Serializable
         data class String(
             val default: kotlin.String?,
             override val description: kotlin.String?,
             val constraint: Constraints.Text?
         ) : Primitive
 
+        @Serializable
         data class Unit(override val description: kotlin.String?) : Primitive
 
         fun default(): kotlin.String? =
@@ -163,15 +177,19 @@ sealed interface Model {
         companion object
     }
 
+    @Serializable
     data class OctetStream(override val description: String?) : Model
 
+    @Serializable
     data class FreeFormJson(override val description: String?, val constraint: Constraints.Object?) :
         Model
 
+    @Serializable
     sealed interface Collection : Model {
         val inner: Model
         val constraint: Constraints.Collection?
 
+        @Serializable
         data class List(
             override val inner: Model,
             val default: kotlin.collections.List<String>?,
@@ -179,6 +197,7 @@ sealed interface Model {
             override val constraint: Constraints.Collection?
         ) : Collection
 
+        @Serializable
         data class Set(
             override val inner: Model,
             val default: kotlin.collections.List<String>?,
@@ -186,6 +205,7 @@ sealed interface Model {
             override val constraint: Constraints.Collection?
         ) : Collection
 
+        @Serializable
         data class Map(
             override val inner: Model,
             override val description: String?,
@@ -197,12 +217,14 @@ sealed interface Model {
         companion object
     }
 
+    @Serializable
     data class Object(
         val context: NamingContext,
         override val description: String?,
         val properties: List<Property>,
         val inline: List<Model>
     ) : Model {
+        @Serializable
         data class Property(
             val baseName: String,
             val model: Model,
@@ -218,6 +240,7 @@ sealed interface Model {
         companion object
     }
 
+    @Serializable
     data class Union(
         val context: NamingContext,
         val cases: List<Case>,
@@ -225,15 +248,18 @@ sealed interface Model {
         override val description: String?,
         val inline: List<Model>
     ) : Model {
+        @Serializable
         data class Case(val context: NamingContext, val model: Model)
     }
 
+    @Serializable
     sealed interface Enum : Model {
         val context: NamingContext
         val values: List<String>
         val default: String?
         override val description: String?
 
+        @Serializable
         data class Closed(
             override val context: NamingContext,
             val inner: Model,
@@ -242,6 +268,7 @@ sealed interface Model {
             override val description: String?
         ) : Enum
 
+        @Serializable
         data class Open(
             override val context: NamingContext,
             override val values: List<String>,

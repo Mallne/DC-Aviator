@@ -1,6 +1,6 @@
 package cloud.mallne.dicentra
 
-import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec
+import cloud.mallne.dicentra.aviator.core.execution.AviatorExtensionSpec
 import cloud.mallne.dicentra.aviator.koas.OpenAPI
 import cloud.mallne.dicentra.aviator.koas.info.Info
 import io.ktor.server.application.*

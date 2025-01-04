@@ -315,7 +315,7 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
                     properties = properties,
                     additionalProperties = ref.value.additionalProperties ?: obj.value.additionalProperties,
                     description = ref.value.description,
-                    required = ref.value.required + obj.value.required,
+                    required = ref.value.required.orEmpty() + obj.value.required.orEmpty(),
                     nullable = ref.value.nullable ?: obj.value.nullable,
                     discriminator = ref.value.discriminator ?: obj.value.discriminator,
                     minProperties = ref.value.minProperties ?: obj.value.minProperties,
@@ -358,8 +358,8 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
             Property(
                 name,
                 model.value,
-                required.contains(name) == true,
-                (resolved.value.nullable ?: required.contains(name).not()) != false,
+                required?.contains(name) == true,
+                (resolved.value.nullable ?: required?.contains(name)?.not()) != false,
                 resolved.value.description
             )
         }, properties.mapNotNull { (name, ref) ->

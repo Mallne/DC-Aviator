@@ -1,8 +1,10 @@
 package cloud.mallne.dicentra.aviator.koas.typed
 
 import cloud.mallne.dicentra.aviator.koas.io.Schema
+import kotlinx.serialization.Serializable
 
 sealed interface Constraints {
+    @Serializable
     data class Number(
         val exclusiveMinimum: Boolean,
         val minimum: Double,
@@ -24,6 +26,7 @@ sealed interface Constraints {
         }
     }
 
+    @Serializable
     data class Text(val minLength: Int, val maxLength: Int, val pattern: String?) : Constraints {
         companion object {
             operator fun invoke(schema: Schema): Text? =
@@ -33,6 +36,7 @@ sealed interface Constraints {
         }
     }
 
+    @Serializable
     data class Collection(
         val minItems: Int,
         val maxItems: Int,
@@ -50,6 +54,7 @@ sealed interface Constraints {
      * minProperties and maxProperties let you restrict the number of properties allowed in an object.
      * This can be useful when using additionalProperties, or free-form objects.
      */
+    @Serializable
     data class Object(
         val minProperties: Int,
         val maxProperties: Int,
