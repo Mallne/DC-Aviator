@@ -1,6 +1,6 @@
 package cloud.mallne.dicentra.aviator.model
 
-import cloud.mallne.dicentra.aviator.core.IAviatorService
+import cloud.mallne.dicentra.aviator.core.AviatorServiceDataHolder
 import cloud.mallne.dicentra.aviator.core.InflatedServiceOptions
 import cloud.mallne.dicentra.aviator.core.ServiceArguments
 import cloud.mallne.dicentra.aviator.core.ServiceOptions
@@ -51,11 +51,11 @@ object AviatorServiceUtils {
         }
     }
 
-    fun validate(service: IAviatorService) {
+    fun validate(service: AviatorServiceDataHolder) {
         validatePathParams(service)
     }
 
-    fun validatePathParams(service: IAviatorService) {
+    fun validatePathParams(service: AviatorServiceDataHolder) {
         if (!service.pathParams.all { it.input == Parameter.Input.Path || it.input == Parameter.Input.Query }) throw ServiceException(
             "Not all path params are specified as such"
         )

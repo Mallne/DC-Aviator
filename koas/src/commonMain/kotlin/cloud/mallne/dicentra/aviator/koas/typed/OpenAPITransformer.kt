@@ -30,20 +30,27 @@ fun OpenAPI.models(): Set<Model> = with(OpenAPITransformer(this)) { schemas() }.
  */
 private class OpenAPITransformer(private val openAPI: OpenAPI) {
 
-    fun operations(): List<Triple<String, HttpMethod, Operation>> = openAPI.paths.entries.flatMap { (path, p) ->
+    data class OperationsHolder(
+        val path: String,
+        val method: HttpMethod,
+        val operation: Operation,
+        val pathItem: PathItem
+    )
+
+    fun operations(): List<OperationsHolder> = openAPI.paths.entries.flatMap { (path, p) ->
         listOfNotNull(
-            Triple(path, HttpMethod.Get, p.get),
-            Triple(path, HttpMethod.Put, p.put),
-            Triple(path, HttpMethod.Post, p.post),
-            Triple(path, HttpMethod.Delete, p.delete),
-            Triple(path, HttpMethod.Head, p.head),
-            Triple(path, HttpMethod.Options, p.options),
-            Triple(path, HttpMethod.parse("Trace"), p.trace),
-            Triple(path, HttpMethod.Patch, p.patch),
+            OperationsHolder(path, HttpMethod.Get, p.get, p),
+            OperationsHolder(path, HttpMethod.Put, p.put, p),
+            OperationsHolder(path, HttpMethod.Post, p.post, p),
+            OperationsHolder(path, HttpMethod.Delete, p.delete, p),
+            OperationsHolder(path, HttpMethod.Head, p.head, p),
+            OperationsHolder(path, HttpMethod.Options, p.options, p),
+            OperationsHolder(path, HttpMethod.parse("Trace"), p.trace, p),
+            OperationsHolder(path, HttpMethod.Patch, p.patch, p),
         )
     }
 
-    fun routes(): List<Route> = operations().map { (path, method, operation) ->
+    fun routes(): List<Route> = operations().map { (path, method, operation, pathItem) ->
         val parts = path.segments()
 
         fun context(context: NamingContext): NamingContext = when (parts.size) {
@@ -96,8 +103,23 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
             },
             returnType = toResponses(operation, ::context),
             extensions = operation.extensions,
-            nested = nestedInput + nestedResponses + nestedBody
+            nested = nestedInput + nestedResponses + nestedBody,
+            parameter = pathItem.condenseParameters { operation }
         )
+    }
+
+    fun PathItem.condenseParameters(
+        pathItem: PathItem = this,
+        operation: () -> Operation = this::get
+    ): List<Parameter> {
+        val paramsOfPath = pathItem.parameters.map { it.get() }
+        val paramsOfOperation = operation().parameters.map { it.get() }
+
+        val filteredParams = paramsOfPath.filter { p ->
+            paramsOfOperation.find { it.name == p.name } == null
+        }
+
+        return filteredParams + paramsOfOperation
     }
 
     fun Operation.input(create: (NamingContext) -> NamingContext): List<Resolved<Model>> = parameters.map { p ->

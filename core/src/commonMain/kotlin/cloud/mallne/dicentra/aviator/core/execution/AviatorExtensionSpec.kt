@@ -12,12 +12,17 @@ object AviatorExtensionSpec {
     val Version = ExtensionLocator(prefix, OpenAPI::extensions)
 
     object ServiceLocator {
-        val Operation = ExtensionLocator("$prefix-serviceDelegateCall", Operation::extensions)
-        val Route = ExtensionLocator("$prefix-serviceDelegateCall", Route::extensions)
+        val O = ExtensionLocator("$prefix-serviceDelegateCall", Operation::extensions)
+        val R = ExtensionLocator("$prefix-serviceDelegateCall", Route::extensions)
     }
 
     object ServiceOptions {
-        val Operation = ExtensionLocator("$prefix-serviceOptions", Operation::extensions)
-        val Route = ExtensionLocator("$prefix-serviceOptions", Route::extensions)
+        val O = ExtensionLocator("$prefix-serviceOptions", Operation::extensions)
+        val R = ExtensionLocator("$prefix-serviceOptions", Route::extensions)
+    }
+
+    object PluginMaterialization {
+        val O = ExtensionLocator("$prefix-pluginMaterialization", Operation::extensions)
+        val R = ExtensionLocator("$prefix-pluginMaterialization", Route::extensions)
     }
 }

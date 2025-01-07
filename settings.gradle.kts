@@ -16,7 +16,6 @@ dependencyResolutionManagement {
 }
 
 include(":aviator-ktor")
-include(":spring-webclient")
 include(":aviator-resource-server")
 include(":core")
 include(":koas")

@@ -12,6 +12,7 @@ data class Route(
     val summary: String?,
     val path: String,
     val method: @Serializable(Serializers.HttpMethodSerializer::class) HttpMethod,
+    val parameter: List<Parameter>,
     val body: Bodies,
     val input: List<Input>,
     val returnType: Returns,

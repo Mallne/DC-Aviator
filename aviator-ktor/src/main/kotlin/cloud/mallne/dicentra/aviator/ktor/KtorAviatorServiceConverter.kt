@@ -10,9 +10,11 @@ import cloud.mallne.dicentra.aviator.koas.typed.Route
 import cloud.mallne.dicentra.aviator.koas.typed.routes
 import cloud.mallne.dicentra.aviator.model.ServiceLocator
 import io.ktor.client.*
+import kotlinx.serialization.json.Json
 
 class KtorAviatorServiceConverter(
     val httpClient: HttpClient = HttpClient(),
+    val json: Json = Json
 ) : APIToServiceConverter {
     override fun build(
         api: OpenAPI,
@@ -30,8 +32,8 @@ class KtorAviatorServiceConverter(
         val routes = api.routes()
         val routing = mutableMapOf<ServiceLocator, Pair<Route, ServiceOptions>>()
         routes.forEach {
-            val l = AviatorExtensionSpec.ServiceLocator.Route.find(it)
-            val options = AviatorExtensionSpec.ServiceOptions.Route.findComplex(it)
+            val l = AviatorExtensionSpec.ServiceLocator.R.find(it)
+            val options = AviatorExtensionSpec.ServiceOptions.R.findComplex(it)
             if (l != null && options != null) {
                 routing[ServiceLocator(l)] = it to options
             }
@@ -48,7 +50,8 @@ class KtorAviatorServiceConverter(
                 client = httpClient,
                 plugins = pluginsForRoute,
                 route = route.first,
-                oas = api
+                oas = api,
+                json = json,
             )
             locator to service
         }.toMap()

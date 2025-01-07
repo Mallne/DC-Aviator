@@ -1,21 +1,21 @@
 package cloud.mallne.dicentra.aviator.ktor
 
-import cloud.mallne.dicentra.aviator.core.IAviatorService
+import cloud.mallne.dicentra.aviator.core.AviatorServiceDataHolder
 import cloud.mallne.dicentra.aviator.core.InflatedServiceOptions
-import cloud.mallne.dicentra.aviator.core.RequestOptions
 import cloud.mallne.dicentra.aviator.core.ServiceOptions
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionPipeline
-import cloud.mallne.dicentra.aviator.core.execution.BasicExecutionContext
-import cloud.mallne.dicentra.aviator.core.execution.StagedExecutor
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginInstance
 import cloud.mallne.dicentra.aviator.koas.OpenAPI
 import cloud.mallne.dicentra.aviator.koas.typed.Route
+import cloud.mallne.dicentra.aviator.koas.typed.TemplateParser.parsePath
 import cloud.mallne.dicentra.aviator.model.AviatorServiceUtils
 import cloud.mallne.dicentra.aviator.model.ServiceLocator
 import io.ktor.client.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
-import io.ktor.http.cio.*
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.serializer
+import kotlin.reflect.typeOf
 
 class KtorAviatorService(
     override val serviceLocator: ServiceLocator,
@@ -23,8 +23,9 @@ class KtorAviatorService(
     val client: HttpClient,
     override val plugins: List<AviatorPluginInstance>,
     override val route: Route,
-    override val oas: OpenAPI
-) : IAviatorService {
+    override val oas: OpenAPI,
+    override val json: Json
+) : AviatorServiceDataHolder {
 
     init {
         AviatorServiceUtils.validate(this)
@@ -32,28 +33,39 @@ class KtorAviatorService(
 
     inline fun <reified T : InflatedServiceOptions> optionBundle(): T = AviatorServiceUtils.optionBundle(options)
 
-    suspend fun request(
-        requestBody: Request? = null,
-        options: RequestOptions = RequestOptions()
-    ): HttpResponse {
-        val executor: StagedExecutor = object : StagedExecutor {
-
-        }
+    suspend inline fun <reified O : @Serializable Any, reified B : @Serializable Any> request(
+        requestBody: B? = null,
+        useSerializer: KSerializer<O> = serializer(),
+        options: Map<String, @Serializable Any> = emptyMap(),
+        requestParams: Map<String, List<String>> = emptyMap()
+    ): O? {
+        val executor = KtorStagedExecutor<O, B>()
         val pipeline = AviatorExecutionPipeline(
-            context = BasicExecutionContext(),
+            context = KtorExecutionContext(
+                dataHolder = this,
+                outputClazz = Triple(O::class, typeOf<O>(), serializer<O>()),
+                body = requestBody,
+                bodyClazz = if (requestBody != null) {
+                    Triple(B::class, typeOf<B>(), serializer<B>())
+                } else {
+                    null
+                },
+                options = options.toMutableMap(),
+                requestParams = requestParams,
+            ),
             plugins = plugins,
             executor = executor,
         )
 
-        val context = pipeline.run()
+        val ctx = pipeline.run()
+        return ctx.result
+    }
 
-        val response = client.request(address) {
-            method = this@KtorAviatorService.method
-            if (requestBody != null) {
-                setBody<Any>(requestBody)
-            }
+    fun close() = client.close()
 
-        }
-        return response
+    fun catchPaths(requestParams: Map<String, List<String>>): List<String> {
+        val pathSlug = route.parsePath(requestParams)
+        val serverSlugs = oas.servers.map { "${it.parsePath(requestParams)}$pathSlug" }
+        return serverSlugs
     }
 }

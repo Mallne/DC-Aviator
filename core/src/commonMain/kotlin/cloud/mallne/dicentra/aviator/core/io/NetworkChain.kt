@@ -1,0 +1,10 @@
+package cloud.mallne.dicentra.aviator.core.io
+
+import kotlinx.serialization.Serializable
+
+@Serializable
+open class NetworkChain<Req : NetworkRequest, Res : NetworkResponse>(
+    open val url: String,
+    open var request: Req? = null,
+    open var response: Res? = null,
+)
