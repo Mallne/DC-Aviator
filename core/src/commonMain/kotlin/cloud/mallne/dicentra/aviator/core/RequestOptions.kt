@@ -1,5 +1,6 @@
 package cloud.mallne.dicentra.aviator.core
 
-import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
-typealias RequestOptions = MutableMap<String, out @Serializable Any>
+typealias MutableRequestOptions = MutableMap<String, JsonElement>
+typealias RequestOptions = Map<String, JsonElement>

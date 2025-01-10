@@ -19,15 +19,6 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
 
     val logger = KtorSimpleLogger("AviatorStagedExecutor")
 
-
-    override suspend fun onInvocation(context: KtorExecutionContext<O, B>) {
-        super.onInvocation(context)
-    }
-
-    override suspend fun onConstraintValidation(context: KtorExecutionContext<O, B>) {
-        super.onConstraintValidation(context)
-    }
-
     override suspend fun onPathMatching(context: KtorExecutionContext<O, B>) {
         context.networkChain.addAll(context.dataHolder.catchPaths(context.requestParams).map {
             logger.trace("Creating Network Chain with target $it")

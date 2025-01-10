@@ -9,11 +9,14 @@ import cloud.mallne.dicentra.aviator.koas.OpenAPI
 import cloud.mallne.dicentra.aviator.koas.typed.Route
 import cloud.mallne.dicentra.aviator.koas.typed.routes
 import cloud.mallne.dicentra.aviator.model.ServiceLocator
+import kotlinx.serialization.json.Json
 
-object MockConverter : APIToServiceConverter {
+class MockConverter(
+    val json: Json = Json
+) : APIToServiceConverter {
     override fun build(
         api: OpenAPI,
-        plugins: AviatorPluginActivationScope.() -> Unit
+        plugins: AviatorPluginActivationScope.() -> Unit,
     ): Map<ServiceLocator, MockedAviatorService> {
         val version = AviatorExtensionSpec.Version.find(api)
         require(version != null) {
@@ -29,8 +32,8 @@ object MockConverter : APIToServiceConverter {
         routes.forEach {
             val l = AviatorExtensionSpec.ServiceLocator.R.find(it)
             val options = AviatorExtensionSpec.ServiceOptions.R.findComplex(it)
-            if (l != null && options != null) {
-                routing[ServiceLocator(l)] = it to options
+            if (l != null) {
+                routing[ServiceLocator(l)] = it to (options ?: json.parseToJsonElement("{}"))
             }
         }
         val services = routing.map { (locator, route) ->

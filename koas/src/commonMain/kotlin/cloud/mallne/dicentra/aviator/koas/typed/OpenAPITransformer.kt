@@ -597,6 +597,10 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
                     statusCode, Route.ReturnType(Model.OctetStream(response.description), response.extensions)
                 )
 
+                response.content.contains("text/plain") -> statusCode to Route.ReturnType(
+                    Model.Primitive.String(null, response.description, null), response.extensions
+                )
+
                 response.content.contains("application/json") -> {
                     val mediaType = response.content.getValue("application/json")
                     val route = when (val resolved = mediaType.schema?.resolve()) {
