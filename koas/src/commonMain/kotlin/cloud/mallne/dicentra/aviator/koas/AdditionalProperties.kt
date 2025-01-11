@@ -1,10 +1,10 @@
 package cloud.mallne.dicentra.aviator.koas
 
+import cloud.mallne.dicentra.aviator.koas.exceptions.OpenAPISerializationException
 import cloud.mallne.dicentra.aviator.koas.extensions.ReferenceOr
 import cloud.mallne.dicentra.aviator.koas.io.Schema
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.SerializationException
 import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
@@ -43,7 +43,7 @@ sealed interface AdditionalProperties {
                         )
 
                     else ->
-                        throw SerializationException("AdditionalProperties can only be a boolean or a schema")
+                        throw OpenAPISerializationException("AdditionalProperties can only be a boolean or a schema")
                 }
             }
 

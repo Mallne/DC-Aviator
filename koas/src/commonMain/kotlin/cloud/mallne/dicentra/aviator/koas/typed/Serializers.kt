@@ -53,4 +53,19 @@ object Serializers {
             return encoder.encodeString("${value.contentType}/${value.contentSubtype}")
         }
     }
+
+    object UrlSerializer : KSerializer<Url> {
+        override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor(
+            "cloud.mallne.dicentra.aviator.koas.typed.Serializers.UrlSerializer",
+            PrimitiveKind.STRING
+        )
+
+        override fun deserialize(decoder: Decoder): Url {
+            return Url(decoder.decodeString())
+        }
+
+        override fun serialize(encoder: Encoder, value: Url) {
+            return encoder.encodeString(value.toString())
+        }
+    }
 }

@@ -1,5 +1,6 @@
 package cloud.mallne.dicentra.aviator.koas
 
+import cloud.mallne.dicentra.aviator.koas.exceptions.ExplicitTypeException
 import cloud.mallne.dicentra.aviator.koas.extensions.Extendable
 import cloud.mallne.dicentra.aviator.koas.extensions.KSerializerWithExtensions
 import cloud.mallne.dicentra.aviator.koas.extensions.ReferenceOr
@@ -13,7 +14,12 @@ import kotlinx.serialization.EncodeDefault.Mode.ALWAYS
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KeepGeneratedSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.*
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlin.jvm.JvmStatic
 
 /** This is the root document object for the API specification. */
@@ -131,5 +137,5 @@ private fun Any?.toJsonElement(): JsonElement =
         is Number -> JsonPrimitive(this)
         is Boolean -> JsonPrimitive(this)
         is String -> JsonPrimitive(this)
-        else -> throw IllegalArgumentException("Unsupported type: ${this::class.simpleName}")
+        else -> throw ExplicitTypeException("Unsupported type: ${this::class.simpleName}")
     }

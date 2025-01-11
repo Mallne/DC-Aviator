@@ -1,8 +1,12 @@
 package cloud.mallne.dicentra.aviator.koas.typed
 
 import cloud.mallne.dicentra.aviator.koas.Style
+import cloud.mallne.dicentra.aviator.koas.exceptions.IngestArgumentViolation
+import cloud.mallne.dicentra.aviator.koas.exceptions.OpenAPIConstraintViolation
 import cloud.mallne.dicentra.aviator.koas.parameters.Parameter
 import cloud.mallne.dicentra.aviator.koas.servers.Server
+import cloud.mallne.dicentra.polyfill.ensure
+import cloud.mallne.dicentra.polyfill.ensureNotNull
 
 object TemplateParser {
     val regex = Regex("\\{\\s*?([;.])?\\s*?(\\S*?)\\s*?([*]?)\\s*?\\}")
@@ -13,8 +17,8 @@ object TemplateParser {
         matches.forEach { match ->
             val (prefix, template, postfix) = match.destructured
             val pparam = variables[template]
-            require(pparam != null) {
-                "Parameter $template not found"
+            ensureNotNull(pparam) {
+                OpenAPIConstraintViolation("Parameter $template not found")
             }
             val replace = data[template] ?: listOf(pparam.default)
             val replacement = genReplacement(replace, template)
@@ -28,14 +32,14 @@ object TemplateParser {
         matches.forEach { match ->
             val (prefix, template, postfix) = match.destructured
             val pparam = parameter.find { it.name == template }
-            require(pparam != null) {
-                "Parameter $template not found"
+            ensureNotNull(pparam) {
+                OpenAPIConstraintViolation("Parameter $template not found")
             }
 
             val (style, explode) = styleExplodePath(pparam, prefix, template, postfix)
             val replace = data[template]
-            require(replace != null) {
-                "Make sure to pass an element for template-parameter $template"
+            ensureNotNull(replace) {
+                IngestArgumentViolation("Make sure to pass an element for template-parameter $template")
             }
             val replacement = genReplacement(replace, template, style, explode)
             ppath = ppath.replace(match.value, replacement)
@@ -44,8 +48,8 @@ object TemplateParser {
         val queryParams = parameter.filter { it.input == Parameter.Input.Query }
         queryParams.forEach { param ->
             if (param.required) {
-                require(data.containsKey(param.name)) {
-                    "Parameter ${param.name} passed as a data Parameter. This is required"
+                ensure(data.containsKey(param.name)) {
+                    IngestArgumentViolation("Parameter ${param.name} passed as a data Parameter. This is required")
                 }
             }
             val template = data[param.name]
@@ -119,13 +123,13 @@ object TemplateParser {
             if (param.style == Style.matrix) {
                 isNot = "."
             }
-            require(prefix != isNot) {
-                "Prefix $prefix for parameter $template is Wrong. Please make sure to use the Right prefix for the ${param.style.name} style."
+            ensure(prefix != isNot) {
+                OpenAPIConstraintViolation("Prefix $prefix for parameter $template is Wrong. Please make sure to use the Right prefix for the ${param.style.name} style.")
             }
         }
         if (param.explode != null) {
-            require(param.explode == (postfix == "*") || postfix.isBlank()) {
-                "Postfix $postfix is Wrong. Please make sure it is omitted or uses the right Postfix for explode: ${param.explode}!"
+            ensure(param.explode == (postfix == "*") || postfix.isBlank()) {
+                OpenAPIConstraintViolation("Postfix $postfix is Wrong. Please make sure it is omitted or uses the right Postfix for explode: ${param.explode}!")
             }
         }
         val style: Style = param.style ?: when (prefix) {

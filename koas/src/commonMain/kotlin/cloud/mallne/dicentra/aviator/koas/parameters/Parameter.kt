@@ -1,12 +1,14 @@
 package cloud.mallne.dicentra.aviator.koas.parameters
 
 import cloud.mallne.dicentra.aviator.koas.Style
+import cloud.mallne.dicentra.aviator.koas.exceptions.OpenAPIConstraintViolation
 import cloud.mallne.dicentra.aviator.koas.extensions.Extendable
 import cloud.mallne.dicentra.aviator.koas.extensions.KSerializerWithExtensions
 import cloud.mallne.dicentra.aviator.koas.extensions.ReferenceOr
 import cloud.mallne.dicentra.aviator.koas.io.Example
 import cloud.mallne.dicentra.aviator.koas.io.ExampleValue
 import cloud.mallne.dicentra.aviator.koas.io.Schema
+import cloud.mallne.dicentra.polyfill.ensure
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KeepGeneratedSerializer
 import kotlinx.serialization.SerialName
@@ -101,8 +103,8 @@ data class Parameter(
 ) : Extendable {
     init {
         if (input == Input.Path)
-            require(required) {
-                "${required}Determines whether this parameter is mandatory. If the parameter location is \"path\", this property is REQUIRED and its value MUST be true. Otherwise, the property MAY be included and its default value is false."
+            ensure(required) {
+                OpenAPIConstraintViolation("${required}Determines whether this parameter is mandatory. If the parameter location is \"path\", this property is REQUIRED and its value MUST be true. Otherwise, the property MAY be included and its default value is false.")
             }
     }
 

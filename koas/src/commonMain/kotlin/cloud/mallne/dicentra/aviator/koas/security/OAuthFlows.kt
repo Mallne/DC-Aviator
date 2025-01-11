@@ -1,7 +1,9 @@
 package cloud.mallne.dicentra.aviator.koas.security
 
+import cloud.mallne.dicentra.aviator.koas.exceptions.OpenAPIConstraintViolation
 import cloud.mallne.dicentra.aviator.koas.extensions.Extendable
 import cloud.mallne.dicentra.aviator.koas.extensions.KSerializerWithExtensions
+import cloud.mallne.dicentra.polyfill.ensure
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KeepGeneratedSerializer
 import kotlinx.serialization.Serializable
@@ -20,17 +22,17 @@ data class OAuthFlows(
 
     init {
         if (implicit != null) {
-            require(implicit.authorizationUrl?.isNotBlank() == true) { "authorizationUrl on implicit flows should not be blank" }
+            ensure(implicit.authorizationUrl?.isNotBlank() == true) { OpenAPIConstraintViolation("authorizationUrl on implicit flows should not be blank") }
         }
         if (authorizationCode != null) {
-            require(authorizationCode.authorizationUrl?.isNotBlank() == true) { "authorizationUrl on authorizationCode flows should not be blank" }
-            require(authorizationCode.tokenUrl?.isNotBlank() == true) { "tokenUrl on authorizationCode flows should not be blank" }
+            ensure(authorizationCode.authorizationUrl?.isNotBlank() == true) { OpenAPIConstraintViolation("authorizationUrl on authorizationCode flows should not be blank") }
+            ensure(authorizationCode.tokenUrl?.isNotBlank() == true) { OpenAPIConstraintViolation("tokenUrl on authorizationCode flows should not be blank") }
         }
         if (password != null) {
-            require(password.tokenUrl?.isNotBlank() == true) { "tokenUrl on password flows should not be blank" }
+            ensure(password.tokenUrl?.isNotBlank() == true) { OpenAPIConstraintViolation("tokenUrl on password flows should not be blank") }
         }
         if (clientCredentials != null) {
-            require(clientCredentials.tokenUrl?.isNotBlank() == true) { "tokenUrl on clientCredentials flows should not be blank" }
+            ensure(clientCredentials.tokenUrl?.isNotBlank() == true) { OpenAPIConstraintViolation("tokenUrl on clientCredentials flows should not be blank") }
         }
     }
 

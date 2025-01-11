@@ -1,10 +1,14 @@
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 group = "cloud.mallne.dicentra.aviator"
 version = "1.0.0-SNAPSHOT"
 description = "DiCentra Aviator preconfigured for Spring Reactive."
 
 plugins {
-    id("maven-publish")
-    alias(libs.plugins.kjvm)
+    alias(libs.plugins.mavenPublish)
+    alias(libs.plugins.kmp)
+    alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.serialization)
 }
 
@@ -15,10 +19,17 @@ publishing {
             artifactId = project.name
             version = project.version.toString()
 
-            from(components["java"])
             pom {
-                name = "DiCentra Aviator Core"
-                description = project.description
+                name = "DiCentra Aviator KTor"
+                description =
+                    "Ktor Implementation of DiCentra Aviator"
+                inceptionYear = "2025"
+                developers {
+                    developer {
+                        name = "Mallne"
+                        url = "mallne.cloud"
+                    }
+                }
             }
             repositories {
                 maven {
@@ -33,9 +44,42 @@ publishing {
     }
 }
 
-dependencies {
-    implementation(libs.kotlinx.serialization.json)
-    implementation(libs.ktor.client.core)
-    implementation(libs.ktor.client.cio)
-    api(project(":core"))
+kotlin {
+    jvm()
+    androidTarget {
+        publishLibraryVariants("release")
+        @OptIn(ExperimentalKotlinGradlePluginApi::class)
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_21)
+        }
+    }
+    iosX64()
+    iosArm64()
+    iosSimulatorArm64()
+    linuxX64()
+
+    sourceSets {
+        val commonMain by getting {
+            dependencies {
+                implementation(libs.kotlinx.serialization.json)
+                implementation(libs.ktor.client.core)
+                api(project(":core"))
+                api(project(":koas"))
+                //Dependency Substitution does not work in KMP for whatever Reason
+                if (findProject(":polyfill") != null) {
+                    implementation(project(":polyfill"))
+                } else {
+                    implementation(libs.dc.polyfill)
+                }
+            }
+        }
+    }
+}
+
+android {
+    namespace = "cloud.mallne.dicentra.aviator"
+    compileSdk = libs.versions.android.compileSdk.get().toInt()
+    defaultConfig {
+        minSdk = libs.versions.android.minSdk.get().toInt()
+    }
 }

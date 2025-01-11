@@ -5,10 +5,13 @@ import cloud.mallne.dicentra.aviator.core.ServiceOptions
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExtensionSpec
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginActivationScope
 import cloud.mallne.dicentra.aviator.core.plugins.BasicPluginActivationScope
+import cloud.mallne.dicentra.aviator.exceptions.AviatorValidationException
 import cloud.mallne.dicentra.aviator.koas.OpenAPI
 import cloud.mallne.dicentra.aviator.koas.typed.Route
 import cloud.mallne.dicentra.aviator.koas.typed.routes
 import cloud.mallne.dicentra.aviator.model.ServiceLocator
+import cloud.mallne.dicentra.polyfill.ensure
+import cloud.mallne.dicentra.polyfill.ensureNotNull
 import io.ktor.client.*
 import kotlinx.serialization.json.Json
 
@@ -21,11 +24,11 @@ class KtorAviatorServiceConverter(
         plugins: AviatorPluginActivationScope.() -> Unit
     ): Map<ServiceLocator, KtorAviatorService> {
         val version = AviatorExtensionSpec.Version.find(api)
-        require(version != null) {
-            "The given OpenAPI specification does not contain a Aviator Version Attribute at root Level."
+        ensureNotNull(version) {
+            AviatorValidationException("The given OpenAPI specification does not contain a Aviator Version Attribute at root Level.")
         }
-        require(AviatorExtensionSpec.understandsVersions.contains(version)) {
-            "This version of Aviator (${AviatorExtensionSpec.SpecVersion}) can't interpret the version of the given OpenAPI definition (${version})."
+        ensure(AviatorExtensionSpec.understandsVersions.contains(version)) {
+            AviatorValidationException("This version of Aviator (${AviatorExtensionSpec.SpecVersion}) can't interpret the version of the given OpenAPI definition (${version}).")
         }
         val scope = BasicPluginActivationScope()
         plugins.invoke(scope)

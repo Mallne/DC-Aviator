@@ -1,8 +1,8 @@
 package cloud.mallne.dicentra.aviator.koas.io
 
+import cloud.mallne.dicentra.aviator.koas.exceptions.OpenAPISerializationException
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -49,7 +49,7 @@ sealed interface ExampleValue {
                     is JsonArray -> Multiple(decoder.decodeSerializableValue(multipleSerializer))
                     is JsonPrimitive -> Single(json.content)
                     else ->
-                        throw SerializationException(
+                        throw OpenAPISerializationException(
                             "ExampleValue can only be a primitive or an array, found $json"
                         )
                 }

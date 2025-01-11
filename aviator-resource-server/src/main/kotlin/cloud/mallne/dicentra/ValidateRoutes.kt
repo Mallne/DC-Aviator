@@ -3,7 +3,13 @@ package cloud.mallne.dicentra
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExtensionSpec
 import cloud.mallne.dicentra.aviator.core.mock.MockConverter
 import cloud.mallne.dicentra.aviator.core.mock.MockExecutionContext
+import cloud.mallne.dicentra.aviator.exceptions.AviatorValidationException
+import cloud.mallne.dicentra.aviator.exceptions.ServiceException
 import cloud.mallne.dicentra.aviator.koas.OpenAPI
+import cloud.mallne.dicentra.aviator.koas.exceptions.ExplicitTypeException
+import cloud.mallne.dicentra.aviator.koas.exceptions.IngestArgumentViolation
+import cloud.mallne.dicentra.aviator.koas.exceptions.OpenAPIConstraintViolation
+import cloud.mallne.dicentra.aviator.koas.exceptions.OpenAPISerializationException
 import cloud.mallne.dicentra.aviator.koas.info.Info
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -23,6 +29,13 @@ fun Application.validateRoutes() {
             )
         }
         post("parse") {
+            suspend fun catchSendBadRequest(e: Throwable) {
+                call.respondText(
+                    text = e.localizedMessage ?: e.toString(),
+                    contentType = ContentType.Text.Plain,
+                    status = HttpStatusCode.BadRequest
+                )
+            }
             try {
                 val koas = call.receive<OpenAPI>()
                 val serv = conv.build(koas)
@@ -30,24 +43,18 @@ fun Application.validateRoutes() {
                     locator.toString() to service.requestContextful()
                 }.toMap()
                 call.respond(outp, typeInfo<Map<String, MockExecutionContext>>())
-            } catch (e: IllegalArgumentException) {
-                call.respondText(
-                    text = e.localizedMessage,
-                    contentType = ContentType.Text.Plain,
-                    status = HttpStatusCode.BadRequest
-                )
-            } catch (e: IllegalStateException) {
-                call.respondText(
-                    text = e.localizedMessage,
-                    contentType = ContentType.Text.Plain,
-                    status = HttpStatusCode.BadRequest
-                )
-            } catch (e: RuntimeException) {
-                call.respondText(
-                    text = e.localizedMessage,
-                    contentType = ContentType.Text.Plain,
-                    status = HttpStatusCode.BadRequest
-                )
+            } catch (e: ExplicitTypeException) {
+                catchSendBadRequest(e)
+            } catch (e: IngestArgumentViolation) {
+                catchSendBadRequest(e)
+            } catch (e: OpenAPISerializationException) {
+                catchSendBadRequest(e)
+            } catch (e: OpenAPIConstraintViolation) {
+                catchSendBadRequest(e)
+            } catch (e: ServiceException) {
+                catchSendBadRequest(e)
+            } catch (e: AviatorValidationException) {
+                catchSendBadRequest(e)
             }
         }
 

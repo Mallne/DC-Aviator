@@ -1,7 +1,9 @@
 package cloud.mallne.dicentra.aviator.koas.security
 
+import cloud.mallne.dicentra.aviator.koas.exceptions.OpenAPIConstraintViolation
 import cloud.mallne.dicentra.aviator.koas.extensions.Extendable
 import cloud.mallne.dicentra.aviator.koas.extensions.KSerializerWithExtensions
+import cloud.mallne.dicentra.polyfill.ensure
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KeepGeneratedSerializer
 import kotlinx.serialization.SerialName
@@ -34,16 +36,16 @@ data class SecurityScheme(
 
     init {
         if (type == Type.APIKEY) {
-            require(name != null && inside != null) { "name and in is required" }
+            ensure(name != null && inside != null) { OpenAPIConstraintViolation("name and in is required") }
         }
         if (type == Type.HTTP) {
-            require(scheme != null) { "scheme is required" }
+            ensure(scheme != null) { OpenAPIConstraintViolation("scheme is required") }
         }
         if (type == Type.OAUTH2) {
-            require(flows != null) { "flows are required" }
+            ensure(flows != null) { OpenAPIConstraintViolation("flows are required") }
         }
         if (type == Type.OPENIDCONNECT) {
-            require(openIdConnectUrl != null) { "openIdConnectUrl is required" }
+            ensure(openIdConnectUrl != null) { OpenAPIConstraintViolation("openIdConnectUrl is required") }
         }
     }
 

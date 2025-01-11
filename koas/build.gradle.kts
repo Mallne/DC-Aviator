@@ -1,4 +1,3 @@
-import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -29,9 +28,19 @@ kotlin {
             dependencies {
                 implementation(libs.kotlinx.serialization.json)
                 implementation(libs.ktor.http)
+                //Dependency Substitution does not work in KMP for whatever Reason
+                if (findProject(":polyfill") != null) {
+                    implementation(project(":polyfill"))
+                } else {
+                    implementation(libs.dc.polyfill)
+                }
             }
         }
     }
+}
+
+dependencies {
+    implementation(libs.kotlinx.serialization.json)
 }
 
 android {

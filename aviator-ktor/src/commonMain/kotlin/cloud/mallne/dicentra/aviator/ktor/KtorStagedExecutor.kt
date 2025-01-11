@@ -17,7 +17,7 @@ import kotlinx.serialization.SerializationException
 class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
     StagedExecutor<KtorExecutionContext<O, B>, O, B> {
 
-    val logger = KtorSimpleLogger("AviatorStagedExecutor")
+    private val logger = KtorSimpleLogger("AviatorStagedExecutor")
 
     override suspend fun onPathMatching(context: KtorExecutionContext<O, B>) {
         context.networkChain.addAll(context.dataHolder.catchPaths(context.requestParams).map {
@@ -47,14 +47,14 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
     override suspend fun onRequesting(context: KtorExecutionContext<O, B>) {
         val chain = context.networkChain.filter { it.request != null && it.response == null }
         chain.manualPipeline { net, next ->
-            logger.trace("Creating Network Request for {}", net)
+            logger.trace("Creating Network Request for ${net.url}")
             val resp = context.dataHolder.client.request {
                 url(net.url)
                 if (context.body != null && net.request?.outgoingContent != null && context.bodyClazz != null) {
                     setBody(context.body, TypeInfo(context.bodyClazz.first, context.bodyClazz.second))
                 }
                 method = net.request!!.method
-                net.request!!.headers.values.forEach(::header)
+                net.request!!.headers.values.forEach { (k, v) -> header(k, v) }
             }
 
             val response = AvKtorResponse(

@@ -5,6 +5,8 @@ import cloud.mallne.dicentra.aviator.koas.AdditionalProperties.Allowed
 import cloud.mallne.dicentra.aviator.koas.OpenAPI
 import cloud.mallne.dicentra.aviator.koas.Operation
 import cloud.mallne.dicentra.aviator.koas.PathItem
+import cloud.mallne.dicentra.aviator.koas.exceptions.IngestArgumentViolation
+import cloud.mallne.dicentra.aviator.koas.exceptions.OpenAPIConstraintViolation
 import cloud.mallne.dicentra.aviator.koas.extensions.ReferenceOr
 import cloud.mallne.dicentra.aviator.koas.io.ExampleValue
 import cloud.mallne.dicentra.aviator.koas.io.Schema
@@ -14,6 +16,8 @@ import cloud.mallne.dicentra.aviator.koas.parameters.RequestBody
 import cloud.mallne.dicentra.aviator.koas.responses.Response
 import cloud.mallne.dicentra.aviator.koas.typed.Model.Object.Property
 import cloud.mallne.dicentra.aviator.koas.typed.NamingContext.Named
+import cloud.mallne.dicentra.polyfill.ensure
+import cloud.mallne.dicentra.polyfill.ensureNotNull
 import io.ktor.http.*
 import kotlin.jvm.JvmInline
 
@@ -71,8 +75,8 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
                     val resolved = refOrResponse.value.content.getOrElse("application/json") { null }?.schema?.resolve()
                         ?: return@mapNotNull null
                     val context = resolved.namedOr {
-                        val operationId = requireNotNull(operation.operationId) {
-                            "OperationId is required for request body inline schemas. Otherwise we cannot generate OperationIdRequest class name"
+                        val operationId = ensureNotNull(operation.operationId) {
+                            OpenAPIConstraintViolation("OperationId is required for request body inline schemas. Otherwise we cannot generate OperationIdRequest class name")
                         }
                         context(NamingContext.RouteBody(operationId, "Response"))
                     }
@@ -85,8 +89,8 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
             operation.requestBody?.valueOrNull()?.content?.getOrElse("application/json") { null }?.schema?.resolve()
 
         val nestedBody = json?.namedOr {
-            val name = requireNotNull(operation.operationId?.let { Named("${it}Request") }) {
-                "OperationId is required for request body inline schemas. Otherwise we cannot generate OperationIdRequest class name"
+            val name = ensureNotNull(operation.operationId?.let { Named("${it}Request") }) {
+                OpenAPIConstraintViolation("OperationId is required for request body inline schemas. Otherwise we cannot generate OperationIdRequest class name")
             }
             context(name)
         }?.let { (json.toModel(it) as? Resolved.Value)?.value }.let(::listOfNotNull)
@@ -124,10 +128,10 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
 
     fun Operation.input(create: (NamingContext) -> NamingContext): List<Resolved<Model>> = parameters.map { p ->
         val param = p.get()
-        val resolved = param.schema?.resolve() ?: throw IllegalStateException("No Schema for Parameter.")
+        val resolved = param.schema?.resolve() ?: throw OpenAPIConstraintViolation("No Schema for Parameter.")
         val context = resolved.namedOr {
-            val operationId = requireNotNull(operationId) {
-                "operationId currently required to generate inline schemas for operation parameters."
+            val operationId = ensureNotNull(operationId) {
+                OpenAPIConstraintViolation("operationId currently required to generate inline schemas for operation parameters.")
             }
             create(NamingContext.RouteParam(param.name, operationId, "Request"))
         }
@@ -137,7 +141,7 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
     /** Gathers all "top-level", or components schemas. */
     fun schemas(): List<Model> = openAPI.components.schemas.map { (name, refOrSchema) ->
         when (val resolved = refOrSchema.resolve()) {
-            is Resolved.Ref -> throw IllegalStateException("Remote schemas not supported yet.")
+            is Resolved.Ref -> throw OpenAPIConstraintViolation("Remote schemas not supported yet.")
             is Resolved.Value -> Resolved.Ref(name, resolved.value).toModel(Named(name)).value
         }
     }
@@ -183,7 +187,7 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
     private tailrec fun Schema.type(context: NamingContext): Model = when (val type = type) {
         is Type.Array -> when (val single = type.types.singleOrNull()) {
             null -> {
-                require(type.types.isNotEmpty()) { "Array type requires types to be defined. $this" }
+                ensure(type.types.isNotEmpty()) { OpenAPIConstraintViolation("Array type requires types to be defined. $this") }
                 val resolved = type.types.sorted().map { t -> Resolved.Value(Schema(type = t)) }
                 Model.Union(
                     context = context,
@@ -234,14 +238,14 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
         label: String, onSingle: (String) -> A?, onMultiple: (List<String>) -> A?
     ): A? = when (val default = default) {
         is ExampleValue.Single -> onSingle(default.value)
-            ?: throw IllegalStateException("Default value ${default.value} is not a $label.")
+            ?: throw OpenAPIConstraintViolation("Default value ${default.value} is not a $label.")
 
         is ExampleValue.Multiple -> onMultiple(default.values)
         null -> null
     }
 
     private fun <A> Schema.default(label: String, onSingle: (String) -> A?): A? = default(label, onSingle) {
-        throw IllegalStateException("Multiple default values not supported for $label.")
+        throw OpenAPIConstraintViolation("Multiple default values not supported for $label.")
     }
 
     fun Schema.isOpenEnumeration(): Boolean {
@@ -253,9 +257,9 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
         is ReferenceOr.Value -> Resolved.Value(value)
         is ReferenceOr.Reference -> {
             val name = ref.drop("#/components/schemas/".length)
-            val schema = requireNotNull(openAPI.components.schemas[name]) {
-                "Schema $name could not be found in ${openAPI.components.schemas}. Is it missing?"
-            }.valueOrNull() ?: throw IllegalStateException("Remote schemas are not yet supported.")
+            val schema = ensureNotNull(openAPI.components.schemas[name]) {
+                OpenAPIConstraintViolation("Schema $name could not be found in ${openAPI.components.schemas}. Is it missing?")
+            }.valueOrNull() ?: throw OpenAPIConstraintViolation("Remote schemas are not yet supported.")
             Resolved.Ref(name, schema)
         }
     }
@@ -264,8 +268,8 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
         is ReferenceOr.Value -> value
         is ReferenceOr.Reference -> {
             val typeName = ref.drop("#/components/responses/".length)
-            requireNotNull(openAPI.components.responses[typeName]) {
-                "Response $typeName could not be found in ${openAPI.components.responses}. Is it missing?"
+            ensureNotNull(openAPI.components.responses[typeName]) {
+                OpenAPIConstraintViolation("Response $typeName could not be found in ${openAPI.components.responses}. Is it missing?")
             }.get()
         }
     }
@@ -274,8 +278,8 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
         is ReferenceOr.Value -> value
         is ReferenceOr.Reference -> {
             val typeName = ref.drop("#/components/parameters/".length)
-            requireNotNull(openAPI.components.parameters[typeName]) {
-                "Parameter $typeName could not be found in ${openAPI.components.parameters}. Is it missing?"
+            ensureNotNull(openAPI.components.parameters[typeName]) {
+                OpenAPIConstraintViolation("Parameter $typeName could not be found in ${openAPI.components.parameters}. Is it missing?")
             }.get()
         }
     }
@@ -284,8 +288,8 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
         is ReferenceOr.Value -> value
         is ReferenceOr.Reference -> {
             val typeName = ref.drop("#/components/requestBodies/".length)
-            requireNotNull(openAPI.components.requestBodies[typeName]) {
-                "RequestBody $typeName could not be found in ${openAPI.components.requestBodies}. Is it missing?"
+            ensureNotNull(openAPI.components.requestBodies[typeName]) {
+                OpenAPIConstraintViolation("RequestBody $typeName could not be found in ${openAPI.components.requestBodies}. Is it missing?")
             }.get()
         }
     }
@@ -294,8 +298,8 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
         is ReferenceOr.Value -> value
         is ReferenceOr.Reference -> {
             val typeName = ref.drop("#/components/pathItems/".length)
-            requireNotNull(openAPI.components.pathItems[typeName]) {
-                "PathItem $typeName could not be found in ${openAPI.components.pathItems}. Is it missing?"
+            ensureNotNull(openAPI.components.pathItems[typeName]) {
+                OpenAPIConstraintViolation("PathItem $typeName could not be found in ${openAPI.components.pathItems}. Is it missing?")
             }.get()
         }
     }
@@ -307,7 +311,7 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
             is AdditionalProperties.PSchema -> Model.FreeFormJson(description, Constraints.Object(this))
 
             is Allowed -> if (props.value) Model.FreeFormJson(description, Constraints.Object(this))
-            else throw IllegalStateException(
+            else throw OpenAPIConstraintViolation(
                 "No additional properties allowed on object without properties. $this"
             )
 
@@ -363,8 +367,8 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
     }
 
     fun Schema.toObject(context: NamingContext, properties: Map<String, ReferenceOr<Schema>>): Model {
-        require((additionalProperties as? Allowed)?.value != true) {
-            "Additional properties, on a schema with properties, are not yet supported."
+        ensure((additionalProperties as? Allowed)?.value != true) {
+            OpenAPIConstraintViolation("Additional properties, on a schema with properties, are not yet supported.")
         }
         return Model.Object(context, description, properties.map { (name, ref) ->
             val resolved = ref.resolve()
@@ -397,13 +401,14 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
     private fun Schema.singleDefaultOrNull(): String? = (default as? ExampleValue.Single)?.value
 
     fun Schema.toOpenEnum(context: NamingContext, values: List<String>): Model.Enum.Open {
-        require(values.isNotEmpty()) { "OpenEnum requires at least 1 possible value" }
+        ensure(values.isNotEmpty()) { OpenAPIConstraintViolation("OpenEnum requires at least 1 possible value") }
         val default = singleDefaultOrNull()
         return Model.Enum.Open(context, values, default, description)
     }
 
     private fun Schema.collection(context: NamingContext): Model.Collection {
-        val items = requireNotNull(items?.resolve()) { "Array type requires items to be defined." }
+        val items =
+            ensureNotNull(items?.resolve()) { OpenAPIConstraintViolation("Array type requires items to be defined.") }
         val inner = items.toModel(items.namedOr { context })
         val default = when (val example = default) {
             is ExampleValue.Multiple -> example.values
@@ -431,7 +436,7 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
     }
 
     fun Schema.toEnum(context: NamingContext, enums: List<String>): Model.Enum.Closed {
-        require(enums.isNotEmpty()) { "Enum requires at least 1 possible value" }/* To resolve the inner type, we erase the enum values.
+        ensure(enums.isNotEmpty()) { OpenAPIConstraintViolation("Enum requires at least 1 possible value") }/* To resolve the inner type, we erase the enum values.
          * Since the schema is still on the same level - we keep the topLevelName */
         val inner = Resolved.Value(copy(enum = emptyList())).toModel(context)
         val default = singleDefaultOrNull()
@@ -514,7 +519,7 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
                 is Model.Collection -> when (val inner = resolved.value.items?.resolve()) {
                     is Resolved.Value -> nestedModel(Resolved.Value(inner.value), caseContext)
                     is Resolved.Ref -> null
-                    null -> throw RuntimeException("Impossible: List without inner type")
+                    null -> throw IngestArgumentViolation("Impossible: List without inner type")
                 }
 
                 else -> model.value
@@ -531,8 +536,8 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
                 ContentType.Application.Json.match(contentType) -> {
                     val json = mediaType.schema?.resolve()?.let { json ->
                         val context = json.namedOr {
-                            val name = requireNotNull(operation.operationId?.let { Named("${it}Request") }) {
-                                "OperationId is required for request body inline schemas. Otherwise we cannot generate OperationIdRequest class name"
+                            val name = ensureNotNull(operation.operationId?.let { Named("${it}Request") }) {
+                                OpenAPIConstraintViolation("OperationId is required for request body inline schemas. Otherwise we cannot generate OperationIdRequest class name")
                             }
                             create(name)
                         }
@@ -545,13 +550,13 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
                 }
 
                 ContentType.MultiPart.FormData.match(contentType) -> {
-                    val resolved = mediaType.schema?.resolve() ?: throw IllegalStateException(
+                    val resolved = mediaType.schema?.resolve() ?: throw OpenAPIConstraintViolation(
                         "$mediaType without a schema. Generation doesn't know what to do, please open a ticket!"
                     )
 
                     fun ctx(name: String): NamingContext = resolved.namedOr {
-                        val operationId = requireNotNull(operation.operationId) {
-                            "operationId currently required to generate inline schemas for operation parameters."
+                        val operationId = ensureNotNull(operation.operationId) {
+                            OpenAPIConstraintViolation("operationId currently required to generate inline schemas for operation parameters.")
                         }
                         create(NamingContext.RouteParam(name, operationId, "Request"))
                     }
@@ -581,7 +586,7 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
                     Route.Body.OctetStream(body.description, mediaType.extensions)
                 )
 
-                else -> throw IllegalStateException("RequestBody content type: $this not yet supported.")
+                else -> throw OpenAPIConstraintViolation("RequestBody content type: $this not yet supported.")
             }
         }.orEmpty(), body?.extensions.orEmpty())
 
@@ -606,8 +611,8 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
                     val route = when (val resolved = mediaType.schema?.resolve()) {
                         is Resolved -> {
                             val context = resolved.namedOr {
-                                val operationId = requireNotNull(operation.operationId) {
-                                    "OperationId is required for request body inline schemas. Otherwise we cannot generate OperationIdRequest class name"
+                                val operationId = ensureNotNull(operation.operationId) {
+                                    OpenAPIConstraintViolation("OperationId is required for request body inline schemas. Otherwise we cannot generate OperationIdRequest class name")
                                 }
                                 create(NamingContext.RouteBody(operationId, "Response"))
                             }
@@ -616,7 +621,7 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
 
                         null -> Route.ReturnType(
                             if (Allowed(true).value) Model.FreeFormJson(response.description, null)
-                            else throw IllegalStateException(
+                            else throw OpenAPIConstraintViolation(
                                 "Illegal State: No additional properties allowed on empty object."
                             ), response.extensions
                         )
@@ -630,7 +635,7 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
                     )
                 )
 
-                else -> throw IllegalStateException("OpenAPI requires at least 1 valid response. $response")
+                else -> throw OpenAPIConstraintViolation("OpenAPI requires at least 1 valid response. $response")
             }
         }, operation.responses.extensions
     )

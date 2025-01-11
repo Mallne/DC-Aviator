@@ -1,16 +1,18 @@
 package cloud.mallne.dicentra.aviator.koas.io
 
 import cloud.mallne.dicentra.aviator.koas.AdditionalProperties
+import cloud.mallne.dicentra.aviator.koas.exceptions.OpenAPIConstraintViolation
+import cloud.mallne.dicentra.aviator.koas.exceptions.OpenAPISerializationException
 import cloud.mallne.dicentra.aviator.koas.extensions.Extendable
 import cloud.mallne.dicentra.aviator.koas.extensions.KSerializerWithExtensions
 import cloud.mallne.dicentra.aviator.koas.extensions.ReferenceOr
 import cloud.mallne.dicentra.aviator.koas.info.ExternalDocs
+import cloud.mallne.dicentra.polyfill.ensure
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.KeepGeneratedSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -75,8 +77,8 @@ data class Schema(
     override val extensions: Map<String, JsonElement> = emptyMap(),
 ) : Extendable {
     init {
-        require(required?.isEmpty() != true) {
-            "An empty list required: [] is not valid. If all properties are optional, do not specify the required keyword."
+        ensure(required?.isEmpty() != true) {
+            OpenAPIConstraintViolation("An empty list required: [] is not valid. If all properties are optional, do not specify the required keyword.")
         }
     }
 
@@ -138,9 +140,9 @@ data class Schema(
 
                     json is JsonPrimitive && json.isString ->
                         Basic.fromString(json.content)
-                            ?: throw SerializationException("Invalid Basic.Type value: ${json.content}")
+                            ?: throw OpenAPISerializationException("Invalid Basic.Type value: ${json.content}")
 
-                    else -> throw SerializationException("Schema.Type can only be a string or an array")
+                    else -> throw OpenAPISerializationException("Schema.Type can only be a string or an array")
                 }
             }
 
