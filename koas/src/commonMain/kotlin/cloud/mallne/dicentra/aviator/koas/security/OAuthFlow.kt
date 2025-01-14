@@ -17,7 +17,7 @@ data class OAuthFlow(
     val tokenUrl: String? = null,
     val refreshUrl: String? = null,
     @Required val scopes: Map<String, String> = emptyMap(),
-    override val extensions: Map<String, JsonElement> = emptyMap(),
+    override var extensions: Map<String, JsonElement> = emptyMap(),
 ) : Extendable {
     companion object {
         internal object Serializer :

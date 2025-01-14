@@ -1,4 +1,4 @@
-package cloud.mallne.dicentra.helper
+package cloud.mallne.dicentra.aviator.testserver.helper
 
 fun String.toBooleanish(): Boolean? {
     val upper = this.uppercase()

@@ -87,7 +87,7 @@ data class Operation(
      * extension (beginning with x-), and the value is the data. The value can be a [JsonNull],
      * [JsonPrimitive], [JsonArray] or [JsonObject].
      */
-    override val extensions: Map<String, JsonElement> = emptyMap()
+    override var extensions: Map<String, JsonElement> = emptyMap()
 ) : Extendable {
     companion object {
         internal object Serializer :

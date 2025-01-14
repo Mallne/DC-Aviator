@@ -1,8 +1,11 @@
 package cloud.mallne.dicentra.aviator.core.mock
 
 import cloud.mallne.dicentra.aviator.core.APIToServiceConverter
+import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec
+import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.`x-dicentra-aviator`
+import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.`x-dicentra-aviator-serviceDelegateCall`
+import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.`x-dicentra-aviator-serviceOptions`
 import cloud.mallne.dicentra.aviator.core.ServiceOptions
-import cloud.mallne.dicentra.aviator.core.execution.AviatorExtensionSpec
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginActivationScope
 import cloud.mallne.dicentra.aviator.core.plugins.BasicPluginActivationScope
 import cloud.mallne.dicentra.aviator.exceptions.AviatorValidationException
@@ -13,6 +16,7 @@ import cloud.mallne.dicentra.aviator.model.ServiceLocator
 import cloud.mallne.dicentra.polyfill.ensure
 import cloud.mallne.dicentra.polyfill.ensureNotNull
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 
 class MockConverter(
     val json: Json = Json
@@ -21,7 +25,7 @@ class MockConverter(
         api: OpenAPI,
         plugins: AviatorPluginActivationScope.() -> Unit,
     ): Map<ServiceLocator, MockedAviatorService> {
-        val version = AviatorExtensionSpec.Version.find(api)
+        val version = api.`x-dicentra-aviator`
         ensureNotNull(version) {
             AviatorValidationException("The given OpenAPI specification does not contain a Aviator Version Attribute at root Level.")
         }
@@ -33,10 +37,10 @@ class MockConverter(
         val routes = api.routes()
         val routing = mutableMapOf<ServiceLocator, Pair<Route, ServiceOptions>>()
         routes.forEach {
-            val l = AviatorExtensionSpec.ServiceLocator.R.find(it)
-            val options = AviatorExtensionSpec.ServiceOptions.R.findComplex(it)
+            val l = it.`x-dicentra-aviator-serviceDelegateCall`
+            val options = it.`x-dicentra-aviator-serviceOptions`
             if (l != null) {
-                routing[ServiceLocator(l)] = it to (options ?: json.parseToJsonElement("{}"))
+                routing[ServiceLocator(l)] = it to (options ?: json.parseToJsonElement("{}").jsonObject)
             }
         }
         val services = routing.map { (locator, route) ->

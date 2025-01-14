@@ -38,7 +38,7 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
                     null
                 },
                 headers = object : NetworkHeader {
-                    override val values: Map<String, List<String>> = emptyMap()
+                    override var values: Map<String, List<String>> = emptyMap()
                 }
             )
         }

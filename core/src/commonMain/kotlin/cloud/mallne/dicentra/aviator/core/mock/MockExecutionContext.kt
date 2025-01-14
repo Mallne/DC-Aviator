@@ -20,8 +20,8 @@ data class MockExecutionContext(
     override val bodyClazz: Triple<KClass<NoBody>, KType, KSerializer<NoBody>>? = null,
     override val bundle: MutableMap<String, JsonElement> = mutableMapOf(),
     override var result: JsonElement? = null,
-    override val body: NoBody? = null,
-    override val networkChain: MutableList<NetworkChain<MockedRequest, MockedResponse>> = mutableListOf(),
+    override var body: NoBody? = null,
+    override val networkChain: MutableList<NetworkChain<MockedRequest, MockedResponse, MockedHeader>> = mutableListOf(),
     override val options: MutableRequestOptions = mutableMapOf(),
-    override val requestParams: Map<String, List<String>> = mutableMapOf(),
+    override var requestParams: Map<String, List<String>> = mutableMapOf(),
 ) : AviatorExecutionContext<JsonElement, NoBody>

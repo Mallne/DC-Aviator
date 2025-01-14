@@ -1,13 +1,10 @@
 package cloud.mallne.dicentra.aviator.core
 
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.decodeFromJsonElement
-import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.*
 
 interface InflatedServiceOptions {
     fun usable(): ServiceOptions {
-        return Json.encodeToJsonElement(this)
+        return Json.encodeToJsonElement(this).jsonObject
     }
 
 
@@ -20,4 +17,4 @@ interface InflatedServiceOptions {
     }
 }
 
-typealias ServiceOptions = JsonElement
+typealias ServiceOptions = JsonObject

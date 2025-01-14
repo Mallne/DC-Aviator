@@ -15,7 +15,8 @@ dependencyResolutionManagement {
     }
 }
 
-include(":aviator-ktor")
+include(":clients:aviator-ktor")
+include(":plugins:translation-keys")
 include(":aviator-resource-server")
 include(":core")
 include(":koas")

@@ -15,11 +15,7 @@ import cloud.mallne.dicentra.aviator.koas.security.SecurityScheme
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KeepGeneratedSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonNull
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.*
 
 /**
  * Holds a set of reusable objects for different aspects of the OAS. All objects defined within the
@@ -45,7 +41,7 @@ data class Components(
      * extension (beginning with x-), and the value is the data. The value can be a [JsonNull],
      * [JsonPrimitive], [JsonArray] or [JsonObject].
      */
-    override val extensions: Map<String, JsonElement> = emptyMap()
+    override var extensions: Map<String, JsonElement> = emptyMap()
 ) : Extendable {
     companion object {
         internal object Serializer :

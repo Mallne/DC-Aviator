@@ -20,50 +20,57 @@ class AviatorExecutionPipeline<C : AviatorExecutionContext<in O, in B>, O : @Ser
         when (context.stage) {
             AviatorExecutionStages.Unstarted -> {
                 context.stage = AviatorExecutionStages.Invocation
+                plugins.forEach { value -> value.x.beforeInvocation(context) }
                 executor.onInvocation(context)
-                plugins.forEach { value -> value.onInvocation(context) }
+                plugins.forEach { value -> value.x.afterInvocation(context) }
                 escalate()
             }
 
             AviatorExecutionStages.Invocation -> {
                 context.stage = AviatorExecutionStages.ConstraintValidation
+                plugins.forEach { value -> value.x.beforeConstraintValidation(context) }
                 executor.onConstraintValidation(context)
-                plugins.forEach { value -> value.onConstraintValidation(context) }
+                plugins.forEach { value -> value.x.afterConstraintValidation(context) }
                 escalate()
             }
 
             AviatorExecutionStages.ConstraintValidation -> {
                 context.stage = AviatorExecutionStages.PathMatching
+                plugins.forEach { value -> value.x.beforePathMatching(context) }
                 executor.onPathMatching(context)
-                plugins.forEach { value -> value.onPathMatching(context) }
+                plugins.forEach { value -> value.x.afterPathMatching(context) }
                 escalate()
             }
 
             AviatorExecutionStages.PathMatching -> {
                 context.stage = AviatorExecutionStages.FormingRequest
+                plugins.forEach { value -> value.x.beforeFormingRequest(context) }
                 executor.onFormingRequest(context)
-                plugins.forEach { value -> value.onFormingRequest(context) }
+                plugins.forEach { value -> value.x.afterFormingRequest(context) }
                 escalate()
             }
 
             AviatorExecutionStages.FormingRequest -> {
                 context.stage = AviatorExecutionStages.Requesting
+                plugins.forEach { value -> value.x.beforeRequesting(context) }
                 executor.onRequesting(context)
-                plugins.forEach { value -> value.onRequesting(context) }
+                plugins.forEach { value -> value.x.afterRequesting(context) }
                 escalate()
             }
 
             AviatorExecutionStages.Requesting -> {
                 context.stage = AviatorExecutionStages.PaintingResponse
+                plugins.forEach { value -> value.x.beforePaintingResponse(context) }
                 executor.onPaintingResponse(context)
-                plugins.forEach { value -> value.onPaintingResponse(context) }
+                plugins.forEach { value -> value.x.afterPaintingResponse(context) }
                 escalate()
             }
 
             AviatorExecutionStages.PaintingResponse -> {
                 context.stage = AviatorExecutionStages.Finished
+                plugins.forEach { value -> value.x.beforeFinished(context) }
                 executor.onFinished(context)
-                plugins.forEach { value -> value.onFinished(context) }
+                plugins.forEach { value -> value.x.afterFinished(context) }
                 escalate()
             }
 

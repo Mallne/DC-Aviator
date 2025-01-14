@@ -1,7 +1,7 @@
 [versions]
 accompanistSystemuicontroller = "0.36.0"
 activityCompose = "1.9.3"
-androidGradlePlugin = "8.8.0"
+agp = "8.7.3"
 androidSdk = "11.2.0"
 android-minSdk = "24"
 android-compileSdk = "34"
@@ -36,6 +36,7 @@ logback = "1.5.16"
 koin = "4.0.1"
 koin-annotations = "1.4.0"
 dc-polyfill = "1.0.0-SNAPSHOT"
+dc-aviator = "1.0.0-SNAPSHOT"
 
 [libraries]
 appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
@@ -65,8 +66,9 @@ koin-annotations-ksp = { module = "io.insert-koin:koin-ksp-compiler", version.re
 dc-polyfill = { module = "cloud.mallne.dicentra:polyfill", version.ref = "dc-polyfill" }
 
 
+
 [plugins]
-android-library = { id = "com.android.library", version.ref = "androidGradlePlugin" }
+android-library = { id = "com.android.library", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 ktor = { id = "io.ktor.plugin", version.ref = "ktor" }

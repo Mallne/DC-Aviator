@@ -4,6 +4,7 @@ import cloud.mallne.dicentra.aviator.core.MutableRequestOptions
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionContext
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionStages
 import cloud.mallne.dicentra.aviator.core.io.NetworkChain
+import cloud.mallne.dicentra.aviator.core.io.NetworkHeader
 import cloud.mallne.dicentra.aviator.ktor.io.AvKtorRequest
 import cloud.mallne.dicentra.aviator.ktor.io.AvKtorResponse
 import kotlinx.serialization.KSerializer
@@ -21,6 +22,6 @@ data class KtorExecutionContext<O : @Serializable Any, B : @Serializable Any>(
     override var result: O? = null,
     override var body: B? = null,
     override val options: MutableRequestOptions = mutableMapOf(),
-    override val networkChain: MutableList<NetworkChain<AvKtorRequest, AvKtorResponse>> = mutableListOf(),
-    override val requestParams: Map<String, List<String>> = mutableMapOf(),
+    override val networkChain: MutableList<NetworkChain<AvKtorRequest, AvKtorResponse, NetworkHeader>> = mutableListOf(),
+    override var requestParams: Map<String, List<String>> = mutableMapOf(),
 ) : AviatorExecutionContext<O, B>

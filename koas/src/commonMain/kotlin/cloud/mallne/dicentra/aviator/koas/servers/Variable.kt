@@ -29,7 +29,7 @@ data class Variable(
      * representation.
      */
     val description: String? = null,
-    override val extensions: Map<String, JsonElement> = emptyMap()
+    override var extensions: Map<String, JsonElement> = emptyMap()
 ) : Extendable {
     companion object {
         internal object Serializer :

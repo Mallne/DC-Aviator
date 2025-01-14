@@ -24,7 +24,7 @@ data class Tag(
     val description: String? = null,
     /** Additional external documentation for this tag. */
     val externalDocs: ExternalDocs? = null,
-    override val extensions: Map<String, JsonElement> = emptyMap(),
+    override var extensions: Map<String, JsonElement> = emptyMap(),
 ) : Extendable {
     companion object {
         internal object Serializer :

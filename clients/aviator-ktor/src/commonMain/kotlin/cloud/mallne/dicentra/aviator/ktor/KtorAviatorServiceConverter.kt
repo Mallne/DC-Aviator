@@ -1,8 +1,11 @@
 package cloud.mallne.dicentra.aviator.ktor
 
 import cloud.mallne.dicentra.aviator.core.APIToServiceConverter
+import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec
+import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.`x-dicentra-aviator`
+import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.`x-dicentra-aviator-serviceDelegateCall`
+import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.`x-dicentra-aviator-serviceOptions`
 import cloud.mallne.dicentra.aviator.core.ServiceOptions
-import cloud.mallne.dicentra.aviator.core.execution.AviatorExtensionSpec
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginActivationScope
 import cloud.mallne.dicentra.aviator.core.plugins.BasicPluginActivationScope
 import cloud.mallne.dicentra.aviator.exceptions.AviatorValidationException
@@ -23,7 +26,7 @@ class KtorAviatorServiceConverter(
         api: OpenAPI,
         plugins: AviatorPluginActivationScope.() -> Unit
     ): Map<ServiceLocator, KtorAviatorService> {
-        val version = AviatorExtensionSpec.Version.find(api)
+        val version = api.`x-dicentra-aviator`
         ensureNotNull(version) {
             AviatorValidationException("The given OpenAPI specification does not contain a Aviator Version Attribute at root Level.")
         }
@@ -35,8 +38,8 @@ class KtorAviatorServiceConverter(
         val routes = api.routes()
         val routing = mutableMapOf<ServiceLocator, Pair<Route, ServiceOptions>>()
         routes.forEach {
-            val l = AviatorExtensionSpec.ServiceLocator.R.find(it)
-            val options = AviatorExtensionSpec.ServiceOptions.R.findComplex(it)
+            val l = it.`x-dicentra-aviator-serviceDelegateCall`
+            val options = it.`x-dicentra-aviator-serviceOptions`
             if (l != null && options != null) {
                 routing[ServiceLocator(l)] = it to options
             }

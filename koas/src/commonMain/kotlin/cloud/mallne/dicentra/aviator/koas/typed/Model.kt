@@ -16,7 +16,7 @@ data class Route(
     val body: Bodies,
     val input: List<Input>,
     val returnType: Returns,
-    override val extensions: Map<String, JsonElement>,
+    override var extensions: Map<String, JsonElement>,
     val nested: List<Model>
 ) : Extendable {
     @Serializable

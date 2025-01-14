@@ -44,7 +44,7 @@ data class Encoding(
      * the default value is false. This property SHALL be ignored if the request body media type is
      * not application/x-www-form-urlencoded.
      */
-    val explode: Boolean = style?.let { it == Style.form.name } ?: false,
+    val explode: Boolean = style?.let { it == Style.form.name } == true,
     /**
      * Determines whether the parameter value SHOULD allow reserved characters, as defined by RFC3986
      * :/?#[]@!$&'()*+,;= to be included without percent-encoding. The default value is false. This
@@ -57,7 +57,7 @@ data class Encoding(
      * extension (beginning with x-), and the value is the data. The value can be a [kotlinx.serialization.json.JsonNull],
      * [kotlinx.serialization.json.JsonPrimitive], [kotlinx.serialization.json.JsonArray] or [kotlinx.serialization.json.JsonObject].
      */
-    override val extensions: Map<String, JsonElement> = emptyMap()
+    override var extensions: Map<String, JsonElement> = emptyMap()
 ) : Extendable {
     companion object {
         internal object Serializer :

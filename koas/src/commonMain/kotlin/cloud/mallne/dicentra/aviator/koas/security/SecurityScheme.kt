@@ -22,7 +22,7 @@ data class SecurityScheme(
     val bearerFormat: String? = null,
     val flows: OAuthFlows? = null,
     val openIdConnectUrl: String? = null,
-    override val extensions: Map<String, JsonElement> = emptyMap(),
+    override var extensions: Map<String, JsonElement> = emptyMap(),
 ) : Extendable {
 
     companion object {

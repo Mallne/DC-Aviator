@@ -1,6 +1,6 @@
-package cloud.mallne.dicentra
+package cloud.mallne.dicentra.aviator.testserver
 
-import cloud.mallne.dicentra.helper.toBooleanish
+import cloud.mallne.dicentra.aviator.testserver.helper.toBooleanish
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.plugins.compression.*

@@ -99,7 +99,7 @@ data class Parameter(
      * examples value SHALL override the example provided by the schema.
      */
     val examples: Map<String, ReferenceOr<Example>>? = emptyMap(),
-    override val extensions: Map<String, JsonElement> = emptyMap(),
+    override var extensions: Map<String, JsonElement> = emptyMap(),
 ) : Extendable {
     init {
         if (input == Input.Path)

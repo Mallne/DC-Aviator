@@ -58,7 +58,7 @@ data class PathItem(
      * extension (beginning with x-), and the value is the data. The value can be a [JsonNull],
      * [JsonPrimitive], [JsonArray] or [JsonObject].
      */
-    override val extensions: Map<String, JsonElement> = emptyMap()
+    override var extensions: Map<String, JsonElement> = emptyMap()
 ) : Extendable {
 
     operator fun plus(other: PathItem): PathItem =

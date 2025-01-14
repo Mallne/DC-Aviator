@@ -3,6 +3,7 @@ package cloud.mallne.dicentra.aviator.core.execution
 import cloud.mallne.dicentra.aviator.core.AviatorServiceDataHolder
 import cloud.mallne.dicentra.aviator.core.MutableRequestOptions
 import cloud.mallne.dicentra.aviator.core.io.NetworkChain
+import cloud.mallne.dicentra.aviator.core.io.NetworkHeader
 import cloud.mallne.dicentra.aviator.core.io.NetworkRequest
 import cloud.mallne.dicentra.aviator.core.io.NetworkResponse
 import kotlinx.serialization.KSerializer
@@ -18,8 +19,8 @@ interface AviatorExecutionContext<O : @Serializable Any, B : @Serializable Any> 
     val bodyClazz: Triple<KClass<B>, KType, KSerializer<B>>?
     val bundle: MutableMap<String, JsonElement>
     var result: O?
-    val body: B?
-    val networkChain: List<NetworkChain<out NetworkRequest, out NetworkResponse>>
+    var body: B?
+    val networkChain: MutableList<out NetworkChain<out NetworkRequest<out NetworkHeader>, out NetworkResponse<out NetworkHeader>, out NetworkHeader>>
     val options: MutableRequestOptions
-    val requestParams: Map<String, List<String>>
+    var requestParams: Map<String, List<String>>
 }

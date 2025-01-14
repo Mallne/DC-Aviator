@@ -1,6 +1,6 @@
-package cloud.mallne.dicentra
+package cloud.mallne.dicentra.aviator.testserver
 
-import cloud.mallne.dicentra.aviator.core.execution.AviatorExtensionSpec
+import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec
 import cloud.mallne.dicentra.aviator.core.mock.MockConverter
 import cloud.mallne.dicentra.aviator.core.mock.MockExecutionContext
 import cloud.mallne.dicentra.aviator.exceptions.AviatorValidationException
@@ -31,7 +31,7 @@ fun Application.validateRoutes() {
         post("parse") {
             suspend fun catchSendBadRequest(e: Throwable) {
                 call.respondText(
-                    text = e.localizedMessage ?: e.toString(),
+                    text = e.message ?: e.toString(),
                     contentType = ContentType.Text.Plain,
                     status = HttpStatusCode.BadRequest
                 )

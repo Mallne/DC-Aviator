@@ -7,10 +7,10 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 
-interface NetworkResponse : NetworkMessage {
-    val status: HttpStatusCode
-    val content: JsonElement?
-    val time: GMTDate
+interface NetworkResponse<H : NetworkHeader> : NetworkMessage<H> {
+    var status: HttpStatusCode
+    var content: JsonElement?
+    var time: GMTDate
 
     fun <T : @Serializable Any> parseBody(serializer: KSerializer<T>, json: Json = Json): T? {
         return content?.let { json.decodeFromJsonElement(serializer, it) }

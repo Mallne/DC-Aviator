@@ -26,7 +26,7 @@ data class Header(
     val examples: Map<String, ReferenceOr<Example>>? = null,
     val content: Map<String, MediaType> = emptyMap(),
     val schema: ReferenceOr<Schema>? = null,
-    override val extensions: Map<String, JsonElement> = emptyMap(),
+    override var extensions: Map<String, JsonElement> = emptyMap(),
 ) : Extendable {
     companion object {
         internal object Serializer :

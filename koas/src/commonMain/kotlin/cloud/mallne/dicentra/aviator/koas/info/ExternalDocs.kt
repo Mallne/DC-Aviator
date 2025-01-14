@@ -19,7 +19,7 @@ data class ExternalDocs(
     val description: String? = null,
     /** The URL for the target documentation. Value MUST be in the format of a URL. */
     val url: String,
-    override val extensions: Map<String, JsonElement> = emptyMap(),
+    override var extensions: Map<String, JsonElement> = emptyMap(),
 ) : Extendable {
     companion object {
         internal object Serializer :

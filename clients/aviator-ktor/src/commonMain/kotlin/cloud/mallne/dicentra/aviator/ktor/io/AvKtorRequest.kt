@@ -6,8 +6,8 @@ import io.ktor.http.*
 import kotlinx.serialization.json.JsonElement
 
 class AvKtorRequest(
-    override val method: HttpMethod,
-    override val url: Url,
-    override val outgoingContent: JsonElement?,
-    override val headers: NetworkHeader
-) : NetworkRequest
+    override var method: HttpMethod,
+    override var url: Url,
+    override var outgoingContent: JsonElement?,
+    override var headers: NetworkHeader
+) : NetworkRequest<NetworkHeader>

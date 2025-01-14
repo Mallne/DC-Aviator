@@ -15,7 +15,7 @@ class MockedStagedExecutor :
 
     override suspend fun onPathMatching(context: MockExecutionContext) {
         val l = AviatorServiceUtils.catchPaths(context.dataHolder, context.requestParams).map {
-            NetworkChain<MockedRequest, MockedResponse>(it)
+            NetworkChain<MockedRequest, MockedResponse, MockedHeader>(it)
         }
         context.networkChain.addAll(l)
     }
@@ -27,7 +27,7 @@ class MockedStagedExecutor :
                 method = route.method,
                 url = Url(net.url),
                 outgoingContent = if (context.body != null && context.bodyClazz != null) {
-                    context.dataHolder.json.encodeToJsonElement(context.bodyClazz.third, context.body)
+                    context.dataHolder.json.encodeToJsonElement(context.bodyClazz.third, context.body!!)
                 } else {
                     null
                 }

@@ -3,14 +3,18 @@ package cloud.mallne.dicentra.aviator.koas.responses
 import cloud.mallne.dicentra.aviator.koas.exceptions.OpenAPIConstraintViolation
 import cloud.mallne.dicentra.aviator.koas.extensions.ReferenceOr
 import cloud.mallne.dicentra.polyfill.ensure
-import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SealedSerializationApi
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.SerialKind
 import kotlinx.serialization.descriptors.StructureKind
+import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 
-@OptIn(ExperimentalSerializationApi::class)
+@OptIn(SealedSerializationApi::class)
 internal object ResponsesDescriptor : SerialDescriptor {
+    val descriptor = buildClassSerialDescriptor(
+        serialName = "cloud.mallne.dicentra.aviator.koas.responses.Responses",
+    )
     override val serialName: String = "cloud.mallne.dicentra.aviator.koas.responses.Responses"
     override val kind: SerialKind = StructureKind.MAP
     override val elementsCount: Int = 2

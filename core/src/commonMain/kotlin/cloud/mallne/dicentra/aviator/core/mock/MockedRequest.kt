@@ -8,8 +8,8 @@ import kotlinx.serialization.json.JsonElement
 
 @Serializable
 data class MockedRequest(
-    override val headers: MockedHeader = MockedHeader(),
-    override val method: @Serializable(Serializers.HttpMethodSerializer::class) HttpMethod,
-    override val url: @Serializable(Serializers.UrlSerializer::class) Url,
-    override val outgoingContent: JsonElement?
-) : NetworkRequest
+    override var headers: MockedHeader = MockedHeader(),
+    override var method: @Serializable(Serializers.HttpMethodSerializer::class) HttpMethod,
+    override var url: @Serializable(Serializers.UrlSerializer::class) Url,
+    override var outgoingContent: JsonElement?
+) : NetworkRequest<MockedHeader>

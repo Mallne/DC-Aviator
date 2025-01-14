@@ -11,7 +11,7 @@ import cloud.mallne.dicentra.polyfill.ensureNotNull
 object TemplateParser {
     val regex = Regex("\\{\\s*?([;.])?\\s*?(\\S*?)\\s*?([*]?)\\s*?\\}")
 
-    fun Server.parsePath(data: Map<String, List<String>>) {
+    fun Server.parsePath(data: Map<String, List<String>>): String {
         var ppath = url
         val matches = regex.findAll(url)//Groups
         matches.forEach { match ->
@@ -24,6 +24,7 @@ object TemplateParser {
             val replacement = genReplacement(replace, template)
             ppath = ppath.replace(match.value, replacement)
         }
+        return ppath
     }
 
     fun Route.parsePath(data: Map<String, List<String>>): String {

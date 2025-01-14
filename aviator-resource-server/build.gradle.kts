@@ -5,7 +5,7 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
-group = "cloud.mallne.dicentra"
+group = "cloud.mallne.dicentra.aviator"
 version = "0.0.1"
 
 application {
@@ -32,5 +32,5 @@ dependencies {
     implementation(libs.ktor.server.netty)
     implementation(libs.logback.classic)
     implementation(libs.ktor.server.config.yaml)
-    implementation(project(":aviator-ktor"))
+    implementation(project(":clients:aviator-ktor"))
 }

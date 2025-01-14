@@ -13,7 +13,7 @@ import kotlinx.serialization.json.JsonElement
 data class Discriminator(
     val propertyName: String,
     val mapping: Map<String, String> = emptyMap(),
-    override val extensions: Map<String, JsonElement> = emptyMap(),
+    override var extensions: Map<String, JsonElement> = emptyMap(),
 ) : Extendable {
     companion object {
         internal object Serializer :

@@ -34,7 +34,7 @@ data class Responses(
      * extension (beginning with x-), and the value is the data. The value can be a [kotlinx.serialization.json.JsonNull],
      * [kotlinx.serialization.json.JsonPrimitive], [kotlinx.serialization.json.JsonArray] or [kotlinx.serialization.json.JsonObject].
      */
-    override val extensions: Map<String, JsonElement> = emptyMap()
+    override var extensions: Map<String, JsonElement> = emptyMap()
 ) : Extendable {
 
     constructor(

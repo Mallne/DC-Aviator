@@ -9,8 +9,8 @@ import kotlinx.serialization.json.JsonElement
 
 @Serializable
 data class MockedResponse(
-    override val headers: MockedHeader = MockedHeader(),
-    override val status: @Serializable(Serializers.HttpStatusCodeSerializer::class) HttpStatusCode,
-    override val content: JsonElement?,
-    override val time: GMTDate
-) : NetworkResponse
+    override var headers: MockedHeader = MockedHeader(),
+    override var status: @Serializable(Serializers.HttpStatusCodeSerializer::class) HttpStatusCode,
+    override var content: JsonElement?,
+    override var time: GMTDate
+) : NetworkResponse<MockedHeader>

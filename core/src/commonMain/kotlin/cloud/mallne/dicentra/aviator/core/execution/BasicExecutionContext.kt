@@ -18,8 +18,8 @@ data class BasicExecutionContext<O : @Serializable Any, B : @Serializable Any>(
     override val bodyClazz: Triple<KClass<B>, KType, KSerializer<B>>? = null,
     override val bundle: MutableMap<String, JsonElement> = mutableMapOf(),
     override var result: O? = null,
-    override val body: B? = null,
+    override var body: B? = null,
     override val networkChain: MutableList<NetworkChain<NetworkRequest, NetworkResponse>> = mutableListOf(),
     override val options: MutableRequestOptions = mutableMapOf(),
-    override val requestParams: Map<String, List<String>> = mutableMapOf(),
+    override var requestParams: Map<String, List<String>> = mutableMapOf(),
 ) : AviatorExecutionContext<O, B>
