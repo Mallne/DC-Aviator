@@ -4,7 +4,7 @@ class BasicPluginActivationScope : AviatorPluginActivationScope {
     val registry: MutableList<AviatorPluginInstance> = mutableListOf()
 
     override fun <ConfigScope : AviatorPluginConfigScope> install(
-        plugin: AviatorPlugin<ConfigScope>,
+        plugin: AviatorPlugin<out ConfigScope>,
         config: ConfigScope.() -> Unit
     ): AviatorPluginInstance {
         val instance = plugin.install(config)
