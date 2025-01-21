@@ -5,7 +5,7 @@ GET http://localhost:8080/version
 GET http://localhost:8080/test
 
 ### Parse Test Data
-POST http://localhost:8080/parse
+POST http://localhost:8090/parse
 Content-Type: application/json
 Accept: application/json
 

@@ -7,3 +7,4 @@ ktor:
 
 dicentra:
   behind-proxy: "${BEHIND_PROXY:FALSE}"
+  enable-cors: "${ENABLE_CORS:FALSE}"

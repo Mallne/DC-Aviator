@@ -24,6 +24,7 @@ dependencies {
     implementation(libs.ktor.server.openapi)
     implementation(libs.ktor.server.content.negotiation)
     implementation(libs.ktor.server.rate.limit)
+    implementation(libs.ktor.server.cors)
     implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.koin.ktor)
     implementation(libs.koin.logger.slf4j)
