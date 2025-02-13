@@ -22,6 +22,9 @@ import kotlin.reflect.typeOf
 fun Application.validateRoutes() {
     val conv = MockConverter()
     routing {
+        get("health") {
+            call.respond("RUNNING")
+        }
         get("version") {
             call.respond(
                 AviatorExtensionSpec.SpecVersion,
