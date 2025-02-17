@@ -1,8 +1,8 @@
 ### Version of the Aviator Parser
-GET http://localhost:8080/version
+GET http://localhost:8090/version
 
 ### Testdata
-GET http://localhost:8080/test
+GET http://localhost:8090/test
 
 ### Parse Test Data
 POST http://localhost:8090/parse
