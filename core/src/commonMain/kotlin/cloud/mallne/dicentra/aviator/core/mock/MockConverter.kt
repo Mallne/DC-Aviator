@@ -40,7 +40,8 @@ class MockConverter(
             val l = it.`x-dicentra-aviator-serviceDelegateCall`
             val options = it.`x-dicentra-aviator-serviceOptions`
             if (l != null) {
-                routing[ServiceLocator(l)] = it to (options ?: json.parseToJsonElement("{}").jsonObject)
+                routing[ServiceLocator(l)] =
+                    it to (options ?: json.parseToJsonElement("{}").jsonObject)
             }
         }
         val services = routing.map { (locator, route) ->

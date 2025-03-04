@@ -2,6 +2,8 @@ package cloud.mallne.dicentra.aviator.model
 
 import cloud.mallne.dicentra.aviator.core.ServiceMethods
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 
 @Serializable
 data class ServiceLocator(
@@ -18,4 +20,6 @@ data class ServiceLocator(
     override fun toString(): String {
         return "$locator>${flavour.serviceFlavour}"
     }
+
+    fun usable(): JsonElement = Json.parseToJsonElement(toString())
 }
