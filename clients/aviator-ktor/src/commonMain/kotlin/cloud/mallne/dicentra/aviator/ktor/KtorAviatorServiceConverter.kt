@@ -7,6 +7,7 @@ import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.`x-dicentra-aviat
 import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.`x-dicentra-aviator-serviceOptions`
 import cloud.mallne.dicentra.aviator.core.ServiceOptions
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginActivationScope
+import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginInstance
 import cloud.mallne.dicentra.aviator.core.plugins.BasicPluginActivationScope
 import cloud.mallne.dicentra.aviator.exceptions.AviatorValidationException
 import cloud.mallne.dicentra.aviator.koas.OpenAPI
@@ -15,13 +16,32 @@ import cloud.mallne.dicentra.aviator.koas.typed.routes
 import cloud.mallne.dicentra.aviator.model.ServiceLocator
 import cloud.mallne.dicentra.polyfill.ensure
 import cloud.mallne.dicentra.polyfill.ensureNotNull
-import io.ktor.client.*
+import io.ktor.client.HttpClient
 import kotlinx.serialization.json.Json
 
 class KtorAviatorServiceConverter(
     val httpClient: HttpClient = HttpClient(),
     val json: Json = Json
 ) : APIToServiceConverter {
+    fun swapPlugins(
+        to: KtorAviatorService,
+        plugins: AviatorPluginActivationScope.() -> Unit
+    ): KtorAviatorService {
+        val registry = crystallizePlugins(plugins)
+        val pluginsForRoute = registry.filter { inst ->
+            inst.configurationBundle.serviceFilter.isEmpty() || inst.configurationBundle.serviceFilter.map { it.toString() }
+                .contains(to.serviceLocator.toString())
+        }
+        return to.copy(plugins = pluginsForRoute)
+    }
+
+    fun swapClient(
+        to: KtorAviatorService,
+        client: HttpClient = httpClient
+    ): KtorAviatorService {
+        return to.copy(client = client)
+    }
+
     override fun build(
         api: OpenAPI,
         plugins: AviatorPluginActivationScope.() -> Unit
@@ -33,8 +53,7 @@ class KtorAviatorServiceConverter(
         ensure(AviatorExtensionSpec.understandsVersions.contains(version)) {
             AviatorValidationException("This version of Aviator (${AviatorExtensionSpec.SpecVersion}) can't interpret the version of the given OpenAPI definition (${version}).")
         }
-        val scope = BasicPluginActivationScope()
-        plugins.invoke(scope)
+        val registry = crystallizePlugins(plugins)
         val routes = api.routes()
         val routing = mutableMapOf<ServiceLocator, Pair<Route, ServiceOptions>>()
         routes.forEach {
@@ -45,7 +64,7 @@ class KtorAviatorServiceConverter(
             }
         }
         val services = routing.map { (locator, route) ->
-            val pluginsForRoute = scope.registry.filter { inst ->
+            val pluginsForRoute = registry.filter { inst ->
                 inst.configurationBundle.serviceFilter.isEmpty() || inst.configurationBundle.serviceFilter.map { it.toString() }
                     .contains(locator.toString())
             }
@@ -62,5 +81,11 @@ class KtorAviatorServiceConverter(
             locator to service
         }.toMap()
         return services
+    }
+
+    private fun crystallizePlugins(plugins: AviatorPluginActivationScope.() -> Unit): List<AviatorPluginInstance> {
+        val scope = BasicPluginActivationScope()
+        plugins.invoke(scope)
+        return scope.registry
     }
 }

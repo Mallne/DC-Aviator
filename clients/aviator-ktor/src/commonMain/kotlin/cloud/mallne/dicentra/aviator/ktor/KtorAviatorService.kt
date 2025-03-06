@@ -10,14 +10,14 @@ import cloud.mallne.dicentra.aviator.koas.OpenAPI
 import cloud.mallne.dicentra.aviator.koas.typed.Route
 import cloud.mallne.dicentra.aviator.model.AviatorServiceUtils
 import cloud.mallne.dicentra.aviator.model.ServiceLocator
-import io.ktor.client.*
+import io.ktor.client.HttpClient
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
 import kotlin.reflect.typeOf
 
-class KtorAviatorService(
+data class KtorAviatorService(
     override val serviceLocator: ServiceLocator,
     override val options: ServiceOptions,
     val client: HttpClient,
@@ -31,14 +31,15 @@ class KtorAviatorService(
         AviatorServiceUtils.validate(this)
     }
 
-    inline fun <reified T : InflatedServiceOptions> optionBundle(): T = AviatorServiceUtils.optionBundle(options)
+    inline fun <reified T : InflatedServiceOptions> optionBundle(): T =
+        AviatorServiceUtils.optionBundle(options)
 
-    suspend inline fun <reified O : @Serializable Any, reified B : @Serializable Any> request(
+    suspend inline fun <reified O : @Serializable Any, reified B : @Serializable Any> requestContextful(
         requestBody: B? = null,
         useSerializer: KSerializer<O> = serializer<O>(),
         options: RequestOptions = emptyMap(),
         requestParams: Map<String, List<String>> = emptyMap()
-    ): O? {
+    ): KtorExecutionContext<O, B> {
 
         val executor = KtorStagedExecutor<O, B>()
         val pipeline = AviatorExecutionPipeline(
@@ -59,8 +60,15 @@ class KtorAviatorService(
         )
 
         val ctx = pipeline.run()
-        return ctx.result
+        return ctx
     }
+
+    suspend inline fun <reified O : @Serializable Any, reified B : @Serializable Any> request(
+        requestBody: B? = null,
+        useSerializer: KSerializer<O> = serializer<O>(),
+        options: RequestOptions = emptyMap(),
+        requestParams: Map<String, List<String>> = emptyMap()
+    ): O? = requestContextful<O, B>(requestBody, useSerializer, options, requestParams).result
 
     fun close() = client.close()
 
