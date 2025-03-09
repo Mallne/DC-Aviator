@@ -4,14 +4,13 @@ import cloud.mallne.dicentra.aviator.koas.extensions.Extendable
 import cloud.mallne.dicentra.aviator.koas.extensions.KSerializerWithExtensions
 import cloud.mallne.dicentra.aviator.koas.extensions.ReferenceOr
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KeepGeneratedSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 
 /** Each Media Type Object provides schema and examples for the media type identified by its key. */
 @Serializable(MediaType.Companion.Serializer::class)
-@OptIn(InternalSerializationApi::class, ExperimentalSerializationApi::class)
+@OptIn(ExperimentalSerializationApi::class)
 @KeepGeneratedSerializer
 data class MediaType(
     /** The schema defining the content of the request, response, or parameter. */

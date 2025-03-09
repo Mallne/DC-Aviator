@@ -1,14 +1,12 @@
 package cloud.mallne.dicentra.aviator.core
 
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
-import kotlinx.serialization.json.encodeToJsonElement
 
 interface InflatedServiceOptions {
-    fun usable(): ServiceOptions {
-        return Json.encodeToJsonElement(this)
-    }
+    fun usable(): ServiceOptions
 
 
     companion object {
@@ -16,7 +14,15 @@ interface InflatedServiceOptions {
             return Json.decodeFromJsonElement(options)
         }
 
-        val empty = object : InflatedServiceOptions {}
+        @OptIn(InternalAviatorAPI::class)
+        val empty = EmptyServiceOpts()
+
+        @Serializable
+        class EmptyServiceOpts @InternalAviatorAPI constructor() : InflatedServiceOptions {
+            override fun usable(): ServiceOptions {
+                return Json.parseToJsonElement("{}")
+            }
+        }
     }
 }
 

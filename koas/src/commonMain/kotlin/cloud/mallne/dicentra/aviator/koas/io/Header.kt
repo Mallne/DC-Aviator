@@ -24,7 +24,7 @@ data class Header(
     val explode: Boolean? = null,
     val example: ExampleValue? = null,
     val examples: Map<String, ReferenceOr<Example>>? = null,
-    val content: Map<String, MediaType> = emptyMap(),
+    //val content: Map<String, MediaType> = emptyMap(), for whatever reason, this prevents the generated Serializer to be generated
     val schema: ReferenceOr<Schema>? = null,
     override var extensions: Map<String, JsonElement> = emptyMap(),
 ) : Extendable {

@@ -45,7 +45,7 @@ class KtorAviatorServiceConverter(
     override fun build(
         api: OpenAPI,
         plugins: AviatorPluginActivationScope.() -> Unit
-    ): Map<ServiceLocator, KtorAviatorService> {
+    ): List<KtorAviatorService> {
         val version = api.`x-dicentra-aviator`
         ensureNotNull(version) {
             AviatorValidationException("The given OpenAPI specification does not contain a Aviator Version Attribute at root Level.")
@@ -55,15 +55,15 @@ class KtorAviatorServiceConverter(
         }
         val registry = crystallizePlugins(plugins)
         val routes = api.routes()
-        val routing = mutableMapOf<ServiceLocator, Pair<Route, ServiceOptions>>()
+        val routing = mutableListOf<Triple<ServiceLocator, Route, ServiceOptions>>()
         routes.forEach {
             val l = it.`x-dicentra-aviator-serviceDelegateCall`
             val options = it.`x-dicentra-aviator-serviceOptions`
             if (l != null && options != null) {
-                routing[ServiceLocator(l)] = it to options
+                routing.add(Triple(ServiceLocator(l), it, options))
             }
         }
-        val services = routing.map { (locator, route) ->
+        val services = routing.map { (locator, route, options) ->
             val pluginsForRoute = registry.filter { inst ->
                 inst.configurationBundle.serviceFilter.isEmpty() || inst.configurationBundle.serviceFilter.map { it.toString() }
                     .contains(locator.toString())
@@ -71,15 +71,15 @@ class KtorAviatorServiceConverter(
 
             val service = KtorAviatorService(
                 serviceLocator = locator,
-                options = route.second,
+                options = options,
                 client = httpClient,
                 plugins = pluginsForRoute,
-                route = route.first,
+                route = route,
                 oas = api,
                 json = json,
             )
-            locator to service
-        }.toMap()
+            service
+        }
         return services
     }
 

@@ -4,6 +4,7 @@ import cloud.mallne.dicentra.aviator.core.MutableRequestOptions
 import cloud.mallne.dicentra.aviator.core.NoBody
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionContext
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionStages
+import cloud.mallne.dicentra.aviator.core.execution.AviatorLogger
 import cloud.mallne.dicentra.aviator.core.io.NetworkChain
 import cloud.mallne.dicentra.aviator.model.AviatorServiceUtils
 import kotlinx.serialization.KSerializer
@@ -24,4 +25,5 @@ data class MockExecutionContext(
     override val networkChain: MutableList<NetworkChain<MockedRequest, MockedResponse, MockedHeader>> = mutableListOf(),
     override val options: MutableRequestOptions = mutableMapOf(),
     override var requestParams: Map<String, List<String>> = mutableMapOf(),
+    override var logger: AviatorLogger? = null
 ) : AviatorExecutionContext<JsonElement, NoBody>

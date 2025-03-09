@@ -18,7 +18,9 @@ import cloud.mallne.dicentra.aviator.koas.typed.Model.Object.Property
 import cloud.mallne.dicentra.aviator.koas.typed.NamingContext.Named
 import cloud.mallne.dicentra.polyfill.ensure
 import cloud.mallne.dicentra.polyfill.ensureNotNull
-import io.ktor.http.*
+import io.ktor.http.ContentType
+import io.ktor.http.HttpMethod
+import io.ktor.http.HttpStatusCode
 import kotlin.jvm.JvmInline
 
 fun OpenAPI.routes(): List<Route> = OpenAPITransformer(this).routes()
@@ -72,8 +74,9 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
             when (refOrResponse) {
                 is ReferenceOr.Reference -> null
                 is ReferenceOr.Value -> {
-                    val resolved = refOrResponse.value.content.getOrElse("application/json") { null }?.schema?.resolve()
-                        ?: return@mapNotNull null
+                    val resolved =
+                        refOrResponse.value.content.getOrElse("application/json") { null }?.schema?.resolve()
+                            ?: return@mapNotNull null
                     val context = resolved.namedOr {
                         val operationId = ensureNotNull(operation.operationId) {
                             OpenAPIConstraintViolation("OperationId is required for request body inline schemas. Otherwise we cannot generate OperationIdRequest class name")
@@ -126,17 +129,19 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
         return filteredParams + paramsOfOperation
     }
 
-    fun Operation.input(create: (NamingContext) -> NamingContext): List<Resolved<Model>> = parameters.map { p ->
-        val param = p.get()
-        val resolved = param.schema?.resolve() ?: throw OpenAPIConstraintViolation("No Schema for Parameter.")
-        val context = resolved.namedOr {
-            val operationId = ensureNotNull(operationId) {
-                OpenAPIConstraintViolation("operationId currently required to generate inline schemas for operation parameters.")
+    fun Operation.input(create: (NamingContext) -> NamingContext): List<Resolved<Model>> =
+        parameters.map { p ->
+            val param = p.get()
+            val resolved = param.schema?.resolve()
+                ?: throw OpenAPIConstraintViolation("No Schema for Parameter ${param.name} of operation $operationId/$description.")
+            val context = resolved.namedOr {
+                val operationId = ensureNotNull(operationId) {
+                    OpenAPIConstraintViolation("operationId currently required to generate inline schemas for operation parameters.")
+                }
+                create(NamingContext.RouteParam(param.name, operationId, "Request"))
             }
-            create(NamingContext.RouteParam(param.name, operationId, "Request"))
+            resolved.toModel(context)
         }
-        resolved.toModel(context)
-    }
 
     /** Gathers all "top-level", or components schemas. */
     fun schemas(): List<Model> = openAPI.components.schemas.map { (name, refOrSchema) ->
@@ -217,7 +222,9 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
 
             Type.Basic.String -> if (format == "binary") Model.OctetStream(description)
             else Model.Primitive.String(
-                default("String", String::toString) { it.joinToString() }, description, Constraints.Text(this)
+                default("String", String::toString) { it.joinToString() },
+                description,
+                Constraints.Text(this)
             )
 
             Type.Basic.Object -> toObject(context)
@@ -244,9 +251,10 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
         null -> null
     }
 
-    private fun <A> Schema.default(label: String, onSingle: (String) -> A?): A? = default(label, onSingle) {
-        throw OpenAPIConstraintViolation("Multiple default values not supported for $label.")
-    }
+    private fun <A> Schema.default(label: String, onSingle: (String) -> A?): A? =
+        default(label, onSingle) {
+            throw OpenAPIConstraintViolation("Multiple default values not supported for $label.")
+        }
 
     fun Schema.isOpenEnumeration(): Boolean {
         val anyOf = anyOf
@@ -259,7 +267,8 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
             val name = ref.drop("#/components/schemas/".length)
             val schema = ensureNotNull(openAPI.components.schemas[name]) {
                 OpenAPIConstraintViolation("Schema $name could not be found in ${openAPI.components.schemas}. Is it missing?")
-            }.valueOrNull() ?: throw OpenAPIConstraintViolation("Remote schemas are not yet supported.")
+            }.valueOrNull()
+                ?: throw OpenAPIConstraintViolation("Remote schemas are not yet supported.")
             Resolved.Ref(name, schema)
         }
     }
@@ -306,9 +315,13 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
 
     private fun Schema.toObject(context: NamingContext): Model = when {
         properties.isNotEmpty() -> toObject(context, properties)
-        additionalProperties != null -> when (val props: AdditionalProperties = additionalProperties) {
+        additionalProperties != null -> when (val props: AdditionalProperties =
+            additionalProperties) {
             // TODO: implement Schema validation
-            is AdditionalProperties.PSchema -> Model.FreeFormJson(description, Constraints.Object(this))
+            is AdditionalProperties.PSchema -> Model.FreeFormJson(
+                description,
+                Constraints.Object(this)
+            )
 
             is Allowed -> if (props.value) Model.FreeFormJson(description, Constraints.Object(this))
             else throw OpenAPIConstraintViolation(
@@ -339,7 +352,8 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
                 Schema(
                     type = Type.Basic.Object,
                     properties = properties,
-                    additionalProperties = ref.value.additionalProperties ?: obj.value.additionalProperties,
+                    additionalProperties = ref.value.additionalProperties
+                        ?: obj.value.additionalProperties,
                     description = ref.value.description,
                     required = ref.value.required.orEmpty() + obj.value.required.orEmpty(),
                     nullable = ref.value.nullable ?: obj.value.nullable,
@@ -366,7 +380,10 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
         }
     }
 
-    fun Schema.toObject(context: NamingContext, properties: Map<String, ReferenceOr<Schema>>): Model {
+    fun Schema.toObject(
+        context: NamingContext,
+        properties: Map<String, ReferenceOr<Schema>>
+    ): Model {
         ensure((additionalProperties as? Allowed)?.value != true) {
             OpenAPIConstraintViolation("Additional properties, on a schema with properties, are not yet supported.")
         }
@@ -418,7 +435,10 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
                     // Translate empty JS array to empty list
                     value == "[]" -> emptyList()
                     // 'null' for a non-nullable collection becomes an empty list
-                    value.equals("null", ignoreCase = true) -> if (nullable == true) listOf("null") else emptyList()
+                    value.equals(
+                        "null",
+                        ignoreCase = true
+                    ) -> if (nullable == true) listOf("null") else emptyList()
 
                     else -> listOf(value)
                 }
@@ -476,41 +496,49 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
         val cases = caseToContext.map { (resolved, caseContext) ->
             Model.Union.Case(caseContext, resolved.toModel(caseContext).value)
         }.sortedWith(unionSchemaComparator)
-        val inline = caseToContext.mapNotNull { (resolved, caseContext) -> nestedModel(resolved, caseContext) }
+        val inline = caseToContext.mapNotNull { (resolved, caseContext) ->
+            nestedModel(
+                resolved,
+                caseContext
+            )
+        }
         return Model.Union(
             context,
             cases,
-            singleDefaultOrNull() ?: subtypes.firstNotNullOfOrNull { it.resolve().value.singleDefaultOrNull() },
+            singleDefaultOrNull()
+                ?: subtypes.firstNotNullOfOrNull { it.resolve().value.singleDefaultOrNull() },
             description,
             inline
         )
     }
 
-    fun toUnionCaseContext(context: NamingContext, case: Resolved<Schema>): NamingContext = when (case) {
-        is Resolved.Ref -> Named(case.name)
-        is Resolved.Value -> when {
-            context is Named && case.value.type == Type.Basic.String && case.value.enum.isNotEmpty() -> NamingContext.Nested(
-                Named(
-                    case.value.enum.joinToString(prefix = "", separator = "Or") {
-                        it.replaceFirstChar(Char::uppercaseChar)
-                    }
-                ),
-                context)
+    fun toUnionCaseContext(context: NamingContext, case: Resolved<Schema>): NamingContext =
+        when (case) {
+            is Resolved.Ref -> Named(case.name)
+            is Resolved.Value -> when {
+                context is Named && case.value.type == Type.Basic.String && case.value.enum.isNotEmpty() -> NamingContext.Nested(
+                    Named(
+                        case.value.enum.joinToString(prefix = "", separator = "Or") {
+                            it.replaceFirstChar(Char::uppercaseChar)
+                        }
+                    ),
+                    context)
 
-            case.value.type == Type.Basic.Object -> NamingContext.Nested(
-                case.value.properties.firstNotNullOfOrNull { (key, value) ->
-                    if (key == "event" || key == "type") value.resolve().value.enum else null
-                }?.singleOrNull()?.let(::Named)
-                    ?: TODO("Name Generated for inline objects of unions not yet supported."), context
-            )
+                case.value.type == Type.Basic.Object -> NamingContext.Nested(
+                    case.value.properties.firstNotNullOfOrNull { (key, value) ->
+                        if (key == "event" || key == "type") value.resolve().value.enum else null
+                    }?.singleOrNull()?.let(::Named)
+                        ?: TODO("Name Generated for inline objects of unions not yet supported."),
+                    context
+                )
 
-            case.value.type == Type.Basic.Array -> case.value.items?.resolve()
-                ?.namedOr { if (case.value.uniqueItems == true) Named("Set") else Named("List") }
-                ?.let { NamingContext.Nested(it, context) } ?: context
+                case.value.type == Type.Basic.Array -> case.value.items?.resolve()
+                    ?.namedOr { if (case.value.uniqueItems == true) Named("Set") else Named("List") }
+                    ?.let { NamingContext.Nested(it, context) } ?: context
 
-            else -> context
+                else -> context
+            }
         }
-    }
 
     private fun nestedModel(resolved: Resolved<Schema>, caseContext: NamingContext): Model? =
         when (val model = resolved.toModel(caseContext)) {
@@ -530,115 +558,134 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
     fun toRequestBody(
         operation: Operation, body: RequestBody?, create: (NamingContext) -> NamingContext
     ): Route.Bodies =
-        Route.Bodies(body?.required == true, body?.content?.entries?.associate { (contentType, mediaType) ->
-            when {
-                ContentType.Application.Xml.match(contentType) -> TODO("Add support for XML.")
-                ContentType.Application.Json.match(contentType) -> {
-                    val json = mediaType.schema?.resolve()?.let { json ->
-                        val context = json.namedOr {
-                            val name = ensureNotNull(operation.operationId?.let { Named("${it}Request") }) {
-                                OpenAPIConstraintViolation("OperationId is required for request body inline schemas. Otherwise we cannot generate OperationIdRequest class name")
+        Route.Bodies(
+            body?.required == true,
+            body?.content?.entries?.associate { (contentType, mediaType) ->
+                when {
+                    ContentType.Application.Xml.match(contentType) -> TODO("Add support for XML.")
+                    ContentType.Application.Json.match(contentType) -> {
+                        val json = mediaType.schema?.resolve()?.let { json ->
+                            val context = json.namedOr {
+                                val name =
+                                    ensureNotNull(operation.operationId?.let { Named("${it}Request") }) {
+                                        OpenAPIConstraintViolation("OperationId is required for request body inline schemas. Otherwise we cannot generate OperationIdRequest class name")
+                                    }
+                                create(name)
                             }
-                            create(name)
-                        }
 
-                        Route.Body.Json.Defined(
-                            json.toModel(context).value, body.description, mediaType.extensions
-                        )
-                    } ?: Route.Body.Json.FreeForm(body.description, mediaType.extensions)
-                    Pair(ContentType.Application.Json, json)
-                }
-
-                ContentType.MultiPart.FormData.match(contentType) -> {
-                    val resolved = mediaType.schema?.resolve() ?: throw OpenAPIConstraintViolation(
-                        "$mediaType without a schema. Generation doesn't know what to do, please open a ticket!"
-                    )
-
-                    fun ctx(name: String): NamingContext = resolved.namedOr {
-                        val operationId = ensureNotNull(operation.operationId) {
-                            OpenAPIConstraintViolation("operationId currently required to generate inline schemas for operation parameters.")
-                        }
-                        create(NamingContext.RouteParam(name, operationId, "Request"))
+                            Route.Body.Json.Defined(
+                                json.toModel(context).value, body.description, mediaType.extensions
+                            )
+                        } ?: Route.Body.Json.FreeForm(body.description, mediaType.extensions)
+                        Pair(ContentType.Application.Json, json)
                     }
 
-                    val multipart = when (resolved) {
-                        is Resolved.Ref -> {
-                            val model = resolved.toModel(Named(resolved.name)) as Resolved.Ref
-                            Route.Body.Multipart.Ref(
-                                model.name, model.value, body.description, mediaType.extensions
+                    ContentType.MultiPart.FormData.match(contentType) -> {
+                        val resolved =
+                            mediaType.schema?.resolve() ?: throw OpenAPIConstraintViolation(
+                                "$mediaType without a schema. Generation doesn't know what to do, please open a ticket!"
+                            )
+
+                        fun ctx(name: String): NamingContext = resolved.namedOr {
+                            val operationId = ensureNotNull(operation.operationId) {
+                                OpenAPIConstraintViolation("operationId currently required to generate inline schemas for operation parameters.")
+                            }
+                            create(NamingContext.RouteParam(name, operationId, "Request"))
+                        }
+
+                        val multipart = when (resolved) {
+                            is Resolved.Ref -> {
+                                val model = resolved.toModel(Named(resolved.name)) as Resolved.Ref
+                                Route.Body.Multipart.Ref(
+                                    model.name, model.value, body.description, mediaType.extensions
+                                )
+                            }
+
+                            is Resolved.Value -> Route.Body.Multipart.Value(
+                                resolved.value.properties.map { (name, ref) ->
+                                    Route.Body.Multipart.FormData(
+                                        name, ref.resolve().toModel(ctx(name)).value
+                                    )
+                                }, body.description, mediaType.extensions
                             )
                         }
 
-                        is Resolved.Value -> Route.Body.Multipart.Value(
-                            resolved.value.properties.map { (name, ref) ->
-                                Route.Body.Multipart.FormData(
-                                    name, ref.resolve().toModel(ctx(name)).value
-                                )
-                            }, body.description, mediaType.extensions
-                        )
+                        Pair(ContentType.MultiPart.FormData, multipart)
                     }
 
-                    Pair(ContentType.MultiPart.FormData, multipart)
+                    ContentType.Application.OctetStream.match(contentType) -> Pair(
+                        ContentType.Application.OctetStream,
+                        Route.Body.OctetStream(body.description, mediaType.extensions)
+                    )
+
+                    else -> throw OpenAPIConstraintViolation("RequestBody content type: $this not yet supported.")
                 }
-
-                ContentType.Application.OctetStream.match(contentType) -> Pair(
-                    ContentType.Application.OctetStream,
-                    Route.Body.OctetStream(body.description, mediaType.extensions)
-                )
-
-                else -> throw OpenAPIConstraintViolation("RequestBody content type: $this not yet supported.")
-            }
-        }.orEmpty(), body?.extensions.orEmpty())
+            }.orEmpty(),
+            body?.extensions.orEmpty()
+        )
 
     private fun Response.isEmpty(): Boolean =
         headers.isEmpty() && content.isEmpty() && links.isEmpty() && extensions.isEmpty()
 
-    fun toResponses(operation: Operation, create: (NamingContext) -> NamingContext): Route.Returns = Route.Returns(
-        operation.responses.responses.entries.associate { (code, refOrResponse) ->
-            val statusCode = HttpStatusCode.fromValue(code)
-            val response = refOrResponse.get()
-            when {
-                response.content.contains("application/octet-stream") -> Pair(
-                    statusCode, Route.ReturnType(Model.OctetStream(response.description), response.extensions)
-                )
-
-                response.content.contains("text/plain") -> statusCode to Route.ReturnType(
-                    Model.Primitive.String(null, response.description, null), response.extensions
-                )
-
-                response.content.contains("application/json") -> {
-                    val mediaType = response.content.getValue("application/json")
-                    val route = when (val resolved = mediaType.schema?.resolve()) {
-                        is Resolved -> {
-                            val context = resolved.namedOr {
-                                val operationId = ensureNotNull(operation.operationId) {
-                                    OpenAPIConstraintViolation("OperationId is required for request body inline schemas. Otherwise we cannot generate OperationIdRequest class name")
-                                }
-                                create(NamingContext.RouteBody(operationId, "Response"))
-                            }
-                            Route.ReturnType(resolved.toModel(context).value, response.extensions)
-                        }
-
-                        null -> Route.ReturnType(
-                            if (Allowed(true).value) Model.FreeFormJson(response.description, null)
-                            else throw OpenAPIConstraintViolation(
-                                "Illegal State: No additional properties allowed on empty object."
-                            ), response.extensions
+    fun toResponses(operation: Operation, create: (NamingContext) -> NamingContext): Route.Returns =
+        Route.Returns(
+            operation.responses.responses.entries.associate { (code, refOrResponse) ->
+                val statusCode = HttpStatusCode.fromValue(code)
+                val response = refOrResponse.get()
+                when {
+                    response.content.contains("application/octet-stream") -> Pair(
+                        statusCode,
+                        Route.ReturnType(
+                            Model.OctetStream(response.description),
+                            response.extensions
                         )
-                    }
-                    Pair(statusCode, route)
-                }
-
-                response.isEmpty() -> Pair(
-                    statusCode, Route.ReturnType(
-                        Model.Primitive.String(null, response.description, null), response.extensions
                     )
-                )
 
-                else -> throw OpenAPIConstraintViolation("OpenAPI requires at least 1 valid response. $response")
-            }
-        }, operation.responses.extensions
-    )
+                    response.content.contains("text/plain") -> statusCode to Route.ReturnType(
+                        Model.Primitive.String(null, response.description, null),
+                        response.extensions
+                    )
+
+                    response.content.contains("application/json") -> {
+                        val mediaType = response.content.getValue("application/json")
+                        val route = when (val resolved = mediaType.schema?.resolve()) {
+                            is Resolved -> {
+                                val context = resolved.namedOr {
+                                    val operationId = ensureNotNull(operation.operationId) {
+                                        OpenAPIConstraintViolation("OperationId is required for request body inline schemas. Otherwise we cannot generate OperationIdRequest class name")
+                                    }
+                                    create(NamingContext.RouteBody(operationId, "Response"))
+                                }
+                                Route.ReturnType(
+                                    resolved.toModel(context).value,
+                                    response.extensions
+                                )
+                            }
+
+                            null -> Route.ReturnType(
+                                if (Allowed(true).value) Model.FreeFormJson(
+                                    response.description,
+                                    null
+                                )
+                                else throw OpenAPIConstraintViolation(
+                                    "Illegal State: No additional properties allowed on empty object."
+                                ), response.extensions
+                            )
+                        }
+                        Pair(statusCode, route)
+                    }
+
+                    response.isEmpty() -> Pair(
+                        statusCode, Route.ReturnType(
+                            Model.Primitive.String(null, response.description, null),
+                            response.extensions
+                        )
+                    )
+
+                    else -> throw OpenAPIConstraintViolation("OpenAPI requires at least 1 valid response. $response")
+                }
+            }, operation.responses.extensions
+        )
 
     /**
      * Allows tracking whether data was referenced by name, or defined inline. This is important to be

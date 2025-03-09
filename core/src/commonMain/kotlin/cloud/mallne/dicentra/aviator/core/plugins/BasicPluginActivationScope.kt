@@ -8,7 +8,7 @@ class BasicPluginActivationScope : AviatorPluginActivationScope {
         config: ConfigScope.() -> Unit
     ): AviatorPluginInstance {
         val instance = plugin.install(config)
-        registry + instance
+        registry += instance
         return instance
     }
 }
