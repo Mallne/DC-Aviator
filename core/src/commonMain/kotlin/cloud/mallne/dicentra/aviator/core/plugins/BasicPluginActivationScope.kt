@@ -11,4 +11,8 @@ class BasicPluginActivationScope : AviatorPluginActivationScope {
         registry += instance
         return instance
     }
+
+    override fun add(instance: AviatorPluginInstance) {
+        registry += instance
+    }
 }

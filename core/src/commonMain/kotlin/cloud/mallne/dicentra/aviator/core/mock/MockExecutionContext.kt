@@ -1,5 +1,6 @@
 package cloud.mallne.dicentra.aviator.core.mock
 
+import cloud.mallne.dicentra.aviator.core.InternalAviatorAPI
 import cloud.mallne.dicentra.aviator.core.MutableRequestOptions
 import cloud.mallne.dicentra.aviator.core.NoBody
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionContext
@@ -14,7 +15,7 @@ import kotlin.reflect.KClass
 import kotlin.reflect.KType
 
 @Serializable
-data class MockExecutionContext(
+data class MockExecutionContext @OptIn(InternalAviatorAPI::class) constructor(
     override var stage: AviatorExecutionStages = AviatorExecutionStages.Unstarted,
     override val dataHolder: MockedAviatorService,
     override val outputClazz: Triple<KClass<JsonElement>, KType, KSerializer<JsonElement>> = AviatorServiceUtils.makeClazzDefinition(),

@@ -5,4 +5,6 @@ interface AviatorPluginActivationScope {
         plugin: AviatorPlugin<out ConfigScope>,
         config: ConfigScope.() -> Unit = {}
     ): AviatorPluginInstance
+
+    fun add(instance: AviatorPluginInstance)
 }

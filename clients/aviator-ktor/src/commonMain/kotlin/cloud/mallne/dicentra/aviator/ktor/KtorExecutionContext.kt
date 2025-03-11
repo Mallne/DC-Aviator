@@ -1,5 +1,6 @@
 package cloud.mallne.dicentra.aviator.ktor
 
+import cloud.mallne.dicentra.aviator.core.InternalAviatorAPI
 import cloud.mallne.dicentra.aviator.core.MutableRequestOptions
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionContext
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionStages
@@ -14,7 +15,9 @@ import kotlinx.serialization.json.JsonElement
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
 
-data class KtorExecutionContext<O : @Serializable Any, B : @Serializable Any>(
+data class KtorExecutionContext<O : @Serializable Any, B : @Serializable Any> @OptIn(
+    InternalAviatorAPI::class
+) constructor(
     override var stage: AviatorExecutionStages = AviatorExecutionStages.Unstarted,
     override val dataHolder: KtorAviatorService,
     override val outputClazz: Triple<KClass<O>, KType, KSerializer<O>>,

@@ -1,5 +1,6 @@
 package cloud.mallne.dicentra.aviator.core.execution
 
+import cloud.mallne.dicentra.aviator.core.InternalAviatorAPI
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginInstance
 import kotlinx.serialization.Serializable
 
@@ -14,6 +15,7 @@ class AviatorExecutionPipeline<C : AviatorExecutionContext<in O, in B>, O : @Ser
         return context
     }
 
+    @OptIn(InternalAviatorAPI::class)
     @Suppress("UNCHECKED_CAST")
     private tailrec suspend fun escalate() {
         context as AviatorExecutionContext<@Serializable Any, @Serializable Any>
