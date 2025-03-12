@@ -21,7 +21,7 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
 
     override suspend fun onPathMatching(context: KtorExecutionContext<O, B>) {
         context.networkChain.addAll(context.dataHolder.catchPaths(context.requestParams).map {
-            context.logger?.trace("Creating Network Chain with target $it")
+            context.log(KtorLoggingIds.TRACE_CREATE_CHAIN) { trace("Creating Network Chain with target $it") }
             NetworkChain(it)
         })
     }
@@ -50,7 +50,7 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
     override suspend fun onRequesting(context: KtorExecutionContext<O, B>) {
         val chain = context.networkChain.filter { it.request != null && it.response == null }
         chain.manualPipeline { net, next ->
-            context.logger?.trace("Creating Network Request for ${net.url}")
+            context.log(KtorLoggingIds.TRACE_CREATE_REQUEST) { trace("Creating Network Request for ${net.url}") }
             val resp = context.dataHolder.client.request {
                 url(net.url)
                 if (context.body != null && net.request?.outgoingContent != null && context.bodyClazz != null) {
@@ -76,7 +76,7 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
 
         val successful = context.networkChain.find { (it.response?.status?.value ?: 500) > 400 }
         if (successful != null) {
-            context.logger?.warn("No responses returned ok")
+            context.log(KtorLoggingIds.WARN_NO_RESPONSES) { warn("No responses returned ok") }
         }
     }
 
@@ -85,16 +85,20 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
         context.result = try {
             successful?.response?.parseBody(context.outputClazz.third, context.dataHolder.json)
         } catch (e: SerializationException) {
-            context.logger?.warn(
-                "Serialization exception, maybe a Plugin will Handle the Object",
-                e
-            )
+            context.log(KtorLoggingIds.WARN_OPTIONAL_FINALIZATION) {
+                warn(
+                    "Serialization exception, maybe a Plugin will Handle the Object",
+                    e
+                )
+            }
             null
         } catch (e: IllegalArgumentException) {
-            context.logger?.warn(
-                "There seems to be Parsing Problems, maybe a Plugin will handle this",
-                e
-            )
+            context.log(KtorLoggingIds.WARN_OPTIONAL_FINALIZATION) {
+                warn(
+                    "There seems to be Parsing Problems, maybe a Plugin will handle this",
+                    e
+                )
+            }
             null
         }
     }

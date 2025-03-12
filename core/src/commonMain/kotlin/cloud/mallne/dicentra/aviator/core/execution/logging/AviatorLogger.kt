@@ -1,4 +1,4 @@
-package cloud.mallne.dicentra.aviator.core.execution
+package cloud.mallne.dicentra.aviator.core.execution.logging
 
 interface AviatorLogger {
     fun error(message: String)

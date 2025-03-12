@@ -4,7 +4,7 @@ import cloud.mallne.dicentra.aviator.core.InternalAviatorAPI
 import cloud.mallne.dicentra.aviator.core.MutableRequestOptions
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionContext
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionStages
-import cloud.mallne.dicentra.aviator.core.execution.AviatorLogger
+import cloud.mallne.dicentra.aviator.core.execution.logging.AviatorLogger
 import cloud.mallne.dicentra.aviator.core.io.NetworkChain
 import cloud.mallne.dicentra.aviator.core.io.NetworkHeader
 import cloud.mallne.dicentra.aviator.ktor.io.AvKtorRequest
@@ -28,5 +28,6 @@ data class KtorExecutionContext<O : @Serializable Any, B : @Serializable Any> @O
     override val options: MutableRequestOptions = mutableMapOf(),
     override val networkChain: MutableList<NetworkChain<AvKtorRequest, AvKtorResponse, NetworkHeader>> = mutableListOf(),
     override var requestParams: Map<String, List<String>> = mutableMapOf(),
+    @property:InternalAviatorAPI
     override var logger: AviatorLogger? = null,
 ) : AviatorExecutionContext<O, B>

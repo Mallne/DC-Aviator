@@ -11,8 +11,12 @@ import kotlinx.serialization.Serializable
 
 class InterceptionPluginConfig : AviatorPluginConfigScope {
     override var serviceFilter: MutableList<ServiceLocator> = mutableListOf()
-    override var activationStrategy: PluginActivationStrategy = PluginActivationStrategy.EnabledByOAS
-    var pipeline: PluginStagedExecutor<AviatorExecutionContext<@Serializable Any, @Serializable Any>, @Serializable Any, @Serializable Any> = PluginStagedExecutorBuilder.steps {  }
+    override var activationStrategy: PluginActivationStrategy =
+        PluginActivationStrategy.EnabledByOAS
+    override val silentLoggingTags: MutableList<String> = mutableListOf()
+    var pipeline: PluginStagedExecutor<AviatorExecutionContext<@Serializable Any, @Serializable Any>, @Serializable Any, @Serializable Any> =
+        PluginStagedExecutorBuilder.steps { }
+
     fun steps(dsl: BuilderDSL<AviatorExecutionContext<@Serializable Any, @Serializable Any>, @Serializable Any, @Serializable Any>.() -> Unit) {
         pipeline = PluginStagedExecutorBuilder.steps(dsl)
     }
