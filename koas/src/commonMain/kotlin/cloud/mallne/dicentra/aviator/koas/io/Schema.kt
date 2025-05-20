@@ -8,11 +8,7 @@ import cloud.mallne.dicentra.aviator.koas.extensions.KSerializerWithExtensions
 import cloud.mallne.dicentra.aviator.koas.extensions.ReferenceOr
 import cloud.mallne.dicentra.aviator.koas.info.ExternalDocs
 import cloud.mallne.dicentra.polyfill.ensure
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.KeepGeneratedSerializer
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+import kotlinx.serialization.*
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -96,7 +92,7 @@ data class Schema(
 
         data class Array(val types: List<Basic>) : Type
 
-        enum class Basic(val value: kotlin.String) : Type {
+        enum class Basic(val value: String) : Type {
             @SerialName("array")
             Array("array"),
 
@@ -119,7 +115,7 @@ data class Schema(
             String("string");
 
             companion object {
-                fun fromString(value: kotlin.String): Basic? =
+                fun fromString(value: String): Basic? =
                     entries.find { it.value.equals(value, ignoreCase = true) }
             }
         }

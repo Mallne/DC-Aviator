@@ -15,7 +15,7 @@ object TemplateParser {
         var ppath = url
         val matches = regex.findAll(url)//Groups
         matches.forEach { match ->
-            val (prefix, template, postfix) = match.destructured
+            val (_, template, _) = match.destructured
             val pparam = variables[template]
             ensureNotNull(pparam) {
                 OpenAPIConstraintViolation("Parameter $template not found")
