@@ -5,7 +5,7 @@ agp = "8.10.1"
 androidSdk = "11.2.0"
 android-minSdk = "24"
 android-compileSdk = "34"
-appcompat = "1.7.0"
+appcompat = "1.7.1"
 appUpdate = "2.1.0"
 browser = "1.8.0"
 coreKtx = "1.16.0"
@@ -24,17 +24,17 @@ navigationCompose = "2.8.4"
 playServicesLocation = "21.3.0"
 ui = "1.7.5"
 volley = "1.2.1"
-kotlin = "2.1.20"
+kotlin = "2.1.21"
 realm = "2.1.0"
-ksp = "2.1.20-1.0.32"
+ksp = "2.1.21-2.0.2"
 serialization = "1.8.1"
 appauth = "0.11.1"
 lifecycleRuntimeKtx = "2.8.7"
 composeBom = "2024.11.00"
-ktor = "3.1.2"
+ktor = "3.2.0"
 logback = "1.5.18"
-koin = "4.0.4"
-koin-annotations = "2.0.0"
+koin = "4.1.0"
+koin-annotations = "2.1.0"
 dc-polyfill = "1.0.0-SNAPSHOT"
 dc-aviator = "1.0.0-SNAPSHOT"
 
@@ -76,4 +76,4 @@ ktor = { id = "io.ktor.plugin", version.ref = "ktor" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kjvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kmp = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
-mavenPublish = { id = "com.vanniktech.maven.publish", version = "0.31.0" }
+mavenPublish = { id = "com.vanniktech.maven.publish", version = "0.32.0" }
