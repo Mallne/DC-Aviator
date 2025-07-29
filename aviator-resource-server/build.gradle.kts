@@ -33,5 +33,5 @@ dependencies {
     implementation(libs.ktor.server.netty)
     implementation(libs.logback.classic)
     implementation(libs.ktor.server.config.yaml)
-    implementation(project(":clients:aviator-ktor"))
+    implementation(project(":clients:ktor"))
 }

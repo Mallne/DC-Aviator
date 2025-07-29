@@ -32,11 +32,7 @@ kotlin {
                 implementation(libs.kotlinx.serialization.json)
                 implementation(libs.ktor.http)
                 //Dependency Substitution does not work in KMP for whatever Reason
-                if (findProject(":polyfill") != null) {
-                    implementation(project(":polyfill"))
-                } else {
-                    implementation(libs.dc.polyfill)
-                }
+                implementation(libs.dc.polyfill)
                 api(project(":koas"))
             }
         }

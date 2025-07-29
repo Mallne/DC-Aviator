@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
-group = "cloud.mallne.dicentra.weaver.plugins"
+group = "cloud.mallne.dicentra.aviator.plugin"
 version = "1.0.0-SNAPSHOT"
 description = "DiCentra Aviator Plugin that uses Weavers Object Mapping to translate input and Output"
 
@@ -62,13 +62,7 @@ kotlin {
             dependencies {
                 implementation(libs.kotlinx.serialization.json)
                 implementation(project(":core"))
-                //Dependency Substitution does not work in KMP for whatever Reason
-                if (findProject(":polyfill") != null) {
-                    implementation(project(":polyfill"))
-                } else {
-                    implementation(libs.dc.polyfill)
-                }
-                implementation(project(":koas"))
+                implementation(libs.dc.polyfill)
                 implementation(libs.ktor.client.core)
             }
         }
@@ -76,7 +70,7 @@ kotlin {
 }
 
 android {
-    namespace = "cloud.mallne.dicentra.weaver.plugins"
+    namespace = "cloud.mallne.dicentra.aviator.plugins"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
     defaultConfig {
         minSdk = libs.versions.android.minSdk.get().toInt()

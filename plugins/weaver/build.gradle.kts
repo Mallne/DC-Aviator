@@ -1,9 +1,9 @@
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
-group = "cloud.mallne.dicentra.aviator"
+group = "cloud.mallne.dicentra.aviator.plugin"
 version = "1.0.0-SNAPSHOT"
-description = "DiCentra Aviator preconfigured for Spring Reactive."
+description = "DiCentra Aviator Plugin that uses Weaver to translate input and Output"
 
 plugins {
     alias(libs.plugins.mavenPublish)
@@ -20,9 +20,8 @@ publishing {
             version = project.version.toString()
 
             pom {
-                name = "DiCentra Aviator KTor"
-                description =
-                    "Ktor Implementation of DiCentra Aviator"
+                name = "DiCentra Weaver X Aviator"
+                description = "DiCentra Aviator Plugin that uses Weaver to translate input and Output"
                 inceptionYear = "2025"
                 developers {
                     developer {
@@ -62,22 +61,16 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(libs.kotlinx.serialization.json)
+                implementation(project(":core"))
+                implementation(libs.dc.weaver.core)
                 implementation(libs.ktor.client.core)
-                api(project(":core"))
-                api(project(":koas"))
-                //Dependency Substitution does not work in KMP for whatever Reason
-                if (findProject(":polyfill") != null) {
-                    implementation(project(":polyfill"))
-                } else {
-                    implementation(libs.dc.polyfill)
-                }
             }
         }
     }
 }
 
 android {
-    namespace = "cloud.mallne.dicentra.aviator"
+    namespace = "cloud.mallne.dicentra.aviator.plugins"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
     defaultConfig {
         minSdk = libs.versions.android.minSdk.get().toInt()

@@ -35,13 +35,16 @@ ktor = "3.2.1"
 logback = "1.5.18"
 koin = "4.1.0"
 koin-annotations = "2.1.0"
+antlr = "1.0.5"
 dc-polyfill = "1.0.0-SNAPSHOT"
 dc-aviator = "1.0.0-SNAPSHOT"
+dc-weaver = "1.0.0-SNAPSHOT"
 
 [libraries]
 appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
 core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
+antlr-runtime = { module = "com.strumenta:antlr-kotlin-runtime", version.ref = "antlr" }
 material = { module = "com.google.android.material:material", version.ref = "material" }
 volley = { module = "com.android.volley:volley", version.ref = "volley" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
@@ -65,11 +68,19 @@ koin-logger-slf4j = { module = "io.insert-koin:koin-logger-slf4j", version.ref =
 koin-annotations = { module = "io.insert-koin:koin-annotations", version.ref = "koin-annotations" }
 koin-annotations-ksp = { module = "io.insert-koin:koin-ksp-compiler", version.ref = "koin-annotations" }
 dc-polyfill = { module = "cloud.mallne.dicentra:polyfill", version.ref = "dc-polyfill" }
-
-
+dc-weaver-tokenizer = { module = "cloud.mallne.dicentra.weaver:tokenizer", version.ref = "dc-weaver" }
+dc-weaver-core = { module = "cloud.mallne.dicentra.weaver:core", version.ref = "dc-weaver" }
+dc-aviator-core = { module = "cloud.mallne.dicentra.aviator:core", version.ref = "dc-aviator" }
+dc-aviator-koas = { module = "cloud.mallne.dicentra.aviator:koas", version.ref = "dc-aviator" }
+dc-aviator-client-ktor = { module = "cloud.mallne.dicentra.aviator.client:ktor", version.ref = "dc-aviator" }
+dc-aviator-plugin-interception = { module = "cloud.mallne.dicentra.aviator.plugin:interception", version.ref = "dc-aviator" }
+dc-aviator-plugin-translationkeys = { module = "cloud.mallne.dicentra.aviator.plugin:translation-keys", version.ref = "dc-aviator" }
+dc-aviator-plugin-weaver = { module = "cloud.mallne.dicentra.aviator.plugin:weaver", version.ref = "dc-aviator" }
+dc-aviator-ressourceserver = { module = "cloud.mallne.dicentra.aviator:aviator-resourcee-server", version.ref = "dc-aviator" }
 
 [plugins]
 android-library = { id = "com.android.library", version.ref = "agp" }
+antlr = { id = "com.strumenta.antlr-kotlin", version.ref = "antlr" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 ktor = { id = "io.ktor.plugin", version.ref = "ktor" }
