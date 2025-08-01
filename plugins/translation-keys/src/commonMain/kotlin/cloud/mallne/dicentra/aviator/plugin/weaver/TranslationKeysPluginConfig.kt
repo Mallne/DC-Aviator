@@ -1,4 +1,4 @@
-package cloud.mallne.dicentra.aviator.plugins.weaver
+package cloud.mallne.dicentra.aviator.plugin.weaver
 
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginConfigScope
 import cloud.mallne.dicentra.aviator.core.plugins.PluginActivationStrategy

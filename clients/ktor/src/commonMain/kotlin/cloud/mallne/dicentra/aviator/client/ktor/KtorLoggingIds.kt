@@ -1,4 +1,4 @@
-package cloud.mallne.dicentra.aviator.ktor
+package cloud.mallne.dicentra.aviator.client.ktor
 
 object KtorLoggingIds {
     const val TRACE_CREATE_CHAIN = "T_create.chain"

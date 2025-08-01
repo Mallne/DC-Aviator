@@ -1,4 +1,4 @@
-package cloud.mallne.dicentra.aviator.plugins.weaver
+package cloud.mallne.dicentra.aviator.plugin.weaver
 
 import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.`x-dicentra-aviator-serviceOptions`
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionContext
@@ -12,7 +12,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.serializer
 
 object TranslationKeysPlugin : AviatorPlugin<TranslationKeysPluginConfig> {
-    val RESULT = "WV-TranslationKeys-Result"
+    const val RESULT = "WV-TranslationKeys-Result"
     override val identity: String = "DC-WVxAV-TranslationKeys"
     override fun install(config: TranslationKeysPluginConfig.() -> Unit): AviatorPluginInstance {
         val pluginConfig = TranslationKeysPluginConfig()

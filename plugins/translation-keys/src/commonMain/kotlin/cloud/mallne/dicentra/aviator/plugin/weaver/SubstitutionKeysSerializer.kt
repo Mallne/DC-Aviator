@@ -1,4 +1,4 @@
-package cloud.mallne.dicentra.aviator.plugins.weaver
+package cloud.mallne.dicentra.aviator.plugin.weaver
 
 import kotlinx.serialization.json.*
 

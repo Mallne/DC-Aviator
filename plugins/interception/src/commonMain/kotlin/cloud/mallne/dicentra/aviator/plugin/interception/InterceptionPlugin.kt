@@ -1,4 +1,4 @@
-package cloud.mallne.dicentra.aviator.plugins.interception
+package cloud.mallne.dicentra.aviator.plugin.interception
 
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPlugin
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginInstance

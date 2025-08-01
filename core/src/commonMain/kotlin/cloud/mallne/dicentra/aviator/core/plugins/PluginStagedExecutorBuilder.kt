@@ -8,11 +8,12 @@ import cloud.mallne.dicentra.polyfill.probe
 import kotlinx.serialization.Serializable
 
 object PluginStagedExecutorBuilder {
+
     @OptIn(InternalAviatorAPI::class)
     inline fun <CTX : AviatorExecutionContext<in O, in B>, O : @Serializable Any, B : @Serializable Any> steps(
         dsl: BuilderDSL<CTX, O, B>.() -> Unit
     ): PluginStagedExecutor<CTX, O, B> {
-        val configuration = BuilderDSL<CTX, O, B>()
+        val configuration = BuilderDSLImpl<CTX, O, B>()
         dsl.invoke(configuration)
         return object : PluginStagedExecutor<CTX, O, B> {
             override suspend fun beforeInvocation(context: CTX): Unit =
@@ -69,26 +70,44 @@ object PluginStagedExecutorBuilder {
             override suspend fun afterFinished(context: CTX) {
                 configuration.afters[AviatorExecutionStages.Finished]?.invoke(context)
             }
+
+            override fun preExecution(context: CTX) {
+                configuration.preExecution.invoke(context)
+            }
         }
     }
 
-    class BuilderDSL<CTX : AviatorExecutionContext<in O, in B>, O : @Serializable Any, B : @Serializable Any> {
+    interface BuilderDSL<CTX : AviatorExecutionContext<in O, in B>, O : @Serializable Any, B : @Serializable Any> {
+        fun after(stage: AviatorExecutionStages, action: suspend (CTX) -> Unit)
+        fun before(stage: AviatorExecutionStages, action: suspend (CTX) -> Unit)
+        fun preExecution(action: (CTX) -> Unit)
+    }
+
+    class BuilderDSLImpl<CTX : AviatorExecutionContext<in O, in B>, O : @Serializable Any, B : @Serializable Any>: BuilderDSL<CTX, O, B> {
         @InternalAviatorAPI
         var afters: MutableMap<AviatorExecutionStages, suspend (CTX) -> Unit> = mutableMapOf()
 
         @InternalAviatorAPI
         var befores: MutableMap<AviatorExecutionStages, suspend (CTX) -> Unit> = mutableMapOf()
 
+        @InternalAviatorAPI
+        var preExecution: (CTX) -> Unit = {}
+
         @OptIn(InternalAviatorAPI::class)
-        fun after(stage: AviatorExecutionStages, action: suspend (CTX) -> Unit) {
+        override fun after(stage: AviatorExecutionStages, action: suspend (CTX) -> Unit) {
             probe(stage != AviatorExecutionStages.Unstarted) { ServiceException("A Stage of $stage cannot be executed. It serves a the Default value, please use the next up in the Lifecycle.") }
             afters[stage] = action
         }
 
         @OptIn(InternalAviatorAPI::class)
-        fun before(stage: AviatorExecutionStages, action: suspend (CTX) -> Unit) {
+        override fun before(stage: AviatorExecutionStages, action: suspend (CTX) -> Unit) {
             probe(stage != AviatorExecutionStages.Unstarted) { ServiceException("A Stage of $stage cannot be executed. It serves a the Default value, please use the next up in the Lifecycle.") }
             befores[stage] = action
+        }
+
+        @OptIn(InternalAviatorAPI::class)
+        override fun preExecution(action: (CTX) -> Unit) {
+            preExecution = action
         }
     }
 }

@@ -1,5 +1,7 @@
-package cloud.mallne.dicentra.aviator.ktor
+package cloud.mallne.dicentra.aviator.client.ktor
 
+import cloud.mallne.dicentra.aviator.client.ktor.io.AvKtorRequest
+import cloud.mallne.dicentra.aviator.client.ktor.io.AvKtorResponse
 import cloud.mallne.dicentra.aviator.core.InternalAviatorAPI
 import cloud.mallne.dicentra.aviator.core.MutableRequestOptions
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionContext
@@ -7,8 +9,6 @@ import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionStages
 import cloud.mallne.dicentra.aviator.core.execution.logging.AviatorLogger
 import cloud.mallne.dicentra.aviator.core.io.NetworkChain
 import cloud.mallne.dicentra.aviator.core.io.NetworkHeader
-import cloud.mallne.dicentra.aviator.ktor.io.AvKtorRequest
-import cloud.mallne.dicentra.aviator.ktor.io.AvKtorResponse
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement

@@ -1,4 +1,4 @@
-package cloud.mallne.dicentra.aviator.ktor
+package cloud.mallne.dicentra.aviator.client.ktor
 
 import cloud.mallne.dicentra.aviator.core.APIToServiceConverter
 import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec

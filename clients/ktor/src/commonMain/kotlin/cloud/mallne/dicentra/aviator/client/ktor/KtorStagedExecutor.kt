@@ -1,18 +1,18 @@
-package cloud.mallne.dicentra.aviator.ktor
+package cloud.mallne.dicentra.aviator.client.ktor
 
+import cloud.mallne.dicentra.aviator.client.ktor.io.AvKtorRequest
+import cloud.mallne.dicentra.aviator.client.ktor.io.AvKtorResponse
+import cloud.mallne.dicentra.aviator.client.ktor.io.manualPipeline
 import cloud.mallne.dicentra.aviator.core.execution.StagedExecutor
 import cloud.mallne.dicentra.aviator.core.io.NetworkChain
 import cloud.mallne.dicentra.aviator.core.io.NetworkHeader
-import cloud.mallne.dicentra.aviator.ktor.io.AvKtorRequest
-import cloud.mallne.dicentra.aviator.ktor.io.AvKtorResponse
-import cloud.mallne.dicentra.aviator.ktor.io.manualPipeline
 import io.ktor.client.call.body
 import io.ktor.client.request.header
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
 import io.ktor.client.request.url
-import io.ktor.http.Url
-import io.ktor.util.reflect.TypeInfo
+import io.ktor.http.*
+import io.ktor.util.reflect.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 

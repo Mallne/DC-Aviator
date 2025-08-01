@@ -18,4 +18,5 @@ interface PluginStagedExecutor<CTX : AviatorExecutionContext<in O, in B>, O : @S
     suspend fun afterRequesting(context: CTX): Unit = Unit
     suspend fun afterPaintingResponse(context: CTX): Unit = Unit
     suspend fun afterFinished(context: CTX): Unit = Unit
+    fun preExecution(context: CTX): Unit = Unit
 }

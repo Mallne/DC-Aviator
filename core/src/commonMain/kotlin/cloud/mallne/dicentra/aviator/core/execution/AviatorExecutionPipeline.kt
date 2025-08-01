@@ -10,6 +10,13 @@ class AviatorExecutionPipeline<C : AviatorExecutionContext<in O, in B>, O : @Ser
     val plugins: List<AviatorPluginInstance>,
     val executor: StagedExecutor<C, O, B>
 ) {
+    init {
+        context as AviatorExecutionContext<@Serializable Any, @Serializable Any>
+        plugins.forEach {
+            it.x.preExecution(context)
+        }
+    }
+
     suspend fun run(): C {
         escalate()
         return context

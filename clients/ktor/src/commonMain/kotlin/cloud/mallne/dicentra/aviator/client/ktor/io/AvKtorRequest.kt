@@ -1,4 +1,4 @@
-package cloud.mallne.dicentra.aviator.ktor.io
+package cloud.mallne.dicentra.aviator.client.ktor.io
 
 import cloud.mallne.dicentra.aviator.core.io.NetworkHeader
 import cloud.mallne.dicentra.aviator.core.io.NetworkRequest
