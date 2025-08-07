@@ -40,7 +40,6 @@ data class KtorAviatorService(
         options: RequestOptions = emptyMap(),
         requestParams: Map<String, List<String>> = emptyMap()
     ): KtorExecutionContext<O, B> {
-
         val executor = KtorStagedExecutor<O, B>()
         val pipeline = AviatorExecutionPipeline(
             context = KtorExecutionContext(

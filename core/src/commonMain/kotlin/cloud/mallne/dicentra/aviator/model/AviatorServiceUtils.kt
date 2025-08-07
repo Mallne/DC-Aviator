@@ -1,9 +1,14 @@
 package cloud.mallne.dicentra.aviator.model
 
+import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.`x-dicentra-aviator-serviceDelegateCall`
+import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.`x-dicentra-aviator-serviceOptions`
 import cloud.mallne.dicentra.aviator.core.AviatorServiceDataHolder
 import cloud.mallne.dicentra.aviator.core.InflatedServiceOptions
 import cloud.mallne.dicentra.aviator.core.ServiceOptions
+import cloud.mallne.dicentra.aviator.koas.OpenAPI
+import cloud.mallne.dicentra.aviator.koas.typed.Route
 import cloud.mallne.dicentra.aviator.koas.typed.TemplateParser.parsePath
+import cloud.mallne.dicentra.aviator.koas.typed.routes
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.serializer
@@ -40,6 +45,17 @@ object AviatorServiceUtils {
         val pathSlug = dataHolder.route.parsePath(requestParams)
         val serverSlugs = dataHolder.oas.servers.map { "${it.parsePath(requestParams)}$pathSlug" }
         return serverSlugs
+    }
+
+    fun extractServiceLocators(oas: OpenAPI): List<Pair<ServiceLocator, Route>> {
+        val routes = oas.routes()
+        val locators = routes.mapNotNull {
+            val l = it.`x-dicentra-aviator-serviceDelegateCall`
+            if (l != null) {
+                ServiceLocator(l) to it
+            } else null
+        }
+        return locators
     }
 
     inline fun <reified T : @Serializable Any> makeClazzDefinition(
