@@ -3,22 +3,21 @@ package cloud.mallne.dicentra.aviator.core.mock
 import cloud.mallne.dicentra.aviator.core.APIToServiceConverter
 import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec
 import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.`x-dicentra-aviator`
+import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.`x-dicentra-aviator-pluginMaterialization`
 import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.`x-dicentra-aviator-serviceDelegateCall`
 import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.`x-dicentra-aviator-serviceOptions`
 import cloud.mallne.dicentra.aviator.core.AviatorServiceDataHolder
-import cloud.mallne.dicentra.aviator.core.ServiceOptions
+import cloud.mallne.dicentra.aviator.core.InternalAviatorAPI
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginActivationScope
-import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginInstance
-import cloud.mallne.dicentra.aviator.core.plugins.BasicPluginActivationScope
 import cloud.mallne.dicentra.aviator.exceptions.AviatorValidationException
 import cloud.mallne.dicentra.aviator.koas.OpenAPI
-import cloud.mallne.dicentra.aviator.koas.typed.Route
 import cloud.mallne.dicentra.aviator.koas.typed.routes
 import cloud.mallne.dicentra.aviator.model.ServiceLocator
 import cloud.mallne.dicentra.polyfill.ensure
 import cloud.mallne.dicentra.polyfill.ensureNotNull
 import kotlinx.serialization.json.Json
 
+@OptIn(InternalAviatorAPI::class)
 class MockConverter(
     val json: Json = Json
 ) : APIToServiceConverter {
@@ -35,36 +34,25 @@ class MockConverter(
         }
         val registry = crystallizePlugins(plugins)
         val routes = api.routes()
-        val routing = mutableListOf<Triple<ServiceLocator, Route, ServiceOptions>>()
-        routes.forEach {
+        val services = routes.mapNotNull {
             val l = it.`x-dicentra-aviator-serviceDelegateCall`
             val options = it.`x-dicentra-aviator-serviceOptions`
+            val pluginsRequested = it.`x-dicentra-aviator-pluginMaterialization`
             if (l != null && options != null) {
-                routing.add(Triple(ServiceLocator(l), it, options))
-            }
-        }
-        val services = routing.map { (locator, route, options) ->
-            val pluginsForRoute = registry.filter { inst ->
-                inst.configurationBundle.serviceFilter.isEmpty() || inst.configurationBundle.serviceFilter.map { it.toString() }
-                    .contains(locator.toString())
-            }
-
-            val service = MockedAviatorService(
-                serviceLocator = locator,
-                options = options,
-                plugins = pluginsForRoute,
-                route = route,
-                oas = api,
-                json = json,
-            )
-            service
+                val locator = ServiceLocator(l)
+                val pluginsForRoute = pluginsForRoute(registry, locator, pluginsRequested ?: mapOf())
+                MockedAviatorService(
+                    serviceLocator = locator,
+                    options = options,
+                    plugins = pluginsForRoute,
+                    route = it,
+                    oas = api,
+                    json = json,
+                )
+            } else null
         }
         return services
     }
 
-    private fun crystallizePlugins(plugins: AviatorPluginActivationScope.() -> Unit): List<AviatorPluginInstance> {
-        val scope = BasicPluginActivationScope()
-        plugins.invoke(scope)
-        return scope.registry
-    }
+
 }

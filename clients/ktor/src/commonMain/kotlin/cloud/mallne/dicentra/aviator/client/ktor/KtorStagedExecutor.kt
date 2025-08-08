@@ -6,11 +6,8 @@ import cloud.mallne.dicentra.aviator.client.ktor.io.manualPipeline
 import cloud.mallne.dicentra.aviator.core.execution.StagedExecutor
 import cloud.mallne.dicentra.aviator.core.io.NetworkChain
 import cloud.mallne.dicentra.aviator.core.io.NetworkHeader
-import io.ktor.client.call.body
-import io.ktor.client.request.header
-import io.ktor.client.request.request
-import io.ktor.client.request.setBody
-import io.ktor.client.request.url
+import io.ktor.client.call.*
+import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.util.reflect.*
 import kotlinx.serialization.Serializable
@@ -34,7 +31,7 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
                 url = Url(net.url),
                 outgoingContent = if (context.body != null && context.bodyClazz != null) {
                     context.dataHolder.json.encodeToJsonElement(
-                        context.bodyClazz.third,
+                        context.bodyClazz!!.third,
                         context.body!!
                     )
                 } else {
@@ -56,7 +53,7 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
                 if (context.body != null && net.request?.outgoingContent != null && context.bodyClazz != null) {
                     setBody(
                         context.body,
-                        TypeInfo(context.bodyClazz.first, context.bodyClazz.second)
+                        TypeInfo(context.bodyClazz!!.first, context.bodyClazz!!.second)
                     )
                 }
                 method = net.request!!.method

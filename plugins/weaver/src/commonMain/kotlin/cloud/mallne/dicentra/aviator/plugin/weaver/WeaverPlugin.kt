@@ -5,7 +5,6 @@ import cloud.mallne.dicentra.aviator.core.plugins.AviatorPlugin
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginInstance
 import cloud.mallne.dicentra.aviator.core.plugins.PluginStagedExecutorBuilder
 import cloud.mallne.dicentra.aviator.model.AviatorServiceUtils
-import cloud.mallne.dicentra.aviator.plugins.weaver.WVPInstance
 import kotlinx.serialization.SerializationException
 
 object WeaverPlugin : AviatorPlugin<WeaverPluginConfig> {

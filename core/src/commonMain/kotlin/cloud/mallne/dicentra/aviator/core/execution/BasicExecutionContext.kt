@@ -20,7 +20,7 @@ data class BasicExecutionContext<O : @Serializable Any, B : @Serializable Any> @
     override var stage: AviatorExecutionStages = AviatorExecutionStages.Unstarted,
     override val dataHolder: AviatorServiceDataHolder,
     override val outputClazz: Triple<KClass<O>, KType, KSerializer<O>>,
-    override val bodyClazz: Triple<KClass<B>, KType, KSerializer<B>>? = null,
+    override var bodyClazz: Triple<KClass<B>, KType, KSerializer<B>>? = null,
     override val bundle: MutableMap<String, JsonElement> = mutableMapOf(),
     override var result: O? = null,
     override var body: B? = null,

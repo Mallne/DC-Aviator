@@ -20,7 +20,7 @@ interface AviatorExecutionContext<O : @Serializable Any, B : @Serializable Any> 
     var stage: AviatorExecutionStages
     val dataHolder: AviatorServiceDataHolder
     val outputClazz: Triple<KClass<O>, KType, KSerializer<O>>
-    val bodyClazz: Triple<KClass<B>, KType, KSerializer<B>>?
+    var bodyClazz: Triple<KClass<B>, KType, KSerializer<B>>?
     val bundle: MutableMap<String, JsonElement>
     var result: O?
     var body: B?

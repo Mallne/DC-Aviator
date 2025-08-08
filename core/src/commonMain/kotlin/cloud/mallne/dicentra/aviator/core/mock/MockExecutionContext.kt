@@ -19,7 +19,7 @@ data class MockExecutionContext @OptIn(InternalAviatorAPI::class) constructor(
     override var stage: AviatorExecutionStages = AviatorExecutionStages.Unstarted,
     override val dataHolder: MockedAviatorService,
     override val outputClazz: Triple<KClass<JsonElement>, KType, KSerializer<JsonElement>> = AviatorServiceUtils.makeClazzDefinition(),
-    override val bodyClazz: Triple<KClass<NoBody>, KType, KSerializer<NoBody>>? = null,
+    override var bodyClazz: Triple<KClass<NoBody>, KType, KSerializer<NoBody>>? = null,
     override val bundle: MutableMap<String, JsonElement> = mutableMapOf(),
     override var result: JsonElement? = null,
     override var body: NoBody? = null,
