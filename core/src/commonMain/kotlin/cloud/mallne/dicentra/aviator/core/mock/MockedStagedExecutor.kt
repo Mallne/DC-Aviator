@@ -4,8 +4,9 @@ import cloud.mallne.dicentra.aviator.core.NoBody
 import cloud.mallne.dicentra.aviator.core.execution.StagedExecutor
 import cloud.mallne.dicentra.aviator.core.io.NetworkChain
 import cloud.mallne.dicentra.aviator.model.AviatorServiceUtils
-import io.ktor.http.*
-import io.ktor.util.date.*
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.Url
+import io.ktor.util.date.GMTDate
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.serializer
@@ -27,7 +28,10 @@ class MockedStagedExecutor :
                 method = route.method,
                 url = Url(net.url),
                 outgoingContent = if (context.body != null && context.bodyClazz != null) {
-                    context.dataHolder.json.encodeToJsonElement(context.bodyClazz.third, context.body!!)
+                    context.dataHolder.json.encodeToJsonElement(
+                        context.bodyClazz!!.third,
+                        context.body!!
+                    )
                 } else {
                     null
                 }
@@ -39,7 +43,10 @@ class MockedStagedExecutor :
         val chain = context.networkChain.filter { it.request != null && it.response == null }
         AviatorServiceUtils.manualPipeline(chain) { net, next ->
             val response = MockedResponse(
-                content = context.dataHolder.json.encodeToJsonElement(serializer(), context.dataHolder.route.nested),
+                content = context.dataHolder.json.encodeToJsonElement(
+                    serializer(),
+                    context.dataHolder.route.nested
+                ),
                 status = HttpStatusCode.OK,
                 time = GMTDate()
             )

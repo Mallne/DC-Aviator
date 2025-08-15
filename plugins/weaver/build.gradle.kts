@@ -21,7 +21,8 @@ publishing {
 
             pom {
                 name = "DiCentra Weaver X Aviator"
-                description = "DiCentra Aviator Plugin that uses Weaver to translate input and Output"
+                description =
+                    "DiCentra Aviator Plugin that uses Weaver to translate input and Output"
                 inceptionYear = "2025"
                 developers {
                     developer {
@@ -76,7 +77,7 @@ android {
         minSdk = libs.versions.android.minSdk.get().toInt()
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 }

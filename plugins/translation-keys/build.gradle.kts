@@ -3,7 +3,8 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 group = "cloud.mallne.dicentra.aviator.plugin"
 version = "1.0.0-SNAPSHOT"
-description = "DiCentra Aviator Plugin that uses Weavers Object Mapping to translate input and Output"
+description =
+    "DiCentra Aviator Plugin that uses Weavers Object Mapping to translate input and Output"
 
 plugins {
     alias(libs.plugins.mavenPublish)
@@ -21,7 +22,8 @@ publishing {
 
             pom {
                 name = "DiCentra Weaver X Aviator TranslationKeys"
-                description = "DiCentra Aviator Plugin that uses Weavers Object Mapping to translate input and Output"
+                description =
+                    "DiCentra Aviator Plugin that uses Weavers Object Mapping to translate input and Output"
                 inceptionYear = "2025"
                 developers {
                     developer {
@@ -76,7 +78,7 @@ android {
         minSdk = libs.versions.android.minSdk.get().toInt()
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 }

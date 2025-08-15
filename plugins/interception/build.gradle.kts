@@ -3,7 +3,8 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 group = "cloud.mallne.dicentra.aviator.plugin"
 version = "1.0.0-SNAPSHOT"
-description = "DiCentra Aviator Plugin wehre You can manuallyy intercept the Request on each pipeline step"
+description =
+    "DiCentra Aviator Plugin wehre You can manuallyy intercept the Request on each pipeline step"
 
 plugins {
     alias(libs.plugins.mavenPublish)
@@ -77,7 +78,7 @@ android {
         minSdk = libs.versions.android.minSdk.get().toInt()
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 }
