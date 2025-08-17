@@ -27,7 +27,7 @@ val apiDest = file("../polyfill")
 if (apiDest.exists()) {
     includeBuild(apiDest.absolutePath) {
         dependencySubstitution {
-            substitute(module("cloud.mallne.dicentra:polyfill")).using(project(":library"))
+            substitute(module("cloud.mallne.dicentra:polyfill")).using(project(":"))
         }
     }
 } else {

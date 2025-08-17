@@ -29,11 +29,7 @@ kotlin {
                 implementation(libs.kotlinx.serialization.json)
                 implementation(libs.ktor.http)
                 //Dependency Substitution does not work in KMP for whatever Reason
-                if (findProject(":polyfill") != null) {
-                    implementation(project(":polyfill"))
-                } else {
                     implementation(libs.dc.polyfill)
-                }
             }
         }
     }
@@ -90,5 +86,5 @@ mavenPublishing {
 
     signAllPublications()
 
-    coordinates(group.toString(), "library", version.toString())
+    coordinates(group.toString(), project.name, version.toString())
 }
