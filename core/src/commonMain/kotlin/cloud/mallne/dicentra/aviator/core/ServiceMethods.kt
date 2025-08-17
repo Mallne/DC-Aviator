@@ -6,5 +6,6 @@ enum class ServiceMethods(
     GATHER("gather"),
     UPDATE("update"),
     CREATE("create"),
+    UPSERT("upsert"),
     DELETE("delete")
 }

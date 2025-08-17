@@ -5,6 +5,7 @@ import cloud.mallne.dicentra.aviator.koas.extensions.KSerializerWithExtensions
 import cloud.mallne.dicentra.aviator.koas.extensions.ReferenceOr
 import cloud.mallne.dicentra.aviator.koas.parameters.Parameter
 import cloud.mallne.dicentra.aviator.koas.servers.Server
+import io.ktor.http.*
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KeepGeneratedSerializer
 import kotlinx.serialization.Serializable
@@ -76,6 +77,19 @@ data class PathItem(
             servers = emptyList(),
             parameters = emptyList()
         )
+
+    fun operations(): Map<HttpMethod, Operation> {
+        return mapOf(
+            HttpMethod.Get to get,
+            HttpMethod.Put to put,
+            HttpMethod.Post to post,
+            HttpMethod.Delete to delete,
+            HttpMethod.Options to options,
+            HttpMethod.Head to head,
+            HttpMethod.Patch to patch,
+            HttpMethod("TRACE") to trace
+        )
+    }
 
     companion object {
         internal object Serializer :
