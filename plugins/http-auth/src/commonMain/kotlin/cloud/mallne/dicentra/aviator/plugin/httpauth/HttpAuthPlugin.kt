@@ -20,7 +20,7 @@ object HttpAuthPlugin : AviatorPlugin<HttpAuthPluginConfig> {
                 if (param == null || param.isEmpty()) return@after
 
                 val usable =
-                    context.dataHolder.route.securities.methods.filter { it.scheme.type == SecurityScheme.Type.HTTP && it.scheme.inside == SecurityScheme.In.HEADER }
+                    context.dataHolder.route.securities.methods.filter { it.scheme.type == SecurityScheme.Type.HTTP }
                 val using = usable.find { it.name == hint?.firstOrNull() } ?: usable.firstOrNull()
                 if (using == null) return@after
 
