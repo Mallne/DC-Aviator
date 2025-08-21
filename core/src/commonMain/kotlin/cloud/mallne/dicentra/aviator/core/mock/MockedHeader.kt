@@ -5,5 +5,5 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class MockedHeader(
-    override var values: Map<String, List<String>> = emptyMap()
+    override var values: MutableMap<String, List<String>> = mutableMapOf()
 ) : NetworkHeader

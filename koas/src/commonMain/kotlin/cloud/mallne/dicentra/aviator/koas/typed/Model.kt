@@ -2,6 +2,7 @@ package cloud.mallne.dicentra.aviator.koas.typed
 
 import cloud.mallne.dicentra.aviator.koas.extensions.Extendable
 import cloud.mallne.dicentra.aviator.koas.parameters.Parameter
+import cloud.mallne.dicentra.aviator.koas.security.SecurityScheme
 import io.ktor.http.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -16,9 +17,23 @@ data class Route(
     val body: Bodies,
     val input: List<Input>,
     val returnType: Returns,
+    val securities: Securities,
     override var extensions: Map<String, JsonElement>,
     val nested: List<Model>
 ) : Extendable {
+    @Serializable
+    data class Security(
+        val name: String,
+        val scopes: List<String>,
+        val scheme: SecurityScheme
+    )
+    @Serializable
+    data class Securities(
+        val methods: List<Security>,
+        val anonymous: Boolean
+    )
+
+
     @Serializable
     data class Bodies(
         /** Request bodies are optional by default! */

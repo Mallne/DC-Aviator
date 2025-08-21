@@ -22,7 +22,7 @@ import kotlin.jvm.JvmStatic
 @Serializable(OpenAPI.Companion.Serializer::class)
 @KeepGeneratedSerializer
 data class OpenAPI(
-    @EncodeDefault(ALWAYS) val openapi: String = "3.1.0",
+    @EncodeDefault(ALWAYS) val openapi: String = "3.1.1",
     /** Provides metadata about the API. The metadata can be used by the clients if needed. */
     val info: Info,
     /** The default value for the $schema keyword within Schema Objects contained within this OAS document. */

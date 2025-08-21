@@ -13,6 +13,6 @@ class AvKtorResponse(
     override var content: JsonElement?,
     override var time: GMTDate = ktorPrimitive.responseTime,
     override var headers: NetworkHeader = object : NetworkHeader {
-        override var values: Map<String, List<String>> = ktorPrimitive.headers.entries().convertToMap()
+        override var values: MutableMap<String, List<String>> = ktorPrimitive.headers.entries().convertToMap().toMutableMap()
     },
 ) : NetworkResponse<NetworkHeader>

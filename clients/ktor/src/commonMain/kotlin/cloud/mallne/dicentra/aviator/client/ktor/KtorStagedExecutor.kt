@@ -38,9 +38,17 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
                     null
                 },
                 headers = object : NetworkHeader {
-                    override var values: Map<String, List<String>> = emptyMap()
+                    override var values: MutableMap<String, List<String>> = mutableMapOf()
                 }
             )
+        }
+    }
+
+    private fun List<String>.unpack(): String {
+        return if (this.size == 1) {
+            this.first()
+        } else {
+            this.joinToString(",")
         }
     }
 
@@ -57,7 +65,7 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
                     )
                 }
                 method = net.request!!.method
-                net.request!!.headers.values.forEach { (k, v) -> header(k, v) }
+                net.request!!.headers.values.forEach { (k, v) -> header(k, v.unpack()) }
             }
 
             val response = AvKtorResponse(

@@ -17,6 +17,7 @@ dependencyResolutionManagement {
 
 include(":clients:ktor")
 include(":plugins:translation-keys")
+include(":plugins:http-auth")
 include(":plugins:interception")
 include(":plugins:weaver")
 include(":plugins:synapse")

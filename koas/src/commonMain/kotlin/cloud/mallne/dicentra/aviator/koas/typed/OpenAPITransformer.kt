@@ -18,9 +18,7 @@ import cloud.mallne.dicentra.aviator.koas.typed.Model.Object.Property
 import cloud.mallne.dicentra.aviator.koas.typed.NamingContext.Named
 import cloud.mallne.dicentra.polyfill.ensure
 import cloud.mallne.dicentra.polyfill.ensureNotNull
-import io.ktor.http.ContentType
-import io.ktor.http.HttpMethod
-import io.ktor.http.HttpStatusCode
+import io.ktor.http.*
 import kotlin.jvm.JvmInline
 
 fun OpenAPI.routes(): List<Route> = OpenAPITransformer(this).routes()
@@ -98,6 +96,36 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
             context(name)
         }?.let { (json.toModel(it) as? Resolved.Value)?.value }.let(::listOfNotNull)
 
+        val securityComponents = openAPI.components.securitySchemes
+        val globalSecurity = openAPI.security
+        val operationSecurity = operation.security
+        val securityRequirements = globalSecurity + operationSecurity
+        var anonymousAllowed = false
+        val securities = mutableListOf<Route.Security>()
+
+        for (securityRequirement in securityRequirements) {
+            if (securityRequirement.isEmpty()) {
+                anonymousAllowed = true
+            }
+            securities.addAll(
+                securityRequirement.mapNotNull { (name, scopes) ->
+                    securityComponents[name]?.let {
+                        securityComponents[name]?.valueOrNull()?.let {
+                            Route.Security(
+                                name,
+                                scopes,
+                                it
+                            )
+                        }
+                    }
+                }
+            )
+        }
+
+        if (securities.isEmpty()) {
+            anonymousAllowed = true
+        }
+
         Route(
             operationId = operation.operationId,
             summary = operation.summary,
@@ -111,7 +139,8 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
             returnType = toResponses(operation, ::context),
             extensions = operation.extensions,
             nested = nestedInput + nestedResponses + nestedBody,
-            parameter = pathItem.condenseParameters { operation }
+            parameter = pathItem.condenseParameters { operation },
+            securities = Route.Securities(securities, anonymousAllowed)
         )
     }
 
