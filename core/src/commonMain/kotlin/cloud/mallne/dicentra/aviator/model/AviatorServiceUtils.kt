@@ -4,6 +4,8 @@ import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.`x-dicentra-aviat
 import cloud.mallne.dicentra.aviator.core.AviatorServiceDataHolder
 import cloud.mallne.dicentra.aviator.core.InflatedServiceOptions
 import cloud.mallne.dicentra.aviator.core.ServiceOptions
+import cloud.mallne.dicentra.aviator.core.execution.RequestParameter
+import cloud.mallne.dicentra.aviator.core.execution.RequestParameters
 import cloud.mallne.dicentra.aviator.koas.OpenAPI
 import cloud.mallne.dicentra.aviator.koas.typed.Route
 import cloud.mallne.dicentra.aviator.koas.typed.TemplateParser.parsePath
@@ -37,17 +39,17 @@ object AviatorServiceUtils {
         }
     }
 
-    private fun mockMandatoryParams(dataHolder: AviatorServiceDataHolder): Map<String, List<String>> {
+    private fun mockMandatoryParams(dataHolder: AviatorServiceDataHolder): RequestParameters {
         val req = dataHolder.route.parameter.filter { it.required }
-        return req.associate { it.name to listOf("<${it.name}>") }
+        return RequestParameters(req.associate { it.name to RequestParameter.Single("<${it.name}>") })
     }
 
     fun catchPaths(
         dataHolder: AviatorServiceDataHolder,
-        requestParams: Map<String, List<String>> = mockMandatoryParams(dataHolder)
+        requestParams: RequestParameters = mockMandatoryParams(dataHolder)
     ): List<String> {
-        val pathSlug = dataHolder.route.parsePath(requestParams)
-        val serverSlugs = dataHolder.oas.servers.map { "${it.parsePath(requestParams)}$pathSlug" }
+        val pathSlug = dataHolder.route.parsePath(requestParams.toStringList())
+        val serverSlugs = dataHolder.oas.servers.map { "${it.parsePath(requestParams.toStringList())}$pathSlug" }
         return serverSlugs
     }
 

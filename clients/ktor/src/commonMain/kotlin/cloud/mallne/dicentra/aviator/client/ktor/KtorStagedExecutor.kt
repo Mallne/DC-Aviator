@@ -1,18 +1,19 @@
 package cloud.mallne.dicentra.aviator.client.ktor
 
-import cloud.mallne.dicentra.aviator.client.ktor.io.AvKtorJsonBody
 import cloud.mallne.dicentra.aviator.client.ktor.io.AvKtorRequest
 import cloud.mallne.dicentra.aviator.client.ktor.io.AvKtorResponse
 import cloud.mallne.dicentra.aviator.client.ktor.io.manualPipeline
+import cloud.mallne.dicentra.aviator.core.execution.RequestParameters
 import cloud.mallne.dicentra.aviator.core.execution.StagedExecutor
 import cloud.mallne.dicentra.aviator.core.io.NetworkBody
 import cloud.mallne.dicentra.aviator.core.io.NetworkChain
 import cloud.mallne.dicentra.aviator.core.io.NetworkHeader
+import cloud.mallne.dicentra.aviator.koas.parameters.Parameter
 import cloud.mallne.dicentra.aviator.koas.typed.Route
 import io.ktor.client.call.*
 import io.ktor.client.request.*
+import io.ktor.client.request.forms.*
 import io.ktor.http.*
-import io.ktor.util.reflect.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 
@@ -26,9 +27,18 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
         })
     }
 
-    private fun tryFormData(contentType: ContentType, body: Route.Body, params: Map<String, List<String>>): NetworkBody? {
+    private fun tryFormData(
+        contentType: ContentType,
+        body: Route.Body,
+        params: RequestParameters
+    ): Pair<NetworkBody, ContentType>? {
         if ((contentType.match(ContentType.MultiPart.FormData) || contentType.match(ContentType.Application.FormUrlEncoded)) && body is Route.Body.Multipart) {
-            body.parameters
+            val pairs = body.parameters.mapNotNull { (name, type) ->
+                params[name]?.let {
+                    name to it.toString()
+                }
+            }
+            return NetworkBody.Form(pairs) to contentType
         } else {
             return null
         }
@@ -37,41 +47,37 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
     override suspend fun onFormingRequest(context: KtorExecutionContext<O, B>) {
         val route = context.dataHolder.route
         context.networkChain.forEach { net ->
-
             val body = if (context.body != null && context.bodyClazz != null) {
-                AvKtorJsonBody(
+                NetworkBody.Json(
                     context.dataHolder.json.encodeToJsonElement(
                         context.bodyClazz!!.third,
                         context.body!!
                     )
-                )
+                ) to ContentType.Application.Json
             } else {
-                val formBody = route.body.filter {it.key.match(ContentType.MultiPart.FormData)}
+                val formBody = route.body.filter { it.value is Route.Body.Multipart }
                 if (formBody.isNotEmpty()) {
                     formBody.mapNotNull {
-                        tryFormData(ContentType.MultiPart.FormData, it.value, context.requestParams)
-                    }.firstOrNull() ?: NetworkBody.Empty
+                        tryFormData(it.key, it.value, context.requestParams)
+                    }.firstOrNull() ?: (NetworkBody.Empty to ContentType.Any)
                 } else {
-                    NetworkBody.Empty
+                    NetworkBody.Empty to ContentType.Any
                 }
             }
+
+            val headers = route.parameter.filter { it.input == Parameter.Input.Header }.mapNotNull { parameter ->
+                context.requestParams[parameter.name]?.let { parameter.name to it }
+            }.toMap()
 
             net.request = AvKtorRequest(
                 method = route.method,
                 url = Url(net.url),
-                outgoingContent = body,
+                outgoingContent = body.first,
                 headers = object : NetworkHeader {
-                    override var values: MutableMap<String, List<String>> = mutableMapOf()
-                }
+                    override var values: RequestParameters = RequestParameters(headers)
+                },
+                contentType = body.second,
             )
-        }
-    }
-
-    private fun List<String>.unpack(): String {
-        return if (this.size == 1) {
-            this.first()
-        } else {
-            this.joinToString(",")
         }
     }
 
@@ -81,14 +87,25 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
             context.log(KtorLoggingIds.TRACE_CREATE_REQUEST) { trace("Creating Network Request for ${net.url}") }
             val resp = context.dataHolder.client.request {
                 url(net.url)
-                if (context.body != null && net.request?.outgoingContent != null && context.bodyClazz != null) {
-                    setBody(
-                        context.body,
-                        TypeInfo(context.bodyClazz!!.first, context.bodyClazz!!.second)
-                    )
+                when (net.request?.outgoingContent) {
+                    is NetworkBody.Form -> {
+                        formData {
+                            val fd = (net.request?.outgoingContent as NetworkBody.Form).formData
+                            fd.forEach {
+                                append(it.first, it.second)
+                            }
+                        }
+                    }
+
+                    is NetworkBody.Json -> {
+                        setBody((net.request!!.outgoingContent as NetworkBody.Json).json)
+                    }
+
+                    else -> {}
                 }
+                contentType(net.request!!.contentType)
                 method = net.request!!.method
-                net.request!!.headers.values.forEach { (k, v) -> header(k, v.unpack()) }
+                net.request!!.headers.values.forEach { (k, v) -> header(k, v.toString()) }
             }
 
             val response = AvKtorResponse(

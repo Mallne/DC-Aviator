@@ -5,6 +5,7 @@ import cloud.mallne.dicentra.aviator.core.MutableRequestOptions
 import cloud.mallne.dicentra.aviator.core.NoBody
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionContext
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionStages
+import cloud.mallne.dicentra.aviator.core.execution.RequestParameters
 import cloud.mallne.dicentra.aviator.core.execution.logging.AviatorLogger
 import cloud.mallne.dicentra.aviator.core.io.NetworkChain
 import cloud.mallne.dicentra.aviator.model.AviatorServiceUtils
@@ -25,7 +26,7 @@ data class MockExecutionContext @OptIn(InternalAviatorAPI::class) constructor(
     override var body: NoBody? = null,
     override val networkChain: MutableList<NetworkChain<MockedRequest, MockedResponse, MockedHeader>> = mutableListOf(),
     override val options: MutableRequestOptions = mutableMapOf(),
-    override var requestParams: Map<String, List<String>> = mutableMapOf(),
+    override var requestParams: RequestParameters = RequestParameters(),
     @property:InternalAviatorAPI
     override var logger: AviatorLogger? = null
 ) : AviatorExecutionContext<JsonElement, NoBody>

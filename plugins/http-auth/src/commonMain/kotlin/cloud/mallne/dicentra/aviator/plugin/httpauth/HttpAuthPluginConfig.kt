@@ -10,4 +10,5 @@ class HttpAuthPluginConfig() : AviatorPluginConfigScope {
     override var serviceFilter: MutableList<ServiceLocator> = mutableListOf()
     override var activationStrategy: PluginActivationStrategy = PluginActivationStrategy.EnabledByDefault
     override val silentLoggingTags: MutableList<String> = mutableListOf()
+    var doBase64Encode: Boolean = false
 }

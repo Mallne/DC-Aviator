@@ -4,6 +4,7 @@ import cloud.mallne.dicentra.aviator.core.AviatorServiceDataHolder
 import cloud.mallne.dicentra.aviator.core.RequestOptions
 import cloud.mallne.dicentra.aviator.core.ServiceOptions
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionPipeline
+import cloud.mallne.dicentra.aviator.core.execution.RequestParameters
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginInstance
 import cloud.mallne.dicentra.aviator.koas.OpenAPI
 import cloud.mallne.dicentra.aviator.koas.typed.Route
@@ -25,14 +26,14 @@ data class MockedAviatorService(
 ) : AviatorServiceDataHolder() {
     suspend inline fun request(
         options: RequestOptions = emptyMap(),
-        requestParams: Map<String, List<String>> = emptyMap()
+        requestParams: RequestParameters = RequestParameters()
     ): JsonElement? {
         return requestContextful(options, requestParams).result
     }
 
     suspend inline fun requestContextful(
         options: RequestOptions = emptyMap(),
-        requestParams: Map<String, List<String>> = emptyMap()
+        requestParams: RequestParameters = RequestParameters()
     ): MockExecutionContext {
 
         val executor = MockedStagedExecutor()

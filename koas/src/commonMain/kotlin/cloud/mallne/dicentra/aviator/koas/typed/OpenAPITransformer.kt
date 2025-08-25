@@ -609,45 +609,11 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
                         Pair(ContentType.Application.Json, json)
                     }
 
-                    ContentType.MultiPart.FormData.match(contentType) -> {
-                        val resolved =
-                            mediaType.schema?.resolve() ?: throw OpenAPIConstraintViolation(
-                                "$mediaType without a schema. Generation doesn't know what to do, please open a ticket!"
-                            )
-
-                        fun ctx(name: String): NamingContext = resolved.namedOr {
-                            val operationId = ensureNotNull(operation.operationId) {
-                                OpenAPIConstraintViolation("operationId currently required to generate inline schemas for operation parameters.")
-                            }
-                            create(NamingContext.RouteParam(name, operationId, "Request"))
-                        }
-
-                        val multipart = when (resolved) {
-                            is Resolved.Ref -> {
-                                val model = resolved.toModel(Named(resolved.name)) as Resolved.Ref
-                                Route.Body.Multipart.Ref(
-                                    model.name, model.value, body.description, mediaType.extensions
-                                )
-                            }
-
-                            is Resolved.Value -> Route.Body.Multipart.Value(
-                                resolved.value.properties.map { (name, ref) ->
-                                    Route.Body.Multipart.FormData(
-                                        name, ref.resolve().toModel(ctx(name)).value
-                                    )
-                                }, body.description, mediaType.extensions
-                            )
-                        }
-
-                        Pair(ContentType.MultiPart.FormData, multipart)
-                    }
-
                     ContentType.Application.OctetStream.match(contentType) -> Pair(
                         ContentType.Application.OctetStream,
                         Route.Body.OctetStream(body.description, mediaType.extensions)
                     )
-
-                    ContentType.Application.FormUrlEncoded.match(contentType) -> {
+                    ContentType.MultiPart.FormData.match(contentType) || ContentType.Application.FormUrlEncoded.match(contentType) -> {
                         val resolved =
                             mediaType.schema?.resolve() ?: throw OpenAPIConstraintViolation(
                                 "$mediaType without a schema. Generation doesn't know what to do, please open a ticket!"
@@ -660,26 +626,17 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
                             create(NamingContext.RouteParam(name, operationId, "Request"))
                         }
 
-                        val multipart = when (resolved) {
-                            is Resolved.Ref -> {
-                                val model = resolved.toModel(Named(resolved.name)) as Resolved.Ref
-                                Route.Body.Multipart.Ref(
-                                    model.name, model.value, body.description, mediaType.extensions
-                                ).apply {
+                        val multipart = Route.Body.Multipart(
+                            parameters = resolved.value.properties.map { (name, ref) ->
+                                Route.Body.Multipart.FormData(
+                                    name, ref.resolve().toModel(ctx(name)).value
+                                )
+                            },
+                            description =  body.description,
+                            extensions = mediaType.extensions
+                        )
 
-                                }
-                            }
-
-                            is Resolved.Value -> Route.Body.Multipart.Value(
-                                resolved.value.properties.map { (name, ref) ->
-                                    Route.Body.Multipart.FormData(
-                                        name, ref.resolve().toModel(ctx(name)).value
-                                    )
-                                }, body.description, mediaType.extensions
-                            )
-                        }
-
-                        Pair(ContentType.Application.FormUrlEncoded, multipart)
+                        Pair(ContentType.parse(contentType), multipart)
                     }
 
                     else -> throw OpenAPIConstraintViolation("RequestBody content type: $this not yet supported.")

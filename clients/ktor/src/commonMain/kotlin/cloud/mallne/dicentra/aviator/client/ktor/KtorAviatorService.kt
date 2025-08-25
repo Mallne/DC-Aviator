@@ -5,6 +5,7 @@ import cloud.mallne.dicentra.aviator.core.InflatedServiceOptions
 import cloud.mallne.dicentra.aviator.core.RequestOptions
 import cloud.mallne.dicentra.aviator.core.ServiceOptions
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionPipeline
+import cloud.mallne.dicentra.aviator.core.execution.RequestParameters
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginInstance
 import cloud.mallne.dicentra.aviator.koas.OpenAPI
 import cloud.mallne.dicentra.aviator.koas.typed.Route
@@ -38,7 +39,7 @@ data class KtorAviatorService(
         requestBody: B? = null,
         useSerializer: KSerializer<O> = serializer<O>(),
         options: RequestOptions = emptyMap(),
-        requestParams: Map<String, List<String>> = emptyMap()
+        requestParams: RequestParameters = RequestParameters()
     ): KtorExecutionContext<O, B> {
         val executor = KtorStagedExecutor<O, B>()
         val pipeline = AviatorExecutionPipeline(
@@ -66,12 +67,12 @@ data class KtorAviatorService(
         requestBody: B? = null,
         useSerializer: KSerializer<O> = serializer<O>(),
         options: RequestOptions = emptyMap(),
-        requestParams: Map<String, List<String>> = emptyMap()
+        requestParams: RequestParameters = RequestParameters()
     ): O? = requestContextful<O, B>(requestBody, useSerializer, options, requestParams).result
 
     fun close() = client.close()
 
-    internal fun catchPaths(requestParams: Map<String, List<String>>): List<String> {
+    internal fun catchPaths(requestParams: RequestParameters = RequestParameters()): List<String> {
         return AviatorServiceUtils.catchPaths(this, requestParams)
     }
 }

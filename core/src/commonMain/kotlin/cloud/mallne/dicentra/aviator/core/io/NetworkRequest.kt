@@ -7,4 +7,5 @@ interface NetworkRequest<H : NetworkHeader> : NetworkMessage<H> {
     var method: HttpMethod
     var url: Url
     var outgoingContent: NetworkBody
+    var contentType: ContentType
 }

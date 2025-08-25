@@ -4,10 +4,6 @@ import kotlinx.serialization.json.JsonElement
 
 sealed interface NetworkBody {
     object Empty : NetworkBody
-    interface Json : NetworkBody {
-        var json: JsonElement
-    }
-    interface Form : NetworkBody {
-        var formData: List<Pair<String, String>>
-    }
+    data class Json(var json: JsonElement) : NetworkBody
+    data class Form(var formData: List<Pair<String, String>>) : NetworkBody
 }

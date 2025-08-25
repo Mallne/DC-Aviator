@@ -2,6 +2,7 @@ package cloud.mallne.dicentra.aviator.core.mock
 
 import cloud.mallne.dicentra.aviator.core.NoBody
 import cloud.mallne.dicentra.aviator.core.execution.StagedExecutor
+import cloud.mallne.dicentra.aviator.core.io.NetworkBody
 import cloud.mallne.dicentra.aviator.core.io.NetworkChain
 import cloud.mallne.dicentra.aviator.model.AviatorServiceUtils
 import io.ktor.http.HttpStatusCode
@@ -27,14 +28,7 @@ class MockedStagedExecutor :
             net.request = MockedRequest(
                 method = route.method,
                 url = Url(net.url),
-                outgoingContent = if (context.body != null && context.bodyClazz != null) {
-                    context.dataHolder.json.encodeToJsonElement(
-                        context.bodyClazz!!.third,
-                        context.body!!
-                    )
-                } else {
-                    null
-                }
+                outgoingContent = NetworkBody.Empty
             )
         }
     }

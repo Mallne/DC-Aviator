@@ -30,7 +30,7 @@ object SynapsePlugin : AviatorPlugin<SynapsePluginConfig> {
                     null
                 }
                 context.body = CatalystRequest(
-                    parameters = context.requestParams,
+                    parameters = context.requestParams.toStringList(),
                     body = body
                 )
                 context.bodyClazz = Triple(CatalystRequest::class, typeOf<CatalystRequest>(), serializer<CatalystRequest>()) as Triple<KClass<@Serializable Any>, KType, KSerializer<@Serializable Any>>

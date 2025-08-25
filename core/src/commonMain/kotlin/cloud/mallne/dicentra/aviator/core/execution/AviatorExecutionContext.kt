@@ -26,7 +26,7 @@ interface AviatorExecutionContext<O : @Serializable Any, B : @Serializable Any> 
     var body: B?
     val networkChain: MutableList<out NetworkChain<out NetworkRequest<out NetworkHeader>, out NetworkResponse<out NetworkHeader>, out NetworkHeader>>
     val options: MutableRequestOptions
-    var requestParams: Map<String, List<String>>
+    var requestParams: RequestParameters
 
     @InternalAviatorAPI
     var logger: AviatorLogger?

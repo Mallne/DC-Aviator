@@ -1,5 +1,7 @@
 package cloud.mallne.dicentra.aviator.client.ktor.io
 
+import cloud.mallne.dicentra.aviator.core.execution.RequestParameter
+import cloud.mallne.dicentra.aviator.core.execution.RequestParameters
 import cloud.mallne.dicentra.aviator.core.io.NetworkHeader
 import cloud.mallne.dicentra.aviator.core.io.NetworkResponse
 import io.ktor.client.statement.*
@@ -13,6 +15,7 @@ class AvKtorResponse(
     override var content: JsonElement?,
     override var time: GMTDate = ktorPrimitive.responseTime,
     override var headers: NetworkHeader = object : NetworkHeader {
-        override var values: MutableMap<String, List<String>> = ktorPrimitive.headers.entries().convertToMap().toMutableMap()
+        override var values: RequestParameters = RequestParameters(
+            ktorPrimitive.headers.entries().associate { it.key to RequestParameter.Multi(it.value) })
     },
 ) : NetworkResponse<NetworkHeader>

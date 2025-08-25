@@ -3,9 +3,11 @@ package cloud.mallne.dicentra.aviator.koas.typed
 import cloud.mallne.dicentra.aviator.koas.extensions.Extendable
 import cloud.mallne.dicentra.aviator.koas.parameters.Parameter
 import cloud.mallne.dicentra.aviator.koas.security.SecurityScheme
+import cloud.mallne.dicentra.aviator.koas.typed.Route.Body.Multipart
 import io.ktor.http.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
+import kotlin.collections.List
 
 @Serializable
 data class Route(
@@ -85,28 +87,13 @@ data class Route(
             override val extensions: Map<String, JsonElement>
         ) : Body
 
-        sealed interface Multipart : Body {
-            val parameters: List<FormData>
+        data class Multipart(
+            val parameters: List<FormData>,
+            override val description: String?,
+            override val extensions: Map<String, JsonElement>
+        ) : Body, List<Multipart.FormData> by parameters {
 
             data class FormData(val name: String, val type: Model)
-
-            // Inline schemas for multipart bodies do not generate a type,
-            // they should be defined as functions parameters.
-            data class Value(
-                override val parameters: List<FormData>,
-                override val description: String?,
-                override val extensions: Map<String, JsonElement>
-            ) : Multipart, List<FormData> by parameters
-
-            // Top-level references get a top-level type.
-            data class Ref(
-                val name: String,
-                val value: Model,
-                override val description: String?,
-                override val extensions: Map<String, JsonElement>
-            ) : Multipart {
-                override val parameters: List<FormData> = listOf(FormData(name, value))
-            }
         }
     }
 

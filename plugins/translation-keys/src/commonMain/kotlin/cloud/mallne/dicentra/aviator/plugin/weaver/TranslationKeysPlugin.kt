@@ -3,6 +3,8 @@ package cloud.mallne.dicentra.aviator.plugin.weaver
 import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.`x-dicentra-aviator-serviceOptions`
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionContext
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionStages
+import cloud.mallne.dicentra.aviator.core.execution.RequestParameters
+import cloud.mallne.dicentra.aviator.core.io.NetworkBody
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPlugin
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginInstance
 import cloud.mallne.dicentra.aviator.core.plugins.PluginStagedExecutorBuilder
@@ -22,8 +24,8 @@ object TranslationKeysPlugin : AviatorPlugin<TranslationKeysPluginConfig> {
                 before(AviatorExecutionStages.PathMatching) { context ->
                     val tk = extractKeys(context)
                     context.requestParams =
-                        context.requestParams.map { (key, value) -> (tk[key] ?: key) to value }
-                            .toMap()
+                        RequestParameters( context.requestParams.map { (key, value) -> (tk[key] ?: key) to value }
+                            .toMap())
                 }
             }
             if (pluginConfig.onInput) {
@@ -31,12 +33,11 @@ object TranslationKeysPlugin : AviatorPlugin<TranslationKeysPluginConfig> {
                     val tk = extractKeys(context)
                     context.networkChain.forEach { net ->
                         net.request?.outgoingContent?.let {
-                            net.request?.outgoingContent =
-                                SubstitutionKeysSerializer.translate(
-                                    tk,
-                                    it,
-                                    context.dataHolder.json
-                                )
+                            net.request?.outgoingContent = SubstitutionKeysSerializer.translate(
+                                tk,
+                                it,
+                                context.dataHolder.json
+                            )
                         }
                     }
                 }
@@ -46,7 +47,7 @@ object TranslationKeysPlugin : AviatorPlugin<TranslationKeysPluginConfig> {
                     val tk = extractKeys(context)
                     context.networkChain.forEach { net ->
                         net.response?.content?.let {
-                            net.response?.content = SubstitutionKeysSerializer.translate(
+                            net.response?.content = SubstitutionKeysSerializer.translateJson(
                                 SubstitutionKeysSerializer.flipTK(tk),
                                 it,
                                 context.dataHolder.json

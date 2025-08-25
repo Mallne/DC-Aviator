@@ -26,7 +26,7 @@ data class BasicExecutionContext<O : @Serializable Any, B : @Serializable Any> @
     override var body: B? = null,
     override val networkChain: MutableList<NetworkChain<NetworkRequest<NetworkHeader>, NetworkResponse<NetworkHeader>, NetworkHeader>> = mutableListOf(),
     override val options: MutableRequestOptions = mutableMapOf(),
-    override var requestParams: Map<String, List<String>> = mutableMapOf(),
+    override var requestParams: RequestParameters = RequestParameters(),
     @property:InternalAviatorAPI
     override var logger: AviatorLogger? = null
 ) : AviatorExecutionContext<O, B>

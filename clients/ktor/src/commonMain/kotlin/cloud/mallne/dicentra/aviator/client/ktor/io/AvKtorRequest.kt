@@ -10,5 +10,6 @@ class AvKtorRequest(
     override var method: HttpMethod,
     override var url: Url,
     override var outgoingContent: NetworkBody = NetworkBody.Empty,
-    override var headers: NetworkHeader
+    override var headers: NetworkHeader,
+    override var contentType: ContentType
 ) : NetworkRequest<NetworkHeader>

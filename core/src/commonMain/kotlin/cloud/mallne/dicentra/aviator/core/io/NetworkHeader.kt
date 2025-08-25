@@ -1,5 +1,7 @@
 package cloud.mallne.dicentra.aviator.core.io
 
+import cloud.mallne.dicentra.aviator.core.execution.RequestParameters
+
 interface NetworkHeader {
-    var values: MutableMap<String, List<String>>
+    var values: RequestParameters
 }
