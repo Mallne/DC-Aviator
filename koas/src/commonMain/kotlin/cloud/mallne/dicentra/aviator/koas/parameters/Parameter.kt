@@ -7,7 +7,9 @@ import cloud.mallne.dicentra.aviator.koas.extensions.KSerializerWithExtensions
 import cloud.mallne.dicentra.aviator.koas.extensions.ReferenceOr
 import cloud.mallne.dicentra.aviator.koas.io.Example
 import cloud.mallne.dicentra.aviator.koas.io.ExampleValue
+import cloud.mallne.dicentra.aviator.koas.io.MediaType
 import cloud.mallne.dicentra.aviator.koas.io.Schema
+import cloud.mallne.dicentra.polyfill.Validation
 import cloud.mallne.dicentra.polyfill.ensure
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KeepGeneratedSerializer
@@ -76,6 +78,7 @@ data class Parameter(
     val allowReserved: Boolean = false,
     /** The schema defining the type used for the parameter. */
     val schema: ReferenceOr<Schema>? = null,
+    val content: Map<String, MediaType> = emptyMap(),
     /**
      * Describes how the parameter value will be serialized depending on the type of the parameter
      * value. Default values (based on value of _paramIn): for ParamQuery - StyleForm; for ParamPath -
@@ -102,6 +105,9 @@ data class Parameter(
     override var extensions: Map<String, JsonElement> = emptyMap(),
 ) : Extendable {
     init {
+        ensure(content.isNotEmpty() || schema != null) {
+            OpenAPIConstraintViolation("Either content or schema must be provided for parameter $name")
+        }
         if (input == Input.Path)
             ensure(required) {
                 OpenAPIConstraintViolation("${required}Determines whether this parameter is mandatory. If the parameter location is \"path\", this property is REQUIRED and its value MUST be true. Otherwise, the property MAY be included and its default value is false.")

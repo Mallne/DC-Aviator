@@ -6,5 +6,5 @@ import kotlinx.serialization.json.JsonElement
 interface NetworkRequest<H : NetworkHeader> : NetworkMessage<H> {
     var method: HttpMethod
     var url: Url
-    var outgoingContent: JsonElement?
+    var outgoingContent: NetworkBody
 }

@@ -1,7 +1,6 @@
 package cloud.mallne.dicentra.aviator.model
 
 import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.`x-dicentra-aviator-serviceDelegateCall`
-import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.`x-dicentra-aviator-serviceOptions`
 import cloud.mallne.dicentra.aviator.core.AviatorServiceDataHolder
 import cloud.mallne.dicentra.aviator.core.InflatedServiceOptions
 import cloud.mallne.dicentra.aviator.core.ServiceOptions
@@ -38,9 +37,14 @@ object AviatorServiceUtils {
         }
     }
 
+    private fun mockMandatoryParams(dataHolder: AviatorServiceDataHolder): Map<String, List<String>> {
+        val req = dataHolder.route.parameter.filter { it.required }
+        return req.associate { it.name to listOf("<${it.name}>") }
+    }
+
     fun catchPaths(
         dataHolder: AviatorServiceDataHolder,
-        requestParams: Map<String, List<String>>
+        requestParams: Map<String, List<String>> = mockMandatoryParams(dataHolder)
     ): List<String> {
         val pathSlug = dataHolder.route.parsePath(requestParams)
         val serverSlugs = dataHolder.oas.servers.map { "${it.parsePath(requestParams)}$pathSlug" }

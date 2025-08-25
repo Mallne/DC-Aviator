@@ -1,11 +1,14 @@
 package cloud.mallne.dicentra.aviator.client.ktor
 
+import cloud.mallne.dicentra.aviator.client.ktor.io.AvKtorJsonBody
 import cloud.mallne.dicentra.aviator.client.ktor.io.AvKtorRequest
 import cloud.mallne.dicentra.aviator.client.ktor.io.AvKtorResponse
 import cloud.mallne.dicentra.aviator.client.ktor.io.manualPipeline
 import cloud.mallne.dicentra.aviator.core.execution.StagedExecutor
+import cloud.mallne.dicentra.aviator.core.io.NetworkBody
 import cloud.mallne.dicentra.aviator.core.io.NetworkChain
 import cloud.mallne.dicentra.aviator.core.io.NetworkHeader
+import cloud.mallne.dicentra.aviator.koas.typed.Route
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.http.*
@@ -23,20 +26,40 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
         })
     }
 
+    private fun tryFormData(contentType: ContentType, body: Route.Body, params: Map<String, List<String>>): NetworkBody? {
+        if ((contentType.match(ContentType.MultiPart.FormData) || contentType.match(ContentType.Application.FormUrlEncoded)) && body is Route.Body.Multipart) {
+            body.parameters
+        } else {
+            return null
+        }
+    }
+
     override suspend fun onFormingRequest(context: KtorExecutionContext<O, B>) {
         val route = context.dataHolder.route
         context.networkChain.forEach { net ->
-            net.request = AvKtorRequest(
-                method = route.method,
-                url = Url(net.url),
-                outgoingContent = if (context.body != null && context.bodyClazz != null) {
+
+            val body = if (context.body != null && context.bodyClazz != null) {
+                AvKtorJsonBody(
                     context.dataHolder.json.encodeToJsonElement(
                         context.bodyClazz!!.third,
                         context.body!!
                     )
+                )
+            } else {
+                val formBody = route.body.filter {it.key.match(ContentType.MultiPart.FormData)}
+                if (formBody.isNotEmpty()) {
+                    formBody.mapNotNull {
+                        tryFormData(ContentType.MultiPart.FormData, it.value, context.requestParams)
+                    }.firstOrNull() ?: NetworkBody.Empty
                 } else {
-                    null
-                },
+                    NetworkBody.Empty
+                }
+            }
+
+            net.request = AvKtorRequest(
+                method = route.method,
+                url = Url(net.url),
+                outgoingContent = body,
                 headers = object : NetworkHeader {
                     override var values: MutableMap<String, List<String>> = mutableMapOf()
                 }

@@ -43,6 +43,10 @@ sealed interface ReferenceOr<out A> {
         private const val pathItems: String = "#/components/pathItems/"
 
         fun schema(name: String): Reference = Reference("$schema$name")
+        fun responses(name: String): Reference = Reference("$responses$name")
+        fun parameters(name: String): Reference = Reference("$parameters$name")
+        fun requestBodies(name: String): Reference = Reference("$requestBodies$name")
+        fun pathItems(name: String): Reference = Reference("$pathItems$name")
 
         fun <A> value(value: A): ReferenceOr<A> = Value(value)
 
