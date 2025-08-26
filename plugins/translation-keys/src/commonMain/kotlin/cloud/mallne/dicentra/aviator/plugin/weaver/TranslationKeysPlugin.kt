@@ -4,7 +4,6 @@ import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.`x-dicentra-aviat
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionContext
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionStages
 import cloud.mallne.dicentra.aviator.core.execution.RequestParameters
-import cloud.mallne.dicentra.aviator.core.io.NetworkBody
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPlugin
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginInstance
 import cloud.mallne.dicentra.aviator.core.plugins.PluginStagedExecutorBuilder
@@ -24,8 +23,8 @@ object TranslationKeysPlugin : AviatorPlugin<TranslationKeysPluginConfig> {
                 before(AviatorExecutionStages.PathMatching) { context ->
                     val tk = extractKeys(context)
                     context.requestParams =
-                        RequestParameters( context.requestParams.map { (key, value) -> (tk[key] ?: key) to value }
-                            .toMap())
+                        RequestParameters(context.requestParams.map { (key, value) -> (tk[key] ?: key) to value }
+                            .toMap().toMutableMap())
                 }
             }
             if (pluginConfig.onInput) {

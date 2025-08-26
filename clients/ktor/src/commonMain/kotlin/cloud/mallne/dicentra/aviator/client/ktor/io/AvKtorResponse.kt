@@ -16,6 +16,7 @@ class AvKtorResponse(
     override var time: GMTDate = ktorPrimitive.responseTime,
     override var headers: NetworkHeader = object : NetworkHeader {
         override var values: RequestParameters = RequestParameters(
-            ktorPrimitive.headers.entries().associate { it.key to RequestParameter.Multi(it.value) })
+            ktorPrimitive.headers.entries().associate { it.key to RequestParameter.Multi(it.value) }.toMutableMap()
+        )
     },
 ) : NetworkResponse<NetworkHeader>

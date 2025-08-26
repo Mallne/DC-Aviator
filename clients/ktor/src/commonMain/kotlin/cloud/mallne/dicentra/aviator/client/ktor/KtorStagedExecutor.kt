@@ -74,7 +74,7 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
                 url = Url(net.url),
                 outgoingContent = body.first,
                 headers = object : NetworkHeader {
-                    override var values: RequestParameters = RequestParameters(headers)
+                    override var values: RequestParameters = RequestParameters(headers.toMutableMap())
                 },
                 contentType = body.second,
             )
@@ -89,12 +89,34 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
                 url(net.url)
                 when (net.request?.outgoingContent) {
                     is NetworkBody.Form -> {
-                        formData {
-                            val fd = (net.request?.outgoingContent as NetworkBody.Form).formData
-                            fd.forEach {
-                                append(it.first, it.second)
-                            }
+                        if (ContentType.Application.FormUrlEncoded.match(
+                                net.request?.contentType ?: ContentType.Text.Plain
+                            )
+                        ) {
+                            setBody(
+                                FormDataContent(
+                                    parameters {
+                                        val fd = (net.request?.outgoingContent as NetworkBody.Form).formData
+                                        fd.forEach {
+                                            append(it.first, it.second)
+                                        }
+                                    }
+                                ))
+                        } else if (ContentType.MultiPart.FormData.match(
+                                net.request?.contentType ?: ContentType.Text.Plain
+                            )
+                        ) {
+                            setBody(
+                                MultiPartFormDataContent(
+                                    formData {
+                                        val fd = (net.request?.outgoingContent as NetworkBody.Form).formData
+                                        fd.forEach {
+                                            append(it.first, it.second)
+                                        }
+                                    }
+                                ))
                         }
+
                     }
 
                     is NetworkBody.Json -> {
@@ -119,7 +141,7 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
             }
         }
 
-        val successful = context.networkChain.find { (it.response?.status?.value ?: 500) > 400 }
+        val successful = context.networkChain.find { (it.response?.status?.value ?: 500) >= 400 }
         if (successful != null) {
             context.log(KtorLoggingIds.WARN_NO_RESPONSES) { warn("No responses returned ok") }
         }

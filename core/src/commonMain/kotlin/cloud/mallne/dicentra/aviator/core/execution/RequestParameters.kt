@@ -6,7 +6,6 @@ import kotlinx.serialization.Serializable
 data class RequestParameters(
     val value: MutableMap<String, RequestParameter> = mutableMapOf(),
 ) : MutableMap<String, RequestParameter> by value {
-    constructor(valu: Map<String, RequestParameter>) : this(valu.toMutableMap())
 
     fun toStringList(): Map<String, List<String>> {
         return value.map { (template, param) ->

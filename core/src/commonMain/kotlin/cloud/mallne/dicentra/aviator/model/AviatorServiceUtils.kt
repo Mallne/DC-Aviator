@@ -41,7 +41,7 @@ object AviatorServiceUtils {
 
     private fun mockMandatoryParams(dataHolder: AviatorServiceDataHolder): RequestParameters {
         val req = dataHolder.route.parameter.filter { it.required }
-        return RequestParameters(req.associate { it.name to RequestParameter.Single("<${it.name}>") })
+        return RequestParameters(req.associate { it.name to RequestParameter.Single("<${it.name}>") }.toMutableMap())
     }
 
     fun catchPaths(
