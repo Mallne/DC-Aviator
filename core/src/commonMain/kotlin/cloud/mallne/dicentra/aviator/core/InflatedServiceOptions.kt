@@ -10,8 +10,8 @@ interface InflatedServiceOptions {
 
 
     companion object {
-        inline fun <reified T : InflatedServiceOptions> inflate(options: ServiceOptions): T {
-            return Json.decodeFromJsonElement(options)
+        inline fun <reified T : InflatedServiceOptions> inflate(options: ServiceOptions, json: Json = Json): T {
+            return json.decodeFromJsonElement(options)
         }
 
         @OptIn(InternalAviatorAPI::class)

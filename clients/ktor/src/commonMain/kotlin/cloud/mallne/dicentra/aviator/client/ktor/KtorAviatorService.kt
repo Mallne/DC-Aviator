@@ -32,8 +32,7 @@ data class KtorAviatorService(
         AviatorServiceUtils.validate(this)
     }
 
-    inline fun <reified T : InflatedServiceOptions> optionBundle(): T =
-        AviatorServiceUtils.optionBundle(options)
+    inline fun <reified T : InflatedServiceOptions> optionBundle(): T = AviatorServiceUtils.optionBundle(options, json)
 
     suspend inline fun <reified O : @Serializable Any, reified B : @Serializable Any> requestContextful(
         requestBody: B? = null,
