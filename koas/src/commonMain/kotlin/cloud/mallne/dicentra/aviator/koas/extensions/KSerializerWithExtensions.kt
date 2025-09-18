@@ -15,7 +15,7 @@ internal abstract class KSerializerWithExtensions<T : Extendable>(
 
     override fun deserialize(decoder: Decoder): T {
         decoder as JsonDecoder
-        val jsObject = decoder.decodeSerializableValue(JsonElement.Companion.serializer())
+        val jsObject = decoder.decodeSerializableValue(JsonElement.serializer())
         val value =
             decoder.json.decodeFromJsonElement(
                 serializer,
@@ -29,7 +29,7 @@ internal abstract class KSerializerWithExtensions<T : Extendable>(
         encoder as JsonEncoder
         val jsObject = encoder.json.encodeToJsonElement(serializer, value).jsonObject - "extensions"
         encoder.encodeSerializableValue(
-            JsonElement.Companion.serializer(),
+            JsonElement.serializer(),
             JsonObject(jsObject + extensions(value))
         )
     }

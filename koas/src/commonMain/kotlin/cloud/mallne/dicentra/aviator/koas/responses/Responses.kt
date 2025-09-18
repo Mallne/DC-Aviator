@@ -54,11 +54,11 @@ data class Responses(
         internal object Serializer : KSerializer<Responses> {
             override val descriptor: SerialDescriptor = ResponsesDescriptor
             private val responseSerializer = ReferenceOr.Companion.serializer(Response.serializer())
-            private val responsesSerializer = MapSerializer(Int.Companion.serializer(), responseSerializer)
+            private val responsesSerializer = MapSerializer(Int.serializer(), responseSerializer)
 
             override fun deserialize(decoder: Decoder): Responses {
                 decoder as JsonDecoder
-                val json = decoder.decodeSerializableValue(JsonElement.Companion.serializer()).jsonObject
+                val json = decoder.decodeSerializableValue(JsonElement.serializer()).jsonObject
                 val default =
                     if (json.contains("default"))
                         decoder.json.decodeFromJsonElement(responseSerializer, json.getValue("default"))
@@ -83,7 +83,7 @@ data class Responses(
                 val responses =
                     encoder.json.encodeToJsonElement(responsesSerializer, value.responses).jsonObject
                 val json = JsonObject((default ?: emptyMap()) + responses + value.extensions)
-                encoder.encodeSerializableValue(JsonElement.Companion.serializer(), json)
+                encoder.encodeSerializableValue(JsonElement.serializer(), json)
             }
         }
     }

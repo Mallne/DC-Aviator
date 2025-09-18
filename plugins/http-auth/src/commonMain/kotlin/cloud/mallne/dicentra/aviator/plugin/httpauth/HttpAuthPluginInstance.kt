@@ -9,5 +9,4 @@ data class HttpAuthPluginInstance(
     override val configurationBundle: HttpAuthPluginConfig,
     override val identity: String,
     override val x: PluginStagedExecutor<AviatorExecutionContext<@Serializable Any, @Serializable Any>, @Serializable Any, @Serializable Any>
-) : AviatorPluginInstance {
-}
+) : AviatorPluginInstance

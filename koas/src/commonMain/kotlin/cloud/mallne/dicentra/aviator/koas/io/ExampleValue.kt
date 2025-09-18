@@ -32,7 +32,7 @@ sealed interface ExampleValue {
     companion object {
 
         internal class Serializer : KSerializer<ExampleValue> {
-            private val multipleSerializer = ListSerializer(String.Companion.serializer())
+            private val multipleSerializer = ListSerializer(String.serializer())
 
             override val descriptor: SerialDescriptor =
                 buildClassSerialDescriptor("cloud.mallne.dicentra.aviator.koas.ExampleValueSerializer")
@@ -45,7 +45,7 @@ sealed interface ExampleValue {
             }
 
             override fun deserialize(decoder: Decoder): ExampleValue {
-                return when (val json = decoder.decodeSerializableValue(JsonElement.Companion.serializer())) {
+                return when (val json = decoder.decodeSerializableValue(JsonElement.serializer())) {
                     is JsonArray -> Multiple(decoder.decodeSerializableValue(multipleSerializer))
                     is JsonPrimitive -> Single(json.content)
                     else ->

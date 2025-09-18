@@ -7,7 +7,6 @@ import cloud.mallne.dicentra.aviator.koas.typed.Route.Body.Multipart
 import io.ktor.http.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
-import kotlin.collections.List
 
 @Serializable
 data class Route(
@@ -29,6 +28,7 @@ data class Route(
         val scopes: List<String>,
         val scheme: SecurityScheme
     )
+
     @Serializable
     data class Securities(
         val methods: List<Security>,
@@ -51,8 +51,8 @@ data class Route(
 
         fun xmlOrNull(): Body.Xml? = types.getOrElse(ContentType.Application.Xml) { null } as? Body.Xml
 
-        fun multipartOrNull(): Body.Multipart? =
-            types.getOrElse(ContentType.MultiPart.FormData) { null } as? Body.Multipart
+        fun multipartOrNull(): Multipart? =
+            types.getOrElse(ContentType.MultiPart.FormData) { null } as? Multipart
     }
 
     sealed interface Body {

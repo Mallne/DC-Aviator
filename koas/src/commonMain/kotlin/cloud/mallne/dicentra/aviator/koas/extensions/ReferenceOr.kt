@@ -1,6 +1,5 @@
 package cloud.mallne.dicentra.aviator.koas.extensions
 
-import cloud.mallne.dicentra.aviator.koas.extensions.ReferenceOr.Reference
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -73,7 +72,7 @@ sealed interface ReferenceOr<out A> {
 
             override fun deserialize(decoder: Decoder): ReferenceOr<T> {
                 decoder as JsonDecoder
-                val json = decoder.decodeSerializableValue(JsonElement.Companion.serializer())
+                val json = decoder.decodeSerializableValue(JsonElement.serializer())
                 return if ((json as JsonObject).contains(RefKey))
                     Reference(json[RefKey]!!.jsonPrimitive.content)
                 else Value(decoder.json.decodeFromJsonElement(dataSerializer!!, json))

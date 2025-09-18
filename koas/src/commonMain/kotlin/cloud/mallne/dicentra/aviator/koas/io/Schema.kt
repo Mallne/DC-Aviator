@@ -125,12 +125,12 @@ data class Schema(
                 buildClassSerialDescriptor("cloud.mallne.dicentra.aviator.koas.io.Schema.Type")
 
             override fun deserialize(decoder: Decoder): Type {
-                val json = decoder.decodeSerializableValue(JsonElement.Companion.serializer())
+                val json = decoder.decodeSerializableValue(JsonElement.serializer())
                 return when {
                     json is JsonArray ->
                         Array(
                             decoder
-                                .decodeSerializableValue(ListSerializer(String.Companion.serializer()))
+                                .decodeSerializableValue(ListSerializer(String.serializer()))
                                 .mapNotNull(Basic.Companion::fromString)
                         )
 
