@@ -1,9 +1,6 @@
 package cloud.mallne.dicentra.aviator.client.ktor
 
-import cloud.mallne.dicentra.aviator.core.AviatorServiceDataHolder
-import cloud.mallne.dicentra.aviator.core.InflatedServiceOptions
-import cloud.mallne.dicentra.aviator.core.RequestOptions
-import cloud.mallne.dicentra.aviator.core.ServiceOptions
+import cloud.mallne.dicentra.aviator.core.*
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionPipeline
 import cloud.mallne.dicentra.aviator.core.execution.RequestParameters
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginInstance
@@ -11,7 +8,7 @@ import cloud.mallne.dicentra.aviator.koas.OpenAPI
 import cloud.mallne.dicentra.aviator.koas.typed.Route
 import cloud.mallne.dicentra.aviator.model.AviatorServiceUtils
 import cloud.mallne.dicentra.aviator.model.ServiceLocator
-import io.ktor.client.HttpClient
+import io.ktor.client.*
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -68,6 +65,12 @@ data class KtorAviatorService(
         options: RequestOptions = emptyMap(),
         requestParams: RequestParameters = RequestParameters()
     ): O? = requestContextful<O, B>(requestBody, useSerializer, options, requestParams).result
+
+    suspend inline fun <reified O : @Serializable Any> request(
+        useSerializer: KSerializer<O> = serializer<O>(),
+        options: RequestOptions = emptyMap(),
+        requestParams: RequestParameters = RequestParameters()
+    ): O? = request<O, NoBody>(null, useSerializer, options, requestParams)
 
     fun close() = client.close()
 
