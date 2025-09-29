@@ -1,13 +1,13 @@
 [versions]
 # @pin
-agp = "8.12.3"
+agp = "8.13.0"
 # @keep
 android-compileSdk = "36"
 # @keep
 android-minSdk = "24"
 antlr = "1.0.6"
 appcompat = "1.7.1"
-ben-manes-versions-v = "0.52.0"
+ben-manes-versions-v = "0.53.0"
 coreKtx = "1.17.0"
 dc-aviator = "1.0.0-SNAPSHOT"
 dc-polyfill = "1.0.0-SNAPSHOT"
@@ -21,7 +21,7 @@ ktor = "3.3.0"
 logback = "1.5.18"
 material = "1.13.0"
 serialization = "1.9.0"
-version-catalog-update-v = "1.0.0"
+version-catalog-update-v = "1.0.1"
 volley = "1.2.1"
 
 [libraries]
