@@ -16,6 +16,9 @@ dependencyResolutionManagement {
 }
 
 include(":clients:ktor")
+include(":clients:mock")
+include(":plugins:adapter-json")
+include(":plugins:adapter-xml")
 include(":plugins:translation-keys")
 include(":plugins:http-auth")
 include(":plugins:interception")

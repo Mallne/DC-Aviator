@@ -1,13 +1,12 @@
-package cloud.mallne.dicentra.aviator.core.mock
+package cloud.mallne.dicentra.aviator.client.mock
 
 import cloud.mallne.dicentra.aviator.core.NoBody
 import cloud.mallne.dicentra.aviator.core.execution.StagedExecutor
 import cloud.mallne.dicentra.aviator.core.io.NetworkBody
 import cloud.mallne.dicentra.aviator.core.io.NetworkChain
 import cloud.mallne.dicentra.aviator.model.AviatorServiceUtils
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.Url
-import io.ktor.util.date.GMTDate
+import io.ktor.http.*
+import io.ktor.util.date.*
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.serializer

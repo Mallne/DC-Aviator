@@ -1,4 +1,4 @@
-package cloud.mallne.dicentra.aviator.core.mock
+package cloud.mallne.dicentra.aviator.client.mock
 
 import cloud.mallne.dicentra.aviator.core.io.NetworkResponse
 import cloud.mallne.dicentra.aviator.koas.typed.Serializers
