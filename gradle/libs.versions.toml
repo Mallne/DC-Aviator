@@ -12,17 +12,18 @@ coreKtx = "1.17.0"
 dc-aviator = "1.0.0-SNAPSHOT"
 dc-polyfill = "1.0.0-SNAPSHOT"
 dc-weaver = "1.0.0-SNAPSHOT"
-dependency-analysis-v = "3.0.4"
+dependency-analysis-v = "3.4.1"
 koin = "4.1.1"
-koin-annotations = "2.1.0"
-kotlin = "2.2.20"
+koin-annotations = "2.3.1"
+kotlin = "2.2.21"
 ksp = "2.2.20-2.0.3"
-ktor = "3.3.0"
-logback = "1.5.19"
+ktor = "3.3.2"
+logback = "1.5.20"
 material = "1.13.0"
 serialization = "1.9.0"
 version-catalog-update-v = "1.0.1"
 volley = "1.2.1"
+xmlutil = "0.91.3"
 
 [libraries]
 antlr-runtime = { module = "com.strumenta:antlr-kotlin-runtime", version.ref = "antlr" }
@@ -43,6 +44,7 @@ koin-annotations-ksp = { module = "io.insert-koin:koin-ksp-compiler", version.re
 koin-ktor = { module = "io.insert-koin:koin-ktor", version.ref = "koin" }
 koin-logger-slf4j = { module = "io.insert-koin:koin-logger-slf4j", version.ref = "koin" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
+kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "serialization" }
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-http = { module = "io.ktor:ktor-http", version.ref = "ktor" }
@@ -61,6 +63,8 @@ ktor-server-resources = { module = "io.ktor:ktor-server-resources-jvm" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 material = { module = "com.google.android.material:material", version.ref = "material" }
 volley = { module = "com.android.volley:volley", version.ref = "volley" }
+xmlutil-serialization = { module = "io.github.pdvrieze.xmlutil:serialization", version.ref = "xmlutil" }
+xmlutil-serialization-core = { module = "io.github.pdvrieze.xmlutil:core", version.ref = "xmlutil" }
 
 [plugins]
 android-library = { id = "com.android.library", version.ref = "agp" }

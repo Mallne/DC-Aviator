@@ -3,8 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 group = "cloud.mallne.dicentra.aviator.plugin"
 version = "1.0.0-SNAPSHOT"
-description =
-    "DiCentra Aviator Plugin that uses Weavers Object Mapping to translate input and Output"
+description = "DiCentra Aviator Adapter for JSON Bodies"
 
 plugins {
     alias(libs.plugins.mavenPublish)
@@ -21,9 +20,9 @@ publishing {
             version = project.version.toString()
 
             pom {
-                name = "DiCentra Weaver X Aviator TranslationKeys"
+                name = "DiCentra Aviator JSON Adapter"
                 description =
-                    "DiCentra Aviator Plugin that uses Weavers Object Mapping to translate input and Output"
+                    "DiCentra Aviator Adapter for JSON Bodies"
                 inceptionYear = "2025"
                 developers {
                     developer {
@@ -64,8 +63,6 @@ kotlin {
             dependencies {
                 implementation(libs.kotlinx.serialization.json)
                 implementation(project(":core"))
-                implementation(libs.dc.polyfill)
-                implementation(libs.ktor.client.core)
             }
         }
     }

@@ -11,6 +11,7 @@ import cloud.mallne.dicentra.aviator.model.ServiceLocator
 import io.ktor.client.*
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.StringFormat
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
 import kotlin.reflect.typeOf
@@ -22,8 +23,26 @@ data class KtorAviatorService(
     override val plugins: List<AviatorPluginInstance>,
     override val route: Route,
     override val oas: OpenAPI,
-    override val json: Json
+    override val serializers: MutableList<StringFormat> = mutableListOf(Json),
 ) : AviatorServiceDataHolder() {
+
+    constructor(
+        serviceLocator: ServiceLocator,
+        options: ServiceOptions,
+        client: HttpClient,
+        plugins: List<AviatorPluginInstance>,
+        route: Route,
+        oas: OpenAPI,
+        json: Json
+    ) : this(
+        serviceLocator = serviceLocator,
+        options = options,
+        client = client,
+        plugins = plugins,
+        route = route,
+        oas = oas,
+        serializers = mutableListOf(json),
+    )
 
     init {
         AviatorServiceUtils.validate(this)

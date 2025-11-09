@@ -46,6 +46,7 @@ object SubstitutionKeysSerializer {
             is NetworkBody.Empty -> input
             is NetworkBody.Json -> NetworkBody.Json( translateJson(translation, input.json, json))
             is NetworkBody.Form -> NetworkBody.Form( translateForm(translation, input.formData, json))
+            else -> input
         }
     }
 }

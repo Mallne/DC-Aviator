@@ -10,6 +10,7 @@ import cloud.mallne.dicentra.aviator.koas.OpenAPI
 import cloud.mallne.dicentra.aviator.koas.typed.Route
 import cloud.mallne.dicentra.aviator.model.ServiceLocator
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.StringFormat
 import kotlinx.serialization.Transient
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -22,8 +23,24 @@ data class MockedAviatorService(
     override val route: Route,
     override val oas: OpenAPI,
     @Transient
-    override val json: Json = Json
+    override val serializers: MutableList<StringFormat> = mutableListOf(Json)
 ) : AviatorServiceDataHolder() {
+
+    constructor(
+        serviceLocator: ServiceLocator,
+        plugins: List<AviatorPluginInstance> = emptyList(),
+        options: ServiceOptions,
+        route: Route,
+        oas: OpenAPI,
+        json: Json = Json
+    ): this(
+        serviceLocator = serviceLocator,
+        plugins = plugins,
+        options = options,
+        route = route,
+        oas = oas,
+        serializers = mutableListOf(json),
+    )
     suspend inline fun request(
         options: RequestOptions = emptyMap(),
         requestParams: RequestParameters = RequestParameters()

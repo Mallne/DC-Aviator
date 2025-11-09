@@ -17,14 +17,17 @@ import cloud.mallne.dicentra.aviator.model.ServiceLocator
 import cloud.mallne.dicentra.polyfill.ensure
 import cloud.mallne.dicentra.polyfill.ensureNotNull
 import io.ktor.client.*
+import kotlinx.serialization.StringFormat
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 
 @OptIn(InternalAviatorAPI::class)
 class KtorAviatorServiceConverter(
     val httpClient: HttpClient = HttpClient(),
-    val json: Json = Json
+    val serializers: MutableList<StringFormat> = mutableListOf(Json),
 ) : APIToServiceConverter {
+    constructor(httpClient: HttpClient, json: Json = Json): this(httpClient, mutableListOf(json))
+
     fun swapPlugins(
         to: KtorAviatorService,
         plugins: AviatorPluginActivationScope.() -> Unit
@@ -69,7 +72,7 @@ class KtorAviatorServiceConverter(
                     plugins = pluginsForRoute,
                     route = it,
                     oas = api,
-                    json = json,
+                    serializers = serializers,
                 )
             } else null
         }
