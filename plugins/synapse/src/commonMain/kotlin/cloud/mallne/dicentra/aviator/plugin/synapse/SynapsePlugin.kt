@@ -1,5 +1,6 @@
 package cloud.mallne.dicentra.aviator.plugin.synapse
 
+import cloud.mallne.dicentra.aviator.core.AviatorServiceDataHolder.Companion.json
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionStages
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPlugin
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginInstance
@@ -33,7 +34,11 @@ object SynapsePlugin : AviatorPlugin<SynapsePluginConfig> {
                     parameters = context.requestParams.toStringList(),
                     body = body
                 )
-                context.bodyClazz = Triple(CatalystRequest::class, typeOf<CatalystRequest>(), serializer<CatalystRequest>()) as Triple<KClass<@Serializable Any>, KType, KSerializer<@Serializable Any>>
+                context.bodyClazz = Triple(
+                    CatalystRequest::class,
+                    typeOf<CatalystRequest>(),
+                    serializer<CatalystRequest>()
+                ) as Triple<KClass<@Serializable Any>, KType, KSerializer<@Serializable Any>>
             }
         })
     }

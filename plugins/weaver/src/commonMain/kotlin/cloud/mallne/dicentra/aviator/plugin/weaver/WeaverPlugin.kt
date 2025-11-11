@@ -1,5 +1,6 @@
 package cloud.mallne.dicentra.aviator.plugin.weaver
 
+import cloud.mallne.dicentra.aviator.core.AviatorServiceDataHolder.Companion.json
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionStages
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPlugin
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginInstance
@@ -32,7 +33,9 @@ object WeaverPlugin : AviatorPlugin<WeaverPluginConfig> {
                 if (engine != null) {
                     context.networkChain.forEach { net ->
                         net.response?.content?.let {
-                            net.response?.content = engine.execute(it)
+                            val string = it.decodeToString()
+                            val element = context.dataHolder.json.parseToJsonElement(string)
+                            net.response?.content = engine.execute(element)
                         }
                     }
                     val successful =
@@ -42,7 +45,8 @@ object WeaverPlugin : AviatorPlugin<WeaverPluginConfig> {
                         context.bundle.plus(RESULT to it)
                         if (!(pluginConfig.preserveDefaultOutput)) {
                             context.result = try {
-                                res.parseBody(context.outputClazz.third, context.dataHolder.json)
+                                val dsrs = context.deserializerFor(res.contentType)
+                                dsrs?.deserialize(it, context)
                             } catch (e: SerializationException) {
                                 null
                             } catch (e: IllegalArgumentException) {
