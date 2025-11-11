@@ -4,10 +4,10 @@ import cloud.mallne.dicentra.aviator.core.AviatorServiceDataHolder
 import cloud.mallne.dicentra.aviator.core.InternalAviatorAPI
 import cloud.mallne.dicentra.aviator.core.MutableRequestOptions
 import cloud.mallne.dicentra.aviator.core.execution.logging.AviatorLogger
-import cloud.mallne.dicentra.aviator.core.io.NetworkChain
-import cloud.mallne.dicentra.aviator.core.io.NetworkHeader
-import cloud.mallne.dicentra.aviator.core.io.NetworkRequest
-import cloud.mallne.dicentra.aviator.core.io.NetworkResponse
+import cloud.mallne.dicentra.aviator.core.io.*
+import cloud.mallne.dicentra.aviator.core.io.adapter.request.RequestBodyAdapter
+import cloud.mallne.dicentra.aviator.core.io.adapter.response.ResponseBodyAdapter
+import io.ktor.http.*
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -45,5 +45,35 @@ interface AviatorExecutionContext<O : @Serializable Any, B : @Serializable Any> 
             set.addAll(plugin.configurationBundle.silentLoggingTags)
         }
         return set
+    }
+
+    fun <T : NetworkBody> adapterFor(body: T): RequestBodyAdapter<T>? {
+        val f = dataHolder.adapters.find { body::class == it.target }
+        if (f == null) {
+            log("Adapter.NotFound") {
+                debug("Adapter for $body not found, maybe a plugin or the client will handle the Type")
+            }
+        }
+        return f as RequestBodyAdapter<T>
+    }
+
+    fun adapterFor(contentType: ContentType): RequestBodyAdapter<*>? {
+        val f = dataHolder.adapters.find { it.understands(contentType) }
+        if (f == null) {
+            log("Adapter.NotFound") {
+                debug("Adapter for $contentType not found, maybe a plugin or the client will handle the Type")
+            }
+        }
+        return f
+    }
+
+    fun deserializerFor(contentType: ContentType): ResponseBodyAdapter? {
+        val f = dataHolder.deserializers.find { it.understands(contentType, this) }
+        if (f == null) {
+            log("Adapter.NotFound") {
+                debug("Adapter for $contentType not found, maybe a plugin or the client will handle the Type")
+            }
+        }
+        return f
     }
 }
