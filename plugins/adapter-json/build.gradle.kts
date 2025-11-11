@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
-group = "cloud.mallne.dicentra.aviator.plugin"
+group = "cloud.mallne.dicentra.aviator.plugin.adapter"
 version = "1.0.0-SNAPSHOT"
 description = "DiCentra Aviator Adapter for JSON Bodies"
 
