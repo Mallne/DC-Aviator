@@ -8,12 +8,13 @@ import cloud.mallne.dicentra.aviator.core.execution.StagedExecutor
 import cloud.mallne.dicentra.aviator.core.io.NetworkBody
 import cloud.mallne.dicentra.aviator.core.io.NetworkChain
 import cloud.mallne.dicentra.aviator.core.io.NetworkHeader
+import cloud.mallne.dicentra.aviator.core.io.adapter.request.FormAdapter
 import cloud.mallne.dicentra.aviator.koas.parameters.Parameter
-import cloud.mallne.dicentra.aviator.koas.typed.Route
-import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
+import io.ktor.client.statement.*
 import io.ktor.http.*
+import io.ktor.http.content.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 
@@ -27,42 +28,16 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
         })
     }
 
-    private fun tryFormData(
-        contentType: ContentType,
-        body: Route.Body,
-        params: RequestParameters
-    ): Pair<NetworkBody, ContentType>? {
-        if ((contentType.match(ContentType.MultiPart.FormData) || contentType.match(ContentType.Application.FormUrlEncoded)) && body is Route.Body.Multipart) {
-            val pairs = body.parameters.mapNotNull { (name, type) ->
-                params[name]?.let {
-                    name to it.toString()
-                }
-            }
-            return NetworkBody.Form(pairs) to contentType
-        } else {
-            return null
-        }
-    }
-
     override suspend fun onFormingRequest(context: KtorExecutionContext<O, B>) {
         val route = context.dataHolder.route
         context.networkChain.forEach { net ->
             val body = if (context.body != null && context.bodyClazz != null) {
-                NetworkBody.Json(
-                    context.dataHolder.json.encodeToJsonElement(
-                        context.bodyClazz!!.third,
-                        context.body!!
-                    )
-                ) to ContentType.Application.Json
+                val adapter =
+                    route.body.mapNotNull { bdy -> context.adapterFor(bdy.key)?.let { it to bdy.key } }.firstOrNull()
+                adapter?.let { adpt -> adpt.first.buildBody(context.body, context)?.let { it to adpt.second } }
+                    ?: (NetworkBody.Empty to ContentType.Any)
             } else {
-                val formBody = route.body.filter { it.value is Route.Body.Multipart }
-                if (formBody.isNotEmpty()) {
-                    formBody.mapNotNull {
-                        tryFormData(it.key, it.value, context.requestParams)
-                    }.firstOrNull() ?: (NetworkBody.Empty to ContentType.Any)
-                } else {
-                    NetworkBody.Empty to ContentType.Any
-                }
+                FormAdapter.buildBody(context) ?: (NetworkBody.Empty to ContentType.Any)
             }
 
             val headers = route.parameter.filter { it.input == Parameter.Input.Header }.mapNotNull { parameter ->
@@ -116,23 +91,29 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
                                     }
                                 ))
                         }
-
                     }
 
-                    is NetworkBody.Json -> {
-                        setBody((net.request!!.outgoingContent as NetworkBody.Json).json)
+                    else -> {
+                        val text = net.request!!.outgoingContent.fetchRepresentation(context)
+                        if (text != null) {
+                            setBody(TextContent(text, net.request!!.contentType))
+                        } else if (net.request!!.outgoingContent !is NetworkBody.Empty) {
+                            context.log(KtorLoggingIds.WARN_NO_BODY_FINALIZATION) {
+                                warn("A Body could not be stringified!")
+                            }
+                        }
                     }
-
-                    else -> {}
                 }
                 contentType(net.request!!.contentType)
                 method = net.request!!.method
                 net.request!!.headers.values.forEach { (k, v) -> header(k, v.toString()) }
             }
-
+            val contentTypeRecieved = resp.headers["Content-Type"]?.let { ContentType.parse(it) }
             val response = AvKtorResponse(
                 ktorPrimitive = resp,
-                content = resp.body(),
+                content = resp.bodyAsBytes(),
+                contentType = contentTypeRecieved ?: context.dataHolder.route.returnType[resp.status]?.toList()
+                    ?.first()?.first ?: ContentType.Any,
             )
             net.response = response
 
@@ -150,7 +131,8 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
     override suspend fun onPaintingResponse(context: KtorExecutionContext<O, B>) {
         val successful = context.networkChain.find { (it.response?.status?.value ?: 500) < 400 }
         context.result = try {
-            successful?.response?.parseBody(context.outputClazz.third, context.dataHolder.json)
+            val deserializer = successful?.response?.let { context.deserializerFor(it.contentType) }
+            successful?.response?.content?.let { deserializer?.deserialize(it, context) }
         } catch (e: SerializationException) {
             context.log(KtorLoggingIds.WARN_OPTIONAL_FINALIZATION) {
                 warn(

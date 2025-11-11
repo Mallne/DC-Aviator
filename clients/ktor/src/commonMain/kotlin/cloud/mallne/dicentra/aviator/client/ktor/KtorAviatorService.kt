@@ -3,6 +3,9 @@ package cloud.mallne.dicentra.aviator.client.ktor
 import cloud.mallne.dicentra.aviator.core.*
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionPipeline
 import cloud.mallne.dicentra.aviator.core.execution.RequestParameters
+import cloud.mallne.dicentra.aviator.core.io.NetworkBody
+import cloud.mallne.dicentra.aviator.core.io.adapter.request.RequestBodyAdapter
+import cloud.mallne.dicentra.aviator.core.io.adapter.response.ResponseBodyAdapter
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginInstance
 import cloud.mallne.dicentra.aviator.koas.OpenAPI
 import cloud.mallne.dicentra.aviator.koas.typed.Route
@@ -10,8 +13,8 @@ import cloud.mallne.dicentra.aviator.model.AviatorServiceUtils
 import cloud.mallne.dicentra.aviator.model.ServiceLocator
 import io.ktor.client.*
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerialFormat
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.StringFormat
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
 import kotlin.reflect.typeOf
@@ -23,26 +26,10 @@ data class KtorAviatorService(
     override val plugins: List<AviatorPluginInstance>,
     override val route: Route,
     override val oas: OpenAPI,
-    override val serializers: MutableList<StringFormat> = mutableListOf(Json),
-) : AviatorServiceDataHolder() {
-
-    constructor(
-        serviceLocator: ServiceLocator,
-        options: ServiceOptions,
-        client: HttpClient,
-        plugins: List<AviatorPluginInstance>,
-        route: Route,
-        oas: OpenAPI,
-        json: Json
-    ) : this(
-        serviceLocator = serviceLocator,
-        options = options,
-        client = client,
-        plugins = plugins,
-        route = route,
-        oas = oas,
-        serializers = mutableListOf(json),
-    )
+    override val adapters: List<RequestBodyAdapter<out NetworkBody>>,
+    override val deserializers: List<ResponseBodyAdapter>,
+    override val serializers: MutableList<SerialFormat> = mutableListOf(Json),
+) : AviatorServiceDataHolder {
 
     init {
         AviatorServiceUtils.validate(this)
