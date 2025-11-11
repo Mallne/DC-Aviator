@@ -16,9 +16,9 @@ dependency-analysis-v = "3.4.1"
 koin = "4.1.1"
 koin-annotations = "2.3.1"
 kotlin = "2.2.21"
-ksp = "2.2.20-2.0.3"
+ksp = "2.3.2"
 ktor = "3.3.2"
-logback = "1.5.20"
+logback = "1.5.21"
 material = "1.13.0"
 serialization = "1.9.0"
 version-catalog-update-v = "1.0.1"
@@ -29,12 +29,12 @@ xmlutil = "0.91.3"
 antlr-runtime = { module = "com.strumenta:antlr-kotlin-runtime", version.ref = "antlr" }
 appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
 core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
+dc-aviator-adapter-json = { module = "cloud.mallne.dicentra.aviator.plugin.adapter:adapter-json", version.ref = "dc-aviator" }
+dc-aviator-adapter-xml = { module = "cloud.mallne.dicentra.aviator.plugin.adapter:adapter-xml", version.ref = "dc-aviator" }
 dc-aviator-client-ktor = { module = "cloud.mallne.dicentra.aviator.client:ktor", version.ref = "dc-aviator" }
 dc-aviator-core = { module = "cloud.mallne.dicentra.aviator:core", version.ref = "dc-aviator" }
 dc-aviator-koas = { module = "cloud.mallne.dicentra.aviator:koas", version.ref = "dc-aviator" }
 dc-aviator-plugin-interception = { module = "cloud.mallne.dicentra.aviator.plugin:interception", version.ref = "dc-aviator" }
-dc-aviator-adapter-xml = { module = "cloud.mallne.dicentra.aviator.plugin.adapter:adapter-xml", version.ref = "dc-aviator" }
-dc-aviator-adapter-json = { module = "cloud.mallne.dicentra.aviator.plugin.adapter:adapter-json", version.ref = "dc-aviator" }
 dc-aviator-plugin-weaver = { module = "cloud.mallne.dicentra.aviator.plugin:weaver", version.ref = "dc-aviator" }
 dc-aviator-ressourceserver = { module = "cloud.mallne.dicentra.aviator:aviator-resourcee-server", version.ref = "dc-aviator" }
 dc-polyfill = { module = "cloud.mallne.dicentra:polyfill", version.ref = "dc-polyfill" }
@@ -44,8 +44,8 @@ koin-annotations = { module = "io.insert-koin:koin-annotations", version.ref = "
 koin-annotations-ksp = { module = "io.insert-koin:koin-ksp-compiler", version.ref = "koin-annotations" }
 koin-ktor = { module = "io.insert-koin:koin-ktor", version.ref = "koin" }
 koin-logger-slf4j = { module = "io.insert-koin:koin-logger-slf4j", version.ref = "koin" }
-kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "serialization" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-http = { module = "io.ktor:ktor-http", version.ref = "ktor" }
@@ -78,5 +78,5 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 ktor = { id = "io.ktor.plugin", version.ref = "ktor" }
-mavenPublish = "com.vanniktech.maven.publish:0.34.0"
+mavenPublish = "com.vanniktech.maven.publish:0.35.0"
 version-catalog-update = { id = "nl.littlerobots.version-catalog-update", version.ref = "version-catalog-update-v" }
