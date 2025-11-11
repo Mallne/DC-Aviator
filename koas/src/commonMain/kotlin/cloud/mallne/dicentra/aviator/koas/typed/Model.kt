@@ -1,9 +1,9 @@
 package cloud.mallne.dicentra.aviator.koas.typed
 
 import cloud.mallne.dicentra.aviator.koas.extensions.Extendable
+import cloud.mallne.dicentra.aviator.koas.io.Schema
 import cloud.mallne.dicentra.aviator.koas.parameters.Parameter
 import cloud.mallne.dicentra.aviator.koas.security.SecurityScheme
-import cloud.mallne.dicentra.aviator.koas.typed.Route.Body.Multipart
 import io.ktor.http.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -42,59 +42,13 @@ data class Route(
         val required: Boolean,
         val types: Map<@Serializable(Serializers.ContentTypeSerializer::class) ContentType, Body>,
         val extensions: Map<String, JsonElement>
-    ) : Map<ContentType, Body> by types {
-        fun jsonOrNull(): Body.Json? =
-            types.getOrElse(ContentType.Application.Json) { null } as? Body.Json
-
-        fun octetStreamOrNull(): Body.OctetStream? =
-            types.getOrElse(ContentType.Application.OctetStream) { null } as? Body.OctetStream
-
-        fun xmlOrNull(): Body.Xml? = types.getOrElse(ContentType.Application.Xml) { null } as? Body.Xml
-
-        fun multipartOrNull(): Multipart? =
-            types.getOrElse(ContentType.MultiPart.FormData) { null } as? Multipart
-    }
-
-    sealed interface Body {
-        val description: String?
-        val extensions: Map<String, JsonElement>
-
-        data class OctetStream(
-            override val description: String?,
-            override val extensions: Map<String, JsonElement>
-        ) : Body
-
-        sealed interface Json : Body {
-            val type: Model
-
-            data class FreeForm(
-                override val description: String?,
-                override val extensions: Map<String, JsonElement>
-            ) : Json {
-                override val type: Model = Model.FreeFormJson(description, null)
-            }
-
-            data class Defined(
-                override val type: Model,
-                override val description: String?,
-                override val extensions: Map<String, JsonElement>
-            ) : Json
-        }
-
-        data class Xml(
-            val type: Model,
-            override val description: String?,
-            override val extensions: Map<String, JsonElement>
-        ) : Body
-
-        data class Multipart(
-            val parameters: List<FormData>,
-            override val description: String?,
-            override val extensions: Map<String, JsonElement>
-        ) : Body, List<Multipart.FormData> by parameters {
-
-            data class FormData(val name: String, val type: Model)
-        }
+    ) : Map<ContentType, Bodies.Body> by types {
+        @Serializable
+        data class Body(
+            val model: Model,
+            val schema: Schema?,
+            val parameters: Map<String, Body>
+        )
     }
 
     // A Parameter can be isNullable, required while the model is not!
@@ -120,7 +74,10 @@ data class Route(
 
     // Required, isNullable ???
     @Serializable
-    data class ReturnType(val type: Model, val extensions: Map<String, JsonElement>)
+    data class ReturnType(
+        val types: Map<@Serializable(Serializers.ContentTypeSerializer::class) ContentType, Bodies.Body>,
+        val extensions: Map<String, JsonElement>
+    ) : Map<ContentType, Bodies.Body> by types
 }
 
 /**
