@@ -6,7 +6,6 @@ import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.`x-dicentra-aviat
 import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.`x-dicentra-aviator-pluginMaterialization`
 import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.`x-dicentra-aviator-serviceDelegateCall`
 import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.`x-dicentra-aviator-serviceOptions`
-import cloud.mallne.dicentra.aviator.core.AviatorServiceDataHolder
 import cloud.mallne.dicentra.aviator.core.InternalAviatorAPI
 import cloud.mallne.dicentra.aviator.core.io.adapter.CommonAdapter
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorAdapterPluginInstance
@@ -27,7 +26,7 @@ class MockConverter(
     override fun build(
         api: OpenAPI,
         plugins: AviatorPluginActivationScope.() -> Unit,
-    ): List<AviatorServiceDataHolder> {
+    ): List<MockedAviatorService> {
         val version = api.`x-dicentra-aviator`
         ensureNotNull(version) {
             AviatorValidationException("The given OpenAPI specification does not contain a Aviator Version Attribute at root Level.")

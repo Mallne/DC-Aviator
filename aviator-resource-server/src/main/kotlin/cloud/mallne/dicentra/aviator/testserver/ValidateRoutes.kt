@@ -1,8 +1,8 @@
 package cloud.mallne.dicentra.aviator.testserver
 
+import cloud.mallne.dicentra.aviator.client.mock.MockConverter
+import cloud.mallne.dicentra.aviator.client.mock.MockExecutionContext
 import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec
-import cloud.mallne.dicentra.aviator.core.mock.MockConverter
-import cloud.mallne.dicentra.aviator.core.mock.MockExecutionContext
 import cloud.mallne.dicentra.aviator.exceptions.AviatorValidationException
 import cloud.mallne.dicentra.aviator.exceptions.ServiceException
 import cloud.mallne.dicentra.aviator.koas.OpenAPI
@@ -42,9 +42,9 @@ fun Application.validateRoutes() {
             try {
                 val koas = call.receive<OpenAPI>()
                 val serv = conv.build(koas)
-                val outp = serv.map { (locator, service) ->
-                    locator.toString() to service.requestContextful()
-                }.toMap()
+                val outp = serv.associate { service ->
+                    service.serviceLocator.toString() to service.requestContextful()
+                }
                 call.respond(outp, typeInfo<Map<String, MockExecutionContext>>())
             } catch (e: ExplicitTypeException) {
                 catchSendBadRequest(e)

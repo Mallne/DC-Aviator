@@ -34,4 +34,5 @@ dependencies {
     implementation(libs.logback.classic)
     implementation(libs.ktor.server.config.yaml)
     implementation(project(":clients:ktor"))
+    implementation(project(":clients:mock"))
 }
