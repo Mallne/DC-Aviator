@@ -1,5 +1,6 @@
 package cloud.mallne.dicentra.aviator.client.mock
 
+import cloud.mallne.dicentra.aviator.core.AviatorServiceDataHolder.Companion.json
 import cloud.mallne.dicentra.aviator.core.NoBody
 import cloud.mallne.dicentra.aviator.core.execution.StagedExecutor
 import cloud.mallne.dicentra.aviator.core.io.NetworkBody
@@ -7,6 +8,8 @@ import cloud.mallne.dicentra.aviator.core.io.NetworkChain
 import cloud.mallne.dicentra.aviator.model.AviatorServiceUtils
 import io.ktor.http.*
 import io.ktor.util.date.*
+import io.ktor.utils.io.charsets.*
+import io.ktor.utils.io.core.*
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.serializer
@@ -36,12 +39,13 @@ class MockedStagedExecutor :
         val chain = context.networkChain.filter { it.request != null && it.response == null }
         AviatorServiceUtils.manualPipeline(chain) { net, next ->
             val response = MockedResponse(
-                content = context.dataHolder.json.encodeToJsonElement(
+                content = context.dataHolder.json.encodeToString(
                     serializer(),
                     context.dataHolder.route.nested
-                ),
+                ).toByteArray(),
                 status = HttpStatusCode.OK,
-                time = GMTDate()
+                time = GMTDate(),
+                contentType = ContentType.Application.Json.withCharset(Charsets.UTF_8)
             )
             net.response = response
         }
@@ -50,7 +54,8 @@ class MockedStagedExecutor :
     override suspend fun onPaintingResponse(context: MockExecutionContext) {
         val successful = context.networkChain.find { (it.response?.status?.value ?: 500) < 400 }
         context.result = try {
-            successful?.response?.parseBody(context.outputClazz.third, context.dataHolder.json)
+            val deserializer = successful?.response?.let { context.deserializerFor(it.contentType) }
+            successful?.response?.content?.let { deserializer?.deserialize(it, context) }
         } catch (e: SerializationException) {
             null
         } catch (e: IllegalArgumentException) {

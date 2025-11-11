@@ -8,6 +8,8 @@ import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.`x-dicentra-aviat
 import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.`x-dicentra-aviator-serviceOptions`
 import cloud.mallne.dicentra.aviator.core.AviatorServiceDataHolder
 import cloud.mallne.dicentra.aviator.core.InternalAviatorAPI
+import cloud.mallne.dicentra.aviator.core.io.adapter.CommonAdapter
+import cloud.mallne.dicentra.aviator.core.plugins.AviatorAdapterPluginInstance
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginActivationScope
 import cloud.mallne.dicentra.aviator.exceptions.AviatorValidationException
 import cloud.mallne.dicentra.aviator.koas.OpenAPI
@@ -15,11 +17,12 @@ import cloud.mallne.dicentra.aviator.koas.typed.routes
 import cloud.mallne.dicentra.aviator.model.ServiceLocator
 import cloud.mallne.dicentra.polyfill.ensure
 import cloud.mallne.dicentra.polyfill.ensureNotNull
+import kotlinx.serialization.SerialFormat
 import kotlinx.serialization.json.Json
 
 @OptIn(InternalAviatorAPI::class)
 class MockConverter(
-    val json: Json = Json
+    val serializers: MutableList<SerialFormat> = mutableListOf(Json),
 ) : APIToServiceConverter {
     override fun build(
         api: OpenAPI,
@@ -41,13 +44,18 @@ class MockConverter(
             if (l != null && options != null) {
                 val locator = ServiceLocator(l)
                 val pluginsForRoute = pluginsForRoute(registry, locator, pluginsRequested ?: mapOf())
+                val adapters = pluginsForRoute.mapNotNull { (it as? AviatorAdapterPluginInstance)?.adapters }.flatten()
+                val deserializers =
+                    pluginsForRoute.mapNotNull { (it as? AviatorAdapterPluginInstance)?.deserializers }.flatten()
                 MockedAviatorService(
                     serviceLocator = locator,
                     options = options,
                     plugins = pluginsForRoute,
                     route = it,
                     oas = api,
-                    json = json,
+                    serializers = serializers,
+                    adapters = adapters + CommonAdapter.adapters,
+                    deserializers = deserializers + CommonAdapter.deserializers,
                 )
             } else null
         }
