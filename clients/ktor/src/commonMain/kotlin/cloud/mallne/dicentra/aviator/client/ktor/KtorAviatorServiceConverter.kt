@@ -23,7 +23,7 @@ import kotlinx.serialization.json.Json
 @OptIn(InternalAviatorAPI::class)
 class KtorAviatorServiceConverter(
     val httpClient: HttpClient = HttpClient(),
-    val serializers: MutableList<SerialFormat> = mutableListOf(Json),
+    val serializers: List<SerialFormat> = listOf(Json),
 ) : APIToServiceConverter {
     constructor(httpClient: HttpClient, json: Json = Json) : this(httpClient, mutableListOf(json))
 

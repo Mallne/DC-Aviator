@@ -63,6 +63,7 @@ kotlin {
             dependencies {
                 implementation(libs.xmlutil.serialization)
                 implementation(project(":core"))
+                implementation(libs.ktor.http)
             }
         }
     }

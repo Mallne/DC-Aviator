@@ -1,6 +1,7 @@
 package cloud.mallne.dicentra.aviator.client.ktor
 
 import cloud.mallne.dicentra.aviator.core.*
+import cloud.mallne.dicentra.aviator.core.AviatorServiceDataHolder.Companion.json
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionPipeline
 import cloud.mallne.dicentra.aviator.core.execution.RequestParameters
 import cloud.mallne.dicentra.aviator.core.io.NetworkBody
@@ -28,7 +29,7 @@ data class KtorAviatorService(
     override val oas: OpenAPI,
     override val adapters: List<RequestBodyAdapter<out NetworkBody>>,
     override val deserializers: List<ResponseBodyAdapter>,
-    override val serializers: MutableList<SerialFormat> = mutableListOf(Json),
+    override val serializers: List<SerialFormat> = listOf(Json),
 ) : AviatorServiceDataHolder {
 
     init {
