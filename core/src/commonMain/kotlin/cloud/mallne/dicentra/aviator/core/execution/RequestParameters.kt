@@ -21,6 +21,8 @@ sealed interface RequestParameter {
     val size: Int
     fun isEmpty(): Boolean
 
+    fun <Tt> asType(): Tt?
+
 
     data class Multi<T>(
         val value: List<T>,
@@ -28,6 +30,7 @@ sealed interface RequestParameter {
     ) : RequestParameter, List<T> by value {
         override fun toString(): String = value.joinToString(separator = ",") { stringify(it) }
         fun toStringList(): List<String> = value.map { stringify(it) }
+        override fun <Tt> asType(): Tt? = value as? Tt
     }
 
     data class Single<T>(
@@ -39,5 +42,7 @@ sealed interface RequestParameter {
             get() = 1
 
         override fun isEmpty(): Boolean = false
+
+        override fun <Tt> asType(): Tt? = value as? Tt
     }
 }

@@ -30,14 +30,15 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
 
     override suspend fun onFormingRequest(context: KtorExecutionContext<O, B>) {
         val route = context.dataHolder.route
+        val fallbackCT = route.body.types.keys.firstOrNull()
         context.networkChain.forEach { net ->
             val body = if (context.body != null && context.bodyClazz != null) {
                 val adapter =
                     route.body.mapNotNull { bdy -> context.adapterFor(bdy.key)?.let { it to bdy.key } }.firstOrNull()
                 adapter?.let { adpt -> adpt.first.buildBody(context.body, context)?.let { it to adpt.second } }
-                    ?: (NetworkBody.Empty to ContentType.Any)
+                    ?: (NetworkBody.Empty to fallbackCT)
             } else {
-                FormAdapter.buildBody(context) ?: (NetworkBody.Empty to ContentType.Any)
+                FormAdapter.buildBody(context) ?: (NetworkBody.Empty to fallbackCT)
             }
 
             val headers = route.parameter.filter { it.input == Parameter.Input.Header }.mapNotNull { parameter ->
@@ -95,8 +96,9 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
 
                     else -> {
                         val text = net.request!!.outgoingContent.fetchRepresentation(context)
-                        if (text != null) {
-                            setBody(TextContent(text, net.request!!.contentType))
+                        if (text != null && net.request?.contentType != null) {
+                            setBody(TextContent(text, net.request!!.contentType!!))
+                            contentType(net.request!!.contentType!!)
                         } else if (net.request!!.outgoingContent !is NetworkBody.Empty) {
                             context.log(KtorLoggingIds.WARN_NO_BODY_FINALIZATION) {
                                 warn("A Body could not be stringified!")
@@ -104,7 +106,6 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
                         }
                     }
                 }
-                contentType(net.request!!.contentType)
                 method = net.request!!.method
                 net.request!!.headers.values.forEach { (k, v) -> header(k, v.toString()) }
             }

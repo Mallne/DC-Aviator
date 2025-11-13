@@ -12,5 +12,5 @@ data class MockedRequest(
     override var method: @Serializable(Serializers.HttpMethodSerializer::class) HttpMethod,
     override var url: @Serializable(Serializers.UrlSerializer::class) Url,
     override var outgoingContent: NetworkBody = NetworkBody.Empty,
-    override var contentType: @Serializable(Serializers.ContentTypeSerializer::class) ContentType = ContentType.Any,
+    override var contentType: ContentType? = ContentType.Any,
 ) : NetworkRequest<MockedHeader>

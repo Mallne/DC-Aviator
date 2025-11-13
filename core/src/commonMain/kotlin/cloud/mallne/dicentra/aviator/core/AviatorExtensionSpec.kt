@@ -2,7 +2,9 @@ package cloud.mallne.dicentra.aviator.core
 
 import cloud.mallne.dicentra.aviator.koas.OpenAPI
 import cloud.mallne.dicentra.aviator.koas.Operation
+import cloud.mallne.dicentra.aviator.koas.info.Info
 import cloud.mallne.dicentra.aviator.koas.typed.Route
+import cloud.mallne.dicentra.aviator.model.SemVer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
@@ -125,4 +127,6 @@ object AviatorExtensionSpec {
                 ).toMap()
             }
         }
+
+    fun Info.semver(): SemVer? = SemVer(version)
 }
