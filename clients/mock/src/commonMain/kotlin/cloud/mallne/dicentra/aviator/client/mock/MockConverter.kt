@@ -21,7 +21,7 @@ import kotlinx.serialization.json.Json
 
 @OptIn(InternalAviatorAPI::class)
 class MockConverter(
-    val serializers: MutableList<SerialFormat> = mutableListOf(Json),
+    val serializers: List<SerialFormat> = listOf(Json),
 ) : APIToServiceConverter {
     override fun build(
         api: OpenAPI,
