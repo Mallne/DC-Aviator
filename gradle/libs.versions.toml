@@ -5,7 +5,7 @@ agp = "8.12.3"
 android-compileSdk = "36"
 # @keep
 android-minSdk = "24"
-antlr = "1.0.8"
+antlr = "1.0.9"
 appcompat = "1.7.1"
 ben-manes-versions-v = "0.53.0"
 coreKtx = "1.17.0"
@@ -68,7 +68,7 @@ xmlutil-serialization = { module = "io.github.pdvrieze.xmlutil:serialization", v
 xmlutil-serialization-core = { module = "io.github.pdvrieze.xmlutil:core", version.ref = "xmlutil" }
 
 [plugins]
-android-library = { id = "com.android.library", version.ref = "agp" }
+android-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 antlr = { id = "com.strumenta.antlr-kotlin", version.ref = "antlr" }
 ben-manes-versions = { id = "com.github.ben-manes.versions", version.ref = "ben-manes-versions-v" }
 dependency-analysis = { id = "com.autonomousapps.dependency-analysis", version.ref = "dependency-analysis-v" }

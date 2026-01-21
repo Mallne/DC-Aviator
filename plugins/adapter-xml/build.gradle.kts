@@ -1,4 +1,8 @@
+@file:OptIn(ExperimentalWasmDsl::class)
+
+import com.android.build.api.dsl.androidLibrary
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 group = "cloud.mallne.dicentra.aviator.plugin.adapter"
@@ -46,12 +50,23 @@ publishing {
 
 kotlin {
     jvm()
-    androidTarget {
-        publishLibraryVariants("release")
+    androidLibrary {
+        namespace = project.group.toString()
+        compileSdk = libs.versions.android.compileSdk.get().toInt()
+        minSdk = libs.versions.android.minSdk.get().toInt()
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_21)
         }
+    }
+    js {
+        nodejs()
+        browser()
+    }
+    wasmJs {
+        browser()
+        nodejs()
+        d8()
     }
     iosX64()
     iosArm64()
@@ -66,17 +81,5 @@ kotlin {
                 implementation(libs.ktor.http)
             }
         }
-    }
-}
-
-android {
-    namespace = "cloud.mallne.dicentra.aviator.plugins"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
-    defaultConfig {
-        minSdk = libs.versions.android.minSdk.get().toInt()
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
     }
 }

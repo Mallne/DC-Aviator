@@ -5,7 +5,7 @@ import cloud.mallne.dicentra.aviator.model.ServiceLocator
 import kotlinx.serialization.Serializable
 
 @Serializable
-class HttpAuthPluginConfig() : AviatorPluginConfigScope {
+class HttpAuthPluginConfig : AviatorPluginConfigScope {
     override var serviceFilter: MutableList<ServiceLocator> = mutableListOf()
     override val silentLoggingTags: MutableList<String> = mutableListOf()
     var doBase64Encode: Boolean = false
