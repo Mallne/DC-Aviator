@@ -128,7 +128,7 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
 
         Route(
             operationId = operation.operationId,
-            summary = operation.summary,
+            summary = operation.summary ?: pathItem.summary,
             path = path,
             method = method,
             body = toRequestBody(operation, operation.requestBody?.get(), ::context),
