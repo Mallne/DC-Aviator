@@ -14,7 +14,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.jvm.JvmInline
 
-private const val RefKey = "\$ref"
+private const val RefKey = $$"$ref"
 
 /**
  * Defines Union [A] | [Reference]. A lot of types like Header, Schema, MediaType, etc. can be
@@ -35,17 +35,29 @@ sealed interface ReferenceOr<out A> {
         }
 
     companion object {
-        private const val schema: String = "#/components/schemas/"
+        private const val schemas: String = "#/components/schemas/"
         private const val responses: String = "#/components/responses/"
         private const val parameters: String = "#/components/parameters/"
+        private const val examples: String = "#/components/examples/"
         private const val requestBodies: String = "#/components/requestBodies/"
+        private const val headers: String = "#/components/headers/"
+        private const val securitySchemes: String = "#/components/securitySchemes/"
+        private const val links: String = "#/components/links/"
+        private const val callbacks: String = "#/components/callbacks/"
         private const val pathItems: String = "#/components/pathItems/"
+        private const val mediaTypes: String = "#/components/mediaTypes/"
 
-        fun schema(name: String): Reference = Reference("$schema$name")
-        fun responses(name: String): Reference = Reference("$responses$name")
-        fun parameters(name: String): Reference = Reference("$parameters$name")
-        fun requestBodies(name: String): Reference = Reference("$requestBodies$name")
-        fun pathItems(name: String): Reference = Reference("$pathItems$name")
+        fun schema(name: String): Reference = Reference("$schemas$name")
+        fun response(name: String): Reference = Reference("$responses$name")
+        fun parameter(name: String): Reference = Reference("$parameters$name")
+        fun example(name: String): Reference = Reference("$examples$name")
+        fun requestBody(name: String): Reference = Reference("$requestBodies$name")
+        fun header(name: String): Reference = Reference("$headers$name")
+        fun securityScheme(name: String): Reference = Reference("$securitySchemes$name")
+        fun link(name: String): Reference = Reference("$links$name")
+        fun callback(name: String): Reference = Reference("$callbacks$name")
+        fun pathItem(name: String): Reference = Reference("$pathItems$name")
+        fun mediaType(name: String): Reference = Reference("$mediaTypes$name")
 
         fun <A> value(value: A): ReferenceOr<A> = Value(value)
 

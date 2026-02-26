@@ -15,10 +15,14 @@ import kotlinx.serialization.json.JsonElement
 @KeepGeneratedSerializer
 data class Response(
     /**
+     * A short summary of the meaning of the response.
+     */
+    val summary: String,
+    /**
      * A short description of the response. CommonMark's syntax MAY be used for rich text
      * representation.
      */
-    val description: String,
+    val description: String? = null,
     /** Maps a header name to its definition. RFC7230 states header names are case-insensitive. */
     val headers: Map<String, ReferenceOr<Header>> = emptyMap(),
     /**
@@ -26,7 +30,7 @@ data class Response(
      * type range and the value describes it. For responses that match multiple keys, only the most
      * specific key is applicable. i.e. text/plain overrides text
      */
-    val content: Map<String, MediaType> = emptyMap(),
+    val content: Map<String, ReferenceOr<MediaType>> = emptyMap(),
     /**
      * A map of operations links that can be followed from the response. The key of the map is a short
      * name for the link, following the naming constraints of the names for Component Objects.
@@ -37,10 +41,11 @@ data class Response(
      * extension (beginning with x-), and the value is the data. The value can be a [kotlinx.serialization.json.JsonNull],
      * [kotlinx.serialization.json.JsonPrimitive], [kotlinx.serialization.json.JsonArray] or [kotlinx.serialization.json.JsonObject].
      */
-    override var extensions: Map<String, JsonElement> = emptyMap()
+    override var extensions: Map<String, JsonElement> = emptyMap(),
 ) : Extendable {
     operator fun plus(other: Response): Response =
         Response(
+            summary,
             description,
             headers + other.headers,
             content + other.content,

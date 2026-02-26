@@ -9,7 +9,6 @@ import cloud.mallne.dicentra.aviator.koas.io.Example
 import cloud.mallne.dicentra.aviator.koas.io.ExampleValue
 import cloud.mallne.dicentra.aviator.koas.io.MediaType
 import cloud.mallne.dicentra.aviator.koas.io.Schema
-import cloud.mallne.dicentra.polyfill.Validation
 import cloud.mallne.dicentra.polyfill.ensure
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KeepGeneratedSerializer
@@ -78,7 +77,7 @@ data class Parameter(
     val allowReserved: Boolean = false,
     /** The schema defining the type used for the parameter. */
     val schema: ReferenceOr<Schema>? = null,
-    val content: Map<String, MediaType> = emptyMap(),
+    val content: Map<String, ReferenceOr<MediaType>> = emptyMap(),
     /**
      * Describes how the parameter value will be serialized depending on the type of the parameter
      * value. Default values (based on value of _paramIn): for ParamQuery - StyleForm; for ParamPath -
@@ -135,6 +134,9 @@ data class Parameter(
         Path("path"),
 
         @SerialName("cookie")
-        Cookie("cookie")
+        Cookie("cookie"),
+
+        @SerialName("querystring")
+        Querystring("querystring")
     }
 }

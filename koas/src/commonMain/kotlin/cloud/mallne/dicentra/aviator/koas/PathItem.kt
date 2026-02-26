@@ -5,11 +5,15 @@ import cloud.mallne.dicentra.aviator.koas.extensions.KSerializerWithExtensions
 import cloud.mallne.dicentra.aviator.koas.extensions.ReferenceOr
 import cloud.mallne.dicentra.aviator.koas.parameters.Parameter
 import cloud.mallne.dicentra.aviator.koas.servers.Server
-import io.ktor.http.*
+import io.ktor.http.HttpMethod
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KeepGeneratedSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.*
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable(PathItem.Companion.Serializer::class)
@@ -46,6 +50,8 @@ data class PathItem(
     val trace: Operation = Operation(),
     /** An alternative server array to service all operations in this path. */
     val servers: List<Server> = emptyList(),
+    /** A map of additional operations on this path. The map key is the HTTP method with the same capitalization that is to be sent in the request. This map MUST NOT contain any entry for the methods that can be defined by other fixed fields with Operation Object values (e.g. no POST entry, as the post field is used for this method). */
+    val additionalOperations: Map<String, Operation> = emptyMap(),
     /**
      * A list of parameters that are applicable for all the operations described under this path.
      * These parameters can be overridden at the operation level, but cannot be removed there. The
@@ -59,7 +65,7 @@ data class PathItem(
      * extension (beginning with x-), and the value is the data. The value can be a [JsonNull],
      * [JsonPrimitive], [JsonArray] or [JsonObject].
      */
-    override var extensions: Map<String, JsonElement> = emptyMap()
+    override var extensions: Map<String, JsonElement> = emptyMap(),
 ) : Extendable {
 
     operator fun plus(other: PathItem): PathItem =

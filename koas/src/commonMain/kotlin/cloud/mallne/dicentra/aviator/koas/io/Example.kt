@@ -25,6 +25,19 @@ data class Example(
      */
     val value: ExampleValue? = null,
     /**
+     * An example of the data structure that MUST be valid according to the relevant Schema Object.
+     * If this field is present, value MUST be absent.
+     */
+    val dataValue: JsonElement? = null,
+    /**
+     * An example of the serialized form of the value, including encoding and escaping as described under
+     * Validating Examples. If dataValue is present, then this field SHOULD contain the serialization of
+     * the given data. Otherwise, it SHOULD be the valid serialization of a data value that itself MUST be
+     * valid as described for dataValue. This field SHOULD NOT be used if the serialization format is JSON,
+     * as the data form is easier to work with. If this field is present, value, and externalValue MUST be absent.
+     */
+    val serializedValue: String? = null,
+    /**
      * A URL that points to the literal example. This provides the capability to reference examples
      * that cannot easily be included in JSON or YAML documents. The value field and externalValue
      * field are mutually exclusive.
@@ -35,7 +48,7 @@ data class Example(
      * extension (beginning with x-), and the value is the data. The value can be a [kotlinx.serialization.json.JsonNull],
      * [kotlinx.serialization.json.JsonPrimitive], [kotlinx.serialization.json.JsonArray] or [kotlinx.serialization.json.JsonObject].
      */
-    override var extensions: Map<String, JsonElement> = mutableMapOf()
+    override var extensions: Map<String, JsonElement> = mutableMapOf(),
 ) : Extendable {
     companion object {
         internal object Serializer :

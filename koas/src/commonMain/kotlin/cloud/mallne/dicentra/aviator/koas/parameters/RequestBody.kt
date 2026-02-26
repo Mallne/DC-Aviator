@@ -2,6 +2,7 @@ package cloud.mallne.dicentra.aviator.koas.parameters
 
 import cloud.mallne.dicentra.aviator.koas.extensions.Extendable
 import cloud.mallne.dicentra.aviator.koas.extensions.KSerializerWithExtensions
+import cloud.mallne.dicentra.aviator.koas.extensions.ReferenceOr
 import cloud.mallne.dicentra.aviator.koas.io.MediaType
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KeepGeneratedSerializer
@@ -22,7 +23,7 @@ data class RequestBody(
      * describes it. For requests that match multiple keys, only the most specific key is applicable.
      * e.g. text/plain overrides text
      */
-    val content: Map<String, MediaType>,
+    val content: Map<String, ReferenceOr<MediaType>>,
     /** Determines if the request body is required in the request. Defaults to false. */
     val required: Boolean = false,
     /**
@@ -30,7 +31,7 @@ data class RequestBody(
      * extension (beginning with x-), and the value is the data. The value can be a [kotlinx.serialization.json.JsonNull],
      * [kotlinx.serialization.json.JsonPrimitive], [kotlinx.serialization.json.JsonArray] or [kotlinx.serialization.json.JsonObject].
      */
-    override var extensions: Map<String, JsonElement> = emptyMap()
+    override var extensions: Map<String, JsonElement> = emptyMap(),
 ) : Extendable {
     companion object {
         internal object Serializer :

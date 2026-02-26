@@ -14,7 +14,12 @@ import kotlinx.serialization.EncodeDefault.Mode.ALWAYS
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KeepGeneratedSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.*
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlin.jvm.JvmStatic
 
 /** This is the root document object for the API specification. */
@@ -22,7 +27,7 @@ import kotlin.jvm.JvmStatic
 @Serializable(OpenAPI.Companion.Serializer::class)
 @KeepGeneratedSerializer
 data class OpenAPI(
-    @EncodeDefault(ALWAYS) val openapi: String = "3.1.1",
+    @EncodeDefault(ALWAYS) val openapi: String = "3.2.0",
     /** Provides metadata about the API. The metadata can be used by the clients if needed. */
     val info: Info,
     /** The default value for the $schema keyword within Schema Objects contained within this OAS document. */
@@ -63,7 +68,7 @@ data class OpenAPI(
      * extension (beginning with x-), and the value is the data. The value can be a [JsonNull],
      * [JsonPrimitive], [JsonArray] or [JsonObject].
      */
-    override var extensions: Map<String, JsonElement> = mutableMapOf()
+    override var extensions: Map<String, JsonElement> = mutableMapOf(),
 ) : Extendable {
 
     fun operationsByTag(): Map<String, List<Operation>> = TODO()

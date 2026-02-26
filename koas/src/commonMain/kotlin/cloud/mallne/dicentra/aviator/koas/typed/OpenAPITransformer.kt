@@ -8,17 +8,25 @@ import cloud.mallne.dicentra.aviator.koas.PathItem
 import cloud.mallne.dicentra.aviator.koas.exceptions.IngestArgumentViolation
 import cloud.mallne.dicentra.aviator.koas.exceptions.OpenAPIConstraintViolation
 import cloud.mallne.dicentra.aviator.koas.extensions.ReferenceOr
+import cloud.mallne.dicentra.aviator.koas.io.Callback
+import cloud.mallne.dicentra.aviator.koas.io.Example
 import cloud.mallne.dicentra.aviator.koas.io.ExampleValue
+import cloud.mallne.dicentra.aviator.koas.io.Header
+import cloud.mallne.dicentra.aviator.koas.io.MediaType
 import cloud.mallne.dicentra.aviator.koas.io.Schema
 import cloud.mallne.dicentra.aviator.koas.io.Schema.Type
 import cloud.mallne.dicentra.aviator.koas.parameters.Parameter
 import cloud.mallne.dicentra.aviator.koas.parameters.RequestBody
+import cloud.mallne.dicentra.aviator.koas.responses.Link
 import cloud.mallne.dicentra.aviator.koas.responses.Response
+import cloud.mallne.dicentra.aviator.koas.security.SecurityScheme
 import cloud.mallne.dicentra.aviator.koas.typed.Model.Object.Property
 import cloud.mallne.dicentra.aviator.koas.typed.NamingContext.Named
 import cloud.mallne.dicentra.polyfill.ensure
 import cloud.mallne.dicentra.polyfill.ensureNotNull
-import io.ktor.http.*
+import io.ktor.http.ContentType
+import io.ktor.http.HttpMethod
+import io.ktor.http.HttpStatusCode
 import kotlin.jvm.JvmInline
 
 fun OpenAPI.routes(): List<Route> = OpenAPITransformer(this).routes()
@@ -38,7 +46,7 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
         val path: String,
         val method: HttpMethod,
         val operation: Operation,
-        val pathItem: PathItem
+        val pathItem: PathItem,
     )
 
     fun operations(): List<OperationsHolder> = openAPI.paths.entries.flatMap { (path, p) ->
@@ -51,7 +59,9 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
             OperationsHolder(path, HttpMethod.Options, p.options, p),
             OperationsHolder(path, HttpMethod.parse("Trace"), p.trace, p),
             OperationsHolder(path, HttpMethod.Patch, p.patch, p),
-        )
+        ) + p.additionalOperations.map { (method, op) ->
+            OperationsHolder(path, HttpMethod.parse(method), op, p)
+        }
     }
 
     fun routes(): List<Route> = operations().map { (path, method, operation, pathItem) ->
@@ -73,7 +83,7 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
                 is ReferenceOr.Reference -> null
                 is ReferenceOr.Value -> {
                     val resolved =
-                        refOrResponse.value.content.getOrElse("application/json") { null }?.schema?.resolve()
+                        refOrResponse.value.content.getOrElse("application/json") { null }?.get()?.schema?.resolve()
                             ?: return@mapNotNull null
                     val context = resolved.namedOr {
                         val operationId = ensureNotNull(operation.operationId) {
@@ -87,7 +97,8 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
         }
 
         val json =
-            operation.requestBody?.valueOrNull()?.content?.getOrElse("application/json") { null }?.schema?.resolve()
+            operation.requestBody?.valueOrNull()?.content?.getOrElse("application/json") { null }
+                ?.get()?.schema?.resolve()
 
         val nestedBody = json?.namedOr {
             val name = ensureNotNull(operation.operationId?.let { Named("${it}Request") }) {
@@ -146,7 +157,7 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
 
     fun PathItem.condenseParameters(
         pathItem: PathItem = this,
-        operation: () -> Operation = this::get
+        operation: () -> Operation = this::get,
     ): List<Parameter> {
         val paramsOfPath = pathItem.parameters.map { it.get() }
         val paramsOfOperation = operation().parameters.map { it.get() }
@@ -271,7 +282,7 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
     }
 
     private fun <A> Schema.default(
-        label: String, onSingle: (String) -> A?, onMultiple: (List<String>) -> A?
+        label: String, onSingle: (String) -> A?, onMultiple: (List<String>) -> A?,
     ): A? = when (val default = default) {
         is ExampleValue.Single -> onSingle(default.value)
             ?: throw OpenAPIConstraintViolation("Default value ${default.value} is not a $label.")
@@ -322,6 +333,16 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
         }
     }
 
+    tailrec fun ReferenceOr<Example>.get(): Example = when (this) {
+        is ReferenceOr.Value -> value
+        is ReferenceOr.Reference -> {
+            val typeName = ref.drop("#/components/examples/".length)
+            ensureNotNull(openAPI.components.examples[typeName]) {
+                OpenAPIConstraintViolation("Example $typeName could not be found in ${openAPI.components.examples}. Is it missing?")
+            }.get()
+        }
+    }
+
     tailrec fun ReferenceOr<RequestBody>.get(): RequestBody = when (this) {
         is ReferenceOr.Value -> value
         is ReferenceOr.Reference -> {
@@ -332,12 +353,62 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
         }
     }
 
+    tailrec fun ReferenceOr<Header>.get(): Header = when (this) {
+        is ReferenceOr.Value -> value
+        is ReferenceOr.Reference -> {
+            val typeName = ref.drop("#/components/header/".length)
+            ensureNotNull(openAPI.components.headers[typeName]) {
+                OpenAPIConstraintViolation("Header $typeName could not be found in ${openAPI.components.headers}. Is it missing?")
+            }.get()
+        }
+    }
+
+    tailrec fun ReferenceOr<SecurityScheme>.get(): SecurityScheme = when (this) {
+        is ReferenceOr.Value -> value
+        is ReferenceOr.Reference -> {
+            val typeName = ref.drop("#/components/securitySchemes/".length)
+            ensureNotNull(openAPI.components.securitySchemes[typeName]) {
+                OpenAPIConstraintViolation("SecurityScheme $typeName could not be found in ${openAPI.components.securitySchemes}. Is it missing?")
+            }.get()
+        }
+    }
+
+    tailrec fun ReferenceOr<Link>.get(): Link = when (this) {
+        is ReferenceOr.Value -> value
+        is ReferenceOr.Reference -> {
+            val typeName = ref.drop("#/components/links/".length)
+            ensureNotNull(openAPI.components.links[typeName]) {
+                OpenAPIConstraintViolation("Link $typeName could not be found in ${openAPI.components.links}. Is it missing?")
+            }.get()
+        }
+    }
+
+    tailrec fun ReferenceOr<Callback>.get(): Callback = when (this) {
+        is ReferenceOr.Value -> value
+        is ReferenceOr.Reference -> {
+            val typeName = ref.drop("#/components/callbacks/".length)
+            ensureNotNull(openAPI.components.callbacks[typeName]) {
+                OpenAPIConstraintViolation("Callback $typeName could not be found in ${openAPI.components.callbacks}. Is it missing?")
+            }.get()
+        }
+    }
+
     tailrec fun ReferenceOr<PathItem>.get(): PathItem = when (this) {
         is ReferenceOr.Value -> value
         is ReferenceOr.Reference -> {
             val typeName = ref.drop("#/components/pathItems/".length)
             ensureNotNull(openAPI.components.pathItems[typeName]) {
                 OpenAPIConstraintViolation("PathItem $typeName could not be found in ${openAPI.components.pathItems}. Is it missing?")
+            }.get()
+        }
+    }
+
+    tailrec fun ReferenceOr<MediaType>.get(): MediaType = when (this) {
+        is ReferenceOr.Value -> value
+        is ReferenceOr.Reference -> {
+            val typeName = ref.drop("#/components/mediaTypes/".length)
+            ensureNotNull(openAPI.components.mediaTypes[typeName]) {
+                OpenAPIConstraintViolation("MediaType $typeName could not be found in ${openAPI.components.mediaTypes}. Is it missing?")
             }.get()
         }
     }
@@ -411,7 +482,7 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
 
     fun Schema.toObject(
         context: NamingContext,
-        properties: Map<String, ReferenceOr<Schema>>
+        properties: Map<String, ReferenceOr<Schema>>,
     ): Model {
         ensure((additionalProperties as? Allowed)?.value != true) {
             OpenAPIConstraintViolation("Additional properties, on a schema with properties, are not yet supported.")
@@ -516,7 +587,7 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
     }
 
     private fun Schema.toUnion(
-        context: NamingContext, subtypes: List<ReferenceOr<Schema>>
+        context: NamingContext, subtypes: List<ReferenceOr<Schema>>,
     ): Model.Union {
         val caseToContext = subtypes.associate { ref ->
             val resolved = ref.resolve()
@@ -585,13 +656,13 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
 
     // TODO interceptor
     fun toRequestBody(
-        operation: Operation, body: RequestBody?, create: (NamingContext) -> NamingContext
+        operation: Operation, body: RequestBody?, create: (NamingContext) -> NamingContext,
     ): Route.Bodies =
         Route.Bodies(
             body?.required == true,
             body?.content?.entries?.associate { (contentType, mediaType) ->
                 ContentType.parse(contentType) to generateRequestModel(
-                    mediaType.schema?.resolve(),
+                    mediaType.get().schema?.resolve(),
                     operation,
                     create,
                     body.description
@@ -604,7 +675,7 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
         schema: Resolved<Schema>?,
         operation: Operation,
         create: (NamingContext) -> NamingContext,
-        description: String?
+        description: String?,
     ): Route.Bodies.Body = schema?.let { json ->
         val context = json.namedOr {
             val name =
@@ -630,7 +701,7 @@ private class OpenAPITransformer(private val openAPI: OpenAPI) {
 
                 val m = response.content.map { (contentType, mediaType) ->
                     ContentType.parse(contentType) to generateRequestModel(
-                        mediaType.schema?.resolve(),
+                        mediaType.get().schema?.resolve(),
                         operation,
                         create,
                         response.description
