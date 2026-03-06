@@ -7,6 +7,7 @@ import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginInstance
 import cloud.mallne.dicentra.aviator.core.plugins.PluginStagedExecutorBuilder
 import cloud.mallne.dicentra.aviator.koas.security.SecurityScheme
 import io.ktor.util.*
+import kotlin.io.encoding.Base64
 
 object HttpAuthPlugin : AviatorPlugin<HttpAuthPluginConfig> {
     const val PARAMETER = "Authorization"
@@ -25,7 +26,7 @@ object HttpAuthPlugin : AviatorPlugin<HttpAuthPluginConfig> {
                     context.dataHolder.route.securities.methods.filter { it.scheme.type == SecurityScheme.Type.HTTP }
                 val using = usable.find { it.name == hint?.toString() } ?: usable.firstOrNull()
                 val encoded = if (pluginConfig.doBase64Encode) {
-                    param.toString().encodeBase64()
+                    Base64.encode(param.toString().encodeToByteArray())
                 } else {
                     param.toString()
                 }
