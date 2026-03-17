@@ -5,15 +5,11 @@ import cloud.mallne.dicentra.aviator.koas.extensions.KSerializerWithExtensions
 import cloud.mallne.dicentra.aviator.koas.extensions.ReferenceOr
 import cloud.mallne.dicentra.aviator.koas.parameters.Parameter
 import cloud.mallne.dicentra.aviator.koas.servers.Server
-import io.ktor.http.HttpMethod
+import io.ktor.http.*
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KeepGeneratedSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonNull
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.*
 
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable(PathItem.Companion.Serializer::class)
@@ -72,20 +68,21 @@ data class PathItem(
         PathItem(
             null,
             null,
-            get = get ?: other.get,
-            put = put ?: other.put,
-            post = post ?: other.post,
-            delete = delete ?: other.delete,
-            options = options ?: other.options,
-            head = head ?: other.head,
-            patch = patch ?: other.patch,
-            trace = trace ?: other.trace,
+            get = if (get.operationId != null) get else other.get,
+            put = if (put.operationId != null) put else other.put,
+            post = if (post.operationId != null) post else other.post,
+            delete = if (delete.operationId != null) delete else other.delete,
+            options = if (options.operationId != null) options else other.options,
+            head = if (head.operationId != null) head else other.head,
+            patch = if (patch.operationId != null) patch else other.patch,
+            trace = if (trace.operationId != null) trace else other.trace,
+            additionalOperations = additionalOperations + other.additionalOperations,
             servers = emptyList(),
             parameters = emptyList()
         )
 
     fun operations(): Map<HttpMethod, Operation> {
-        return mapOf(
+        return additionalOperations.map { HttpMethod(it.key) to it.value }.toMap() + mapOf(
             HttpMethod.Get to get,
             HttpMethod.Put to put,
             HttpMethod.Post to post,

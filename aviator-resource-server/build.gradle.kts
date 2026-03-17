@@ -2,7 +2,7 @@ plugins {
     alias(libs.plugins.kjvm)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ktor)
-    alias(libs.plugins.ksp)
+    alias(libs.plugins.koin.compiler)
 }
 
 group = "cloud.mallne.dicentra.aviator"
@@ -29,7 +29,6 @@ dependencies {
     implementation(libs.koin.ktor)
     implementation(libs.koin.logger.slf4j)
     implementation(libs.koin.annotations)
-    ksp(libs.koin.annotations.ksp)
     implementation(libs.ktor.server.netty)
     implementation(libs.logback.classic)
     implementation(libs.ktor.server.config.yaml)

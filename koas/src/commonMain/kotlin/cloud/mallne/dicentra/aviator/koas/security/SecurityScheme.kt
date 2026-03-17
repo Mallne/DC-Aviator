@@ -52,6 +52,7 @@ data class SecurityScheme(
     /**
      * Gets or Sets type
      */
+    @Serializable
     enum class Type(val value: String) {
         @SerialName("apiKey")
         APIKEY("apiKey"),
@@ -69,13 +70,14 @@ data class SecurityScheme(
         MUTUALTLS("mutualTLS");
 
         override fun toString(): String {
-            return value.toString()
+            return value
         }
     }
 
     /**
      * Gets or Sets in
      */
+    @Serializable
     enum class In(val value: String) {
         @SerialName("cookie")
         COOKIE("cookie"),
@@ -87,7 +89,7 @@ data class SecurityScheme(
         QUERY("query");
 
         override fun toString(): String {
-            return value.toString()
+            return value
         }
     }
 }
