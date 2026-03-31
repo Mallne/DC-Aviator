@@ -1,18 +1,22 @@
 package cloud.mallne.dicentra.aviator.client.ktor
 
-import cloud.mallne.dicentra.aviator.core.*
+import cloud.mallne.dicentra.aviator.core.AviatorServiceDataHolder
 import cloud.mallne.dicentra.aviator.core.AviatorServiceDataHolder.Companion.json
+import cloud.mallne.dicentra.aviator.core.InflatedServiceOptions
+import cloud.mallne.dicentra.aviator.core.NoBody
+import cloud.mallne.dicentra.aviator.core.RequestOptions
+import cloud.mallne.dicentra.aviator.core.ServiceOptions
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionPipeline
 import cloud.mallne.dicentra.aviator.core.execution.RequestParameters
 import cloud.mallne.dicentra.aviator.core.io.NetworkBody
 import cloud.mallne.dicentra.aviator.core.io.adapter.request.RequestBodyAdapter
 import cloud.mallne.dicentra.aviator.core.io.adapter.response.ResponseBodyAdapter
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginInstance
-import cloud.mallne.dicentra.aviator.koas.OpenAPI
 import cloud.mallne.dicentra.aviator.koas.typed.Route
 import cloud.mallne.dicentra.aviator.model.AviatorServiceUtils
 import cloud.mallne.dicentra.aviator.model.ServiceLocator
 import io.ktor.client.*
+import io.ktor.openapi.*
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialFormat
 import kotlinx.serialization.Serializable
@@ -26,7 +30,7 @@ data class KtorAviatorService(
     val client: HttpClient,
     override val plugins: List<AviatorPluginInstance>,
     override val route: Route,
-    override val oas: OpenAPI,
+    override val oas: OpenApiDoc,
     override val adapters: List<RequestBodyAdapter<out NetworkBody>>,
     override val deserializers: List<ResponseBodyAdapter>,
     override val serializers: List<SerialFormat> = listOf(Json),

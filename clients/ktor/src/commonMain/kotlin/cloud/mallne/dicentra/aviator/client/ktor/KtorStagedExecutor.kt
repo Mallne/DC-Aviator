@@ -9,12 +9,12 @@ import cloud.mallne.dicentra.aviator.core.io.NetworkBody
 import cloud.mallne.dicentra.aviator.core.io.NetworkChain
 import cloud.mallne.dicentra.aviator.core.io.NetworkHeader
 import cloud.mallne.dicentra.aviator.core.io.adapter.request.FormAdapter
-import cloud.mallne.dicentra.aviator.koas.parameters.Parameter
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.http.content.*
+import io.ktor.openapi.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 
@@ -41,7 +41,7 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
                 FormAdapter.buildBody(context) ?: (NetworkBody.Empty to fallbackCT)
             }
 
-            val headers = route.parameter.filter { it.input == Parameter.Input.Header }.mapNotNull { parameter ->
+            val headers = route.parameter.filter { it.`in` == ParameterType.header }.mapNotNull { parameter ->
                 context.requestParams[parameter.name]?.let { parameter.name to it }
             }.toMap()
 

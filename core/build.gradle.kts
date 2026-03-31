@@ -45,8 +45,8 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(libs.kotlinx.serialization.json)
-                implementation(libs.ktor.http)
-                //Dependency Substitution does not work in KMP for whatever Reason
+                api(libs.ktor.http)
+                api(libs.ktor.openapi.schema)
                 implementation(libs.dc.polyfill)
                 api(project(":koas"))
             }

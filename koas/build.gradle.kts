@@ -45,8 +45,8 @@ kotlin {
             dependencies {
                 implementation(libs.kotlinx.serialization.json)
                 implementation(libs.ktor.http)
-                //Dependency Substitution does not work in KMP for whatever Reason
-                    implementation(libs.dc.polyfill)
+                api(libs.ktor.openapi.schema)
+                implementation(libs.dc.polyfill)
             }
         }
     }

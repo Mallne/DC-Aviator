@@ -3,27 +3,27 @@ package cloud.mallne.dicentra.aviator.koas.typed
 import cloud.mallne.dicentra.aviator.koas.Style
 import cloud.mallne.dicentra.aviator.koas.exceptions.IngestArgumentViolation
 import cloud.mallne.dicentra.aviator.koas.exceptions.OpenAPIConstraintViolation
-import cloud.mallne.dicentra.aviator.koas.parameters.Parameter
-import cloud.mallne.dicentra.aviator.koas.servers.Server
 import cloud.mallne.dicentra.polyfill.ensure
 import cloud.mallne.dicentra.polyfill.ensureNotNull
+import io.ktor.openapi.*
 
 object TemplateParser {
     val regex = Regex("\\{\\s*?([;.])?\\s*?(\\S*?)\\s*?([*]?)\\s*?\\}")
 
     fun Server.parsePath(data: Map<String, List<String>>): String {
         var ppath = url
-        val matches = regex.findAll(url)//Groups
-        matches.forEach { match ->
-            val (_, template, _) = match.destructured
-            val pparam = variables[template]
-            ensureNotNull(pparam) {
-                OpenAPIConstraintViolation("Parameter $template not found")
-            }
-            val replace = data[template] ?: listOf(pparam.default)
-            val replacement = genReplacement(replace, template)
-            ppath = ppath.replace(match.value, replacement)
-        }
+        //TODO-low add back in when ktor supports server variables
+        //val matches = regex.findAll(url)//Groups
+        //matches.forEach { match ->
+        //    val (_, template, _) = match.destructured
+        //    val pparam = variables[template]
+        //    ensureNotNull(pparam) {
+        //        OpenAPIConstraintViolation("Parameter $template not found")
+        //    }
+        //    val replace = data[template] ?: listOf(pparam.default)
+        //    val replacement = genReplacement(replace, template)
+        //    ppath = ppath.replace(match.value, replacement)
+        //}
         return ppath
     }
 
@@ -46,7 +46,7 @@ object TemplateParser {
             ppath = ppath.replace(match.value, replacement)
         }
         val queryString = mutableListOf<String>()
-        val queryParams = parameter.filter { it.input == Parameter.Input.Query }
+        val queryParams = parameter.filter { it.`in` == ParameterType.query }
         queryParams.forEach { param ->
             if (param.required) {
                 ensure(data.containsKey(param.name)) {
@@ -55,7 +55,7 @@ object TemplateParser {
             }
             val template = data[param.name]
             if (template != null) {
-                val style = param.style ?: Style.form
+                val style = param.style?.let { Style.valueOf(it) } ?: Style.form
                 val explode = param.explode == true
                 queryString += genReplacement(template, param.name, style, explode)
             }
@@ -118,14 +118,14 @@ object TemplateParser {
     ): Pair<Style, Boolean> {
         if (param.style != null) {
             var isNot = " " // A space will always be true, hence it is not a valid parameter
-            if (param.style == Style.label) {
+            if (param.style == Style.label.name) {
                 isNot = ";"
             }
-            if (param.style == Style.matrix) {
+            if (param.style == Style.matrix.name) {
                 isNot = "."
             }
             ensure(prefix != isNot) {
-                OpenAPIConstraintViolation("Prefix $prefix for parameter $template is Wrong. Please make sure to use the Right prefix for the ${param.style.name} style.")
+                OpenAPIConstraintViolation("Prefix $prefix for parameter $template is Wrong. Please make sure to use the Right prefix for the ${param.style} style.")
             }
         }
         if (param.explode != null) {
@@ -133,7 +133,7 @@ object TemplateParser {
                 OpenAPIConstraintViolation("Postfix $postfix is Wrong. Please make sure it is omitted or uses the right Postfix for explode: ${param.explode}!")
             }
         }
-        val style: Style = param.style ?: when (prefix) {
+        val style: Style = param.style?.let { Style.valueOf(it) } ?: when (prefix) {
             "." -> Style.label
             ";" -> Style.matrix
             else -> Style.simple

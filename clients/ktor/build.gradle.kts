@@ -82,6 +82,8 @@ kotlin {
                 api(project(":koas"))
                 implementation(libs.dc.polyfill)
                 implementation(libs.ktor.client.core)
+                api(libs.ktor.http)
+                api(libs.ktor.openapi.schema)
             }
         }
     }

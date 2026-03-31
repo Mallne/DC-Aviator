@@ -12,9 +12,9 @@ dc-polyfill = "1.0.0-SNAPSHOT"
 dc-weaver = "1.0.0-SNAPSHOT"
 dependency-analysis-v = "3.6.1"
 koin = "4.2.0"
-koin-plugin = "0.4.0"
+koin-plugin = "0.4.1"
 kotlin = "2.3.20"
-ktor = "3.4.1"
+ktor = "3.4.2"
 logback = "1.5.32"
 serialization = "1.10.0"
 version-catalog-update-v = "1.1.0"
@@ -41,6 +41,7 @@ ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-http = { module = "io.ktor:ktor-http", version.ref = "ktor" }
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json-jvm" }
+ktor-openapi-schema = { module = "io.ktor:ktor-openapi-schema", version.ref = "ktor" }
 ktor-server-compression = { module = "io.ktor:ktor-server-compression-jvm" }
 ktor-server-config-yaml = { module = "io.ktor:ktor-server-config-yaml-jvm" }
 ktor-server-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation-jvm" }

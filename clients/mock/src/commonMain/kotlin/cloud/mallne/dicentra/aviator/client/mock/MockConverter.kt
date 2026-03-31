@@ -11,11 +11,11 @@ import cloud.mallne.dicentra.aviator.core.io.adapter.CommonAdapter
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorAdapterPluginInstance
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginActivationScope
 import cloud.mallne.dicentra.aviator.exceptions.AviatorValidationException
-import cloud.mallne.dicentra.aviator.koas.OpenAPI
 import cloud.mallne.dicentra.aviator.koas.typed.routes
 import cloud.mallne.dicentra.aviator.model.ServiceLocator
 import cloud.mallne.dicentra.polyfill.ensure
 import cloud.mallne.dicentra.polyfill.ensureNotNull
+import io.ktor.openapi.*
 import kotlinx.serialization.SerialFormat
 import kotlinx.serialization.json.Json
 
@@ -24,7 +24,7 @@ class MockConverter(
     val serializers: List<SerialFormat> = listOf(Json),
 ) : APIToServiceConverter {
     override fun build(
-        api: OpenAPI,
+        api: OpenApiDoc,
         plugins: AviatorPluginActivationScope.() -> Unit,
     ): List<MockedAviatorService> {
         val version = api.`x-dicentra-aviator`

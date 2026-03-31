@@ -9,9 +9,9 @@ import cloud.mallne.dicentra.aviator.core.io.NetworkBody
 import cloud.mallne.dicentra.aviator.core.io.adapter.request.RequestBodyAdapter
 import cloud.mallne.dicentra.aviator.core.io.adapter.response.ResponseBodyAdapter
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginInstance
-import cloud.mallne.dicentra.aviator.koas.OpenAPI
 import cloud.mallne.dicentra.aviator.koas.typed.Route
 import cloud.mallne.dicentra.aviator.model.ServiceLocator
+import io.ktor.openapi.*
 import kotlinx.serialization.SerialFormat
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -23,7 +23,7 @@ data class MockedAviatorService(
     override val plugins: List<AviatorPluginInstance> = emptyList(),
     override val options: ServiceOptions,
     override val route: Route,
-    override val oas: OpenAPI,
+    override val oas: OpenApiDoc,
     override val serializers: List<SerialFormat> = listOf(Json),
     override val adapters: List<RequestBodyAdapter<out NetworkBody>>,
     override val deserializers: List<ResponseBodyAdapter>,

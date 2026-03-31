@@ -6,10 +6,10 @@ import cloud.mallne.dicentra.aviator.core.InflatedServiceOptions
 import cloud.mallne.dicentra.aviator.core.ServiceOptions
 import cloud.mallne.dicentra.aviator.core.execution.RequestParameter
 import cloud.mallne.dicentra.aviator.core.execution.RequestParameters
-import cloud.mallne.dicentra.aviator.koas.OpenAPI
 import cloud.mallne.dicentra.aviator.koas.typed.Route
 import cloud.mallne.dicentra.aviator.koas.typed.TemplateParser.parsePath
 import cloud.mallne.dicentra.aviator.koas.typed.routes
+import io.ktor.openapi.*
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -50,11 +50,11 @@ object AviatorServiceUtils {
         requestParams: RequestParameters = mockMandatoryParams(dataHolder)
     ): List<String> {
         val pathSlug = dataHolder.route.parsePath(requestParams.toStringList())
-        val serverSlugs = dataHolder.oas.servers.map { "${it.parsePath(requestParams.toStringList())}$pathSlug" }
-        return serverSlugs
+        val serverSlugs = dataHolder.oas.servers?.map { "${it.parsePath(requestParams.toStringList())}$pathSlug" }
+        return serverSlugs ?: listOf()
     }
 
-    fun extractServiceLocators(oas: OpenAPI): List<Pair<ServiceLocator, Route>> {
+    fun extractServiceLocators(oas: OpenApiDoc): List<Pair<ServiceLocator, Route>> {
         val routes = oas.routes()
         val locators = routes.mapNotNull {
             val l = it.`x-dicentra-aviator-serviceDelegateCall`

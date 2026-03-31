@@ -3,15 +3,13 @@ package cloud.mallne.dicentra.aviator.core
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginActivationScope
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginInstance
 import cloud.mallne.dicentra.aviator.core.plugins.BasicPluginActivationScope
-import cloud.mallne.dicentra.aviator.koas.OpenAPI
 import cloud.mallne.dicentra.aviator.model.ServiceLocator
+import io.ktor.openapi.*
 import kotlinx.serialization.json.JsonElement
-import kotlin.collections.component1
-import kotlin.collections.component2
 
 interface APIToServiceConverter {
     fun build(
-        api: OpenAPI,
+        api: OpenApiDoc,
         plugins: AviatorPluginActivationScope.() -> Unit = {}
     ): List<AviatorServiceDataHolder>
 

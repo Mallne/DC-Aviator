@@ -1,8 +1,8 @@
 package cloud.mallne.dicentra.aviator.koas.typed
 
-import cloud.mallne.dicentra.aviator.koas.OpenAPI
+import io.ktor.openapi.*
 
-fun OpenAPI.root(name: String): Root = routes().sort(name)
+fun OpenApiDoc.root(name: String): Root = routes().sort(name)
 
 /**
  * ADT that models how to generate the API. Our OpenAPI document dictates the structure of the API,

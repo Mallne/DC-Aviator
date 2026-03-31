@@ -1,6 +1,6 @@
 package cloud.mallne.dicentra.aviator.koas.typed
 
-import cloud.mallne.dicentra.aviator.koas.io.Schema
+import io.ktor.openapi.*
 import kotlinx.serialization.Serializable
 
 sealed interface Constraints {
@@ -13,13 +13,13 @@ sealed interface Constraints {
         val multipleOf: Double?
     ) : Constraints {
         companion object {
-            operator fun invoke(schema: Schema): Number? =
+            operator fun invoke(schema: JsonSchema): Number? =
                 if (schema.minimum != null || schema.maximum != null || schema.multipleOf != null)
                     Number(
-                        schema.exclusiveMinimum == true,
-                        schema.minimum ?: Double.NEGATIVE_INFINITY,
-                        schema.exclusiveMaximum == true,
-                        schema.maximum ?: Double.POSITIVE_INFINITY,
+                        schema.exclusiveMinimum != null,
+                        schema.minimum ?: schema.exclusiveMinimum ?: Double.NEGATIVE_INFINITY,
+                        schema.exclusiveMaximum != null,
+                        schema.maximum ?: schema.exclusiveMaximum ?: Double.POSITIVE_INFINITY,
                         schema.multipleOf
                     )
                 else null
@@ -29,7 +29,7 @@ sealed interface Constraints {
     @Serializable
     data class Text(val minLength: Int, val maxLength: Int, val pattern: String?) : Constraints {
         companion object {
-            operator fun invoke(schema: Schema): Text? =
+            operator fun invoke(schema: JsonSchema): Text? =
                 if (schema.maxLength != null || schema.minLength != null || schema.pattern != null)
                     Text(schema.minLength ?: 0, schema.maxLength ?: Int.MAX_VALUE, schema.pattern)
                 else null
@@ -42,7 +42,7 @@ sealed interface Constraints {
         val maxItems: Int,
     ) : Constraints {
         companion object {
-            operator fun invoke(schema: Schema): Collection? =
+            operator fun invoke(schema: JsonSchema): Collection? =
                 if (schema.minItems != null || schema.maxItems != null)
                     Collection(schema.minItems ?: 0, schema.maxItems ?: Int.MAX_VALUE)
                 else null
@@ -60,7 +60,7 @@ sealed interface Constraints {
         val maxProperties: Int,
     ) : Constraints {
         companion object {
-            operator fun invoke(schema: Schema): Object? =
+            operator fun invoke(schema: JsonSchema): Object? =
                 if (schema.minProperties != null || schema.maxProperties != null)
                     Object(
                         schema.minProperties ?: 0,

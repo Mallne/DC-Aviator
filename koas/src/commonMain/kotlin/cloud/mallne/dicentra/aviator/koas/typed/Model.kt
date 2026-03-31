@@ -1,12 +1,8 @@
 package cloud.mallne.dicentra.aviator.koas.typed
 
-import cloud.mallne.dicentra.aviator.koas.extensions.Extendable
-import cloud.mallne.dicentra.aviator.koas.io.Schema
-import cloud.mallne.dicentra.aviator.koas.parameters.Parameter
-import cloud.mallne.dicentra.aviator.koas.security.SecurityScheme
 import io.ktor.http.*
+import io.ktor.openapi.*
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonElement
 
 @Serializable
 data class Route(
@@ -19,9 +15,9 @@ data class Route(
     val input: List<Input>,
     val returnType: Returns,
     val securities: Securities,
-    override var extensions: Map<String, JsonElement>,
+    var extensions: Map<String, GenericElement>,
     val nested: List<Model>
-) : Extendable {
+) {
     @Serializable
     data class Security(
         val name: String,
@@ -41,12 +37,12 @@ data class Route(
         /** Request bodies are optional by default! */
         val required: Boolean,
         val types: Map<@Serializable(Serializers.ContentTypeSerializer::class) ContentType, Body>,
-        val extensions: Map<String, JsonElement>
+        val extensions: Map<String, GenericElement>
     ) : Map<ContentType, Bodies.Body> by types {
         @Serializable
         data class Body(
             val model: Model,
-            val schema: Schema?,
+            val schema: JsonSchema?,
             val parameters: Map<String, Body>
         )
     }
@@ -57,26 +53,26 @@ data class Route(
         val name: String,
         val type: Model,
         val isRequired: Boolean,
-        val input: Parameter.Input,
+        val input: ParameterType,
         val description: String?
     )
 
     @Serializable
     data class Returns(
         val types: Map<@Serializable(Serializers.HttpStatusCodeSerializer::class) HttpStatusCode, ReturnType>,
-        val extensions: Map<String, JsonElement>
+        val extensions: Map<String, GenericElement>
     ) : Map<HttpStatusCode, ReturnType> by types {
         constructor(
             vararg types: Pair<HttpStatusCode, ReturnType>,
-            extensions: Map<String, JsonElement> = emptyMap()
+            extensions: Map<String, GenericElement> = emptyMap()
         ) : this(types.toMap(), extensions)
     }
 
     // Required, isNullable ???
     @Serializable
     data class ReturnType(
-        val types: Map<@Serializable(Serializers.ContentTypeSerializer::class) ContentType, Bodies.Body>,
-        val extensions: Map<String, JsonElement>
+        val types: Map<@Serializable(ContentTypeSerializer::class) ContentType, Bodies.Body>,
+        val extensions: Map<String, GenericElement>
     ) : Map<ContentType, Bodies.Body> by types
 }
 
@@ -152,15 +148,7 @@ sealed interface Model {
         @Serializable
         data class List(
             override val inner: Model,
-            val default: kotlin.collections.List<String>?,
-            override val description: String?,
-            override val constraint: Constraints.Collection?
-        ) : Collection
-
-        @Serializable
-        data class Set(
-            override val inner: Model,
-            val default: kotlin.collections.List<String>?,
+            val default: String?,
             override val description: String?,
             override val constraint: Constraints.Collection?
         ) : Collection

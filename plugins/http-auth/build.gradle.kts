@@ -79,6 +79,7 @@ kotlin {
                 implementation(libs.kotlinx.serialization.json)
                 implementation(project(":core"))
                 implementation(libs.ktor.client.core)
+                implementation(libs.ktor.openapi.schema)
             }
         }
     }
