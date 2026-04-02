@@ -5,8 +5,7 @@ import cloud.mallne.dicentra.aviator.core.execution.RequestParameter
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPlugin
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginInstance
 import cloud.mallne.dicentra.aviator.core.plugins.PluginStagedExecutorBuilder
-import cloud.mallne.dicentra.aviator.koas.security.SecurityScheme
-import io.ktor.util.*
+import io.ktor.openapi.*
 import kotlin.io.encoding.Base64
 
 object HttpAuthPlugin : AviatorPlugin<HttpAuthPluginConfig> {
@@ -23,8 +22,8 @@ object HttpAuthPlugin : AviatorPlugin<HttpAuthPluginConfig> {
                 if (param == null || param.isEmpty()) return@after
 
                 val usable =
-                    context.dataHolder.route.securities.methods.filter { it.scheme.type == SecurityScheme.Type.HTTP }
-                val using = usable.find { it.name == hint?.toString() } ?: usable.firstOrNull()
+                    context.dataHolder.route.securities.methods.filter { it.scheme.type == SecuritySchemeType.HTTP && it.scheme is HttpSecurityScheme }
+                val using = (usable.find { it.name == hint?.toString() } ?: usable.firstOrNull())
                 val encoded = if (pluginConfig.doBase64Encode) {
                     Base64.encode(param.toString().encodeToByteArray())
                 } else {
@@ -35,7 +34,7 @@ object HttpAuthPlugin : AviatorPlugin<HttpAuthPluginConfig> {
                 context.networkChain.forEach { chain ->
                     chain.request?.headers?.values?.put(
                         key = PARAMETER,
-                        value = RequestParameter.Single("${using.scheme.scheme}: $encoded")
+                        value = RequestParameter.Single("${(using.scheme as? HttpSecurityScheme)?.scheme}: $encoded")
                     )
                 }
             }
