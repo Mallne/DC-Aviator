@@ -1,6 +1,7 @@
 package cloud.mallne.dicentra.aviator.core
 
 import io.ktor.openapi.*
+import kotlinx.serialization.builtins.serializer
 
 data class ExtensionLocator<X>(
     val key: String,
@@ -9,9 +10,7 @@ data class ExtensionLocator<X>(
     fun find(part: X): String? {
         val ge = findComplex(part) ?: return null
         return try {
-            ge.takeIf { it.isString() }?.let {
-                (it as? GenericElementString)?.element ?: it.element.toString()
-            }
+            ge.takeIf { it.isString() }?.deserialize(String.serializer())
         } catch (e: Exception) {
             null
         }

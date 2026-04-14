@@ -7,8 +7,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
 
 interface InflatedServiceOptions {
-    fun usable(): ServiceOptions = GenericElement(this)
-
+    fun usable(): ServiceOptions = GenericElementWrapper(this, serializer())
 
     companion object {
         inline fun <reified T : InflatedServiceOptions> inflate(
