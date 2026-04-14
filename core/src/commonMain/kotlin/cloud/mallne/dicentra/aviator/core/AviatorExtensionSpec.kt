@@ -4,11 +4,11 @@ import cloud.mallne.dicentra.aviator.koas.typed.Route
 import cloud.mallne.dicentra.aviator.model.SemVer
 import io.ktor.openapi.*
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.serializer
+import kotlinx.serialization.json.jsonObject
 
 object AviatorExtensionSpec {
     private const val prefix = "x-dicentra-aviator"
-    val SpecVersion = "1.0.0"
+    const val SpecVersion = "1.0.0"
     val understandsVersions = listOf(SpecVersion)
 
     object Version {
@@ -32,6 +32,24 @@ object AviatorExtensionSpec {
         val O = ExtensionLocator("$prefix-pluginMaterialization", Operation::extensions)
         val DSL = ExtensionLocator("$prefix-pluginMaterialization", Operation.Builder::extensions)
         val R = ExtensionLocator("$prefix-pluginMaterialization", Route::extensions)
+    }
+
+    private fun GenericElement.toJsonElement(): JsonElement {
+        return when {
+            this.isObject() -> kotlinx.serialization.json.JsonObject(
+                entries().associate { (k, v) -> k to v.toJsonElement() }
+            )
+
+            this.isArray() -> kotlinx.serialization.json.JsonArray(
+                items().map { it.toJsonElement() }
+            )
+
+            this.isString() -> kotlinx.serialization.json.JsonPrimitive(
+                (this as? GenericElementString)?.element ?: this.element.toString()
+            )
+
+            else -> kotlinx.serialization.json.JsonPrimitive(element.toString())
+        }
     }
 
     val OpenApiDoc.`x-dicentra-aviator`: String?
@@ -110,12 +128,22 @@ object AviatorExtensionSpec {
 
     val Operation.`x-dicentra-aviator-pluginMaterialization`: Map<String, JsonElement>?
         get() {
-            return PluginMaterialization.O.findComplex(this)?.deserialize(serializer())
+            val ge = PluginMaterialization.O.findComplex(this) ?: return null
+            return try {
+                ge.toJsonElement().jsonObject.toMap().mapValues { it.value }
+            } catch (e: Exception) {
+                null
+            }
         }
 
     var Operation.Builder.`x-dicentra-aviator-pluginMaterialization`: Map<String, JsonElement>?
         get() {
-            return PluginMaterialization.DSL.findComplex(this)?.deserialize(serializer())
+            val ge = PluginMaterialization.DSL.findComplex(this) ?: return null
+            return try {
+                ge.toJsonElement().jsonObject.toMap().mapValues { it.value }
+            } catch (e: Exception) {
+                null
+            }
         }
         set(value) {
             if (value != null) {
@@ -127,7 +155,12 @@ object AviatorExtensionSpec {
 
     var Route.`x-dicentra-aviator-pluginMaterialization`: Map<String, JsonElement>?
         get() {
-            return PluginMaterialization.R.findComplex(this)?.deserialize(serializer())
+            val ge = PluginMaterialization.R.findComplex(this) ?: return null
+            return try {
+                ge.toJsonElement().jsonObject.toMap().mapValues { it.value }
+            } catch (e: Exception) {
+                null
+            }
         }
         set(value) {
             if (value != null) {

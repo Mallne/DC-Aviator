@@ -10,6 +10,7 @@ import cloud.mallne.dicentra.aviator.koas.typed.Route
 import cloud.mallne.dicentra.aviator.koas.typed.TemplateParser.parsePath
 import cloud.mallne.dicentra.aviator.koas.typed.routes
 import io.ktor.openapi.*
+import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -19,8 +20,12 @@ import kotlin.reflect.KType
 import kotlin.reflect.typeOf
 
 object AviatorServiceUtils {
-    inline fun <reified T : InflatedServiceOptions> optionBundle(options: ServiceOptions, json: Json = Json): T =
-        InflatedServiceOptions.inflate<T>(options, json)
+    inline fun <reified T : InflatedServiceOptions> optionBundle(
+        options: ServiceOptions,
+        json: Json = Json,
+        serializer: DeserializationStrategy<T> = serializer()
+    ): T =
+        InflatedServiceOptions.inflate<T>(options = options, serializer = serializer, json = json)
 
     fun validate(service: AviatorServiceDataHolder) {
 
