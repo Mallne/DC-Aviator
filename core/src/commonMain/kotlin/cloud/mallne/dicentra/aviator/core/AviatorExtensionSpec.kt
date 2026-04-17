@@ -109,10 +109,16 @@ object AviatorExtensionSpec {
         }
 
     val Operation.`x-dicentra-aviator-pluginMaterialization`: Map<String, JsonElement>?
-        get() = PluginMaterialization.O.findComplex(this)?.deserialize(serializer())
+        get() {
+            val a = PluginMaterialization.O.findComplex(this)?.entries()
+            return a?.associate { (k, v) -> k to v.deserialize(serializer<JsonElement>()) }
+        }
 
     var Operation.Builder.`x-dicentra-aviator-pluginMaterialization`: Map<String, JsonElement>?
-        get() = PluginMaterialization.DSL.findComplex(this)?.deserialize(serializer())
+        get() {
+            val a = PluginMaterialization.DSL.findComplex(this)?.entries()
+            return a?.associate { (k, v) -> k to v.deserialize(serializer<JsonElement>()) }
+        }
         set(value) {
             if (value != null) {
                 this.extensions.put(
@@ -122,7 +128,10 @@ object AviatorExtensionSpec {
         }
 
     var Route.`x-dicentra-aviator-pluginMaterialization`: Map<String, JsonElement>?
-        get() = PluginMaterialization.R.findComplex(this)?.deserialize(serializer())
+        get() {
+            val a = PluginMaterialization.R.findComplex(this)?.entries()
+            return a?.associate { (k, v) -> k to v.deserialize(serializer<JsonElement>()) }
+        }
         set(value) {
             if (value != null) {
                 this.extensions = this.extensions.toMutableMap().plus(

@@ -7,6 +7,7 @@ import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.`x-dicentra-aviat
 import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.`x-dicentra-aviator-serviceDelegateCall`
 import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.`x-dicentra-aviator-serviceOptions`
 import cloud.mallne.dicentra.aviator.core.InternalAviatorAPI
+import cloud.mallne.dicentra.aviator.core.ServiceOptions
 import cloud.mallne.dicentra.aviator.core.io.adapter.CommonAdapter
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorAdapterPluginInstance
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginActivationScope
@@ -59,9 +60,9 @@ class KtorAviatorServiceConverter(
         val routes = api.routes()
         val services = routes.mapNotNull { route ->
             val l = route.`x-dicentra-aviator-serviceDelegateCall`
-            val options = route.`x-dicentra-aviator-serviceOptions`
+            val options = route.`x-dicentra-aviator-serviceOptions` ?: ServiceOptions.EmptyObject
             val pluginsRequested = route.`x-dicentra-aviator-pluginMaterialization`
-            if (l != null && options != null) {
+            if (l != null) {
                 val locator = ServiceLocator(l)
                 val pluginsForRoute = pluginsForRoute(registry, locator, pluginsRequested ?: mapOf())
                 val adapters = pluginsForRoute.mapNotNull { (it as? AviatorAdapterPluginInstance)?.adapters }.flatten()
