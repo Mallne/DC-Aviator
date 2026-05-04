@@ -50,7 +50,7 @@ publishing {
 kotlin {
     jvm()
     android {
-        namespace = project.group.toString()
+        namespace = "${project.group}.ktor"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
