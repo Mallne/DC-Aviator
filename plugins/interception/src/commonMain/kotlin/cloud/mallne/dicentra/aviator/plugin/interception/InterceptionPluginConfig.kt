@@ -2,12 +2,14 @@ package cloud.mallne.dicentra.aviator.plugin.interception
 
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionContext
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginConfigScope
+import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginDsl
 import cloud.mallne.dicentra.aviator.core.plugins.PluginStagedExecutor
 import cloud.mallne.dicentra.aviator.core.plugins.PluginStagedExecutorBuilder
 import cloud.mallne.dicentra.aviator.core.plugins.PluginStagedExecutorBuilder.BuilderDSL
 import cloud.mallne.dicentra.aviator.model.ServiceLocator
 import kotlinx.serialization.Serializable
 
+@AviatorPluginDsl
 class InterceptionPluginConfig : AviatorPluginConfigScope {
     override var serviceFilter: MutableList<ServiceLocator> = mutableListOf()
     override val silentLoggingTags: MutableList<String> = mutableListOf()

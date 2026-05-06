@@ -1,10 +1,12 @@
 package cloud.mallne.dicentra.aviator.plugin.weaver
 
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginConfigScope
+import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginDsl
 import cloud.mallne.dicentra.aviator.model.ServiceLocator
 import cloud.mallne.dicentra.weaver.core.Weaver
 import cloud.mallne.dicentra.weaver.core.specification.WeaverSchema
 
+@AviatorPluginDsl
 class WeaverPluginConfig : AviatorPluginConfigScope {
     override var serviceFilter: MutableList<ServiceLocator> = mutableListOf()
     override val silentLoggingTags: MutableList<String> = mutableListOf()

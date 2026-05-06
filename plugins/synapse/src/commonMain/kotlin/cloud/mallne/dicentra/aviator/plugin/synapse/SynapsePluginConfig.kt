@@ -1,10 +1,12 @@
 package cloud.mallne.dicentra.aviator.plugin.synapse
 
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginConfigScope
+import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginDsl
 import cloud.mallne.dicentra.aviator.model.ServiceLocator
 import kotlinx.serialization.Serializable
 
 @Serializable
+@AviatorPluginDsl
 data class SynapsePluginConfig(val active: Boolean = false) : AviatorPluginConfigScope {
     override var serviceFilter: MutableList<ServiceLocator> = mutableListOf()
     override val silentLoggingTags: MutableList<String> = mutableListOf()

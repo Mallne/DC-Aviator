@@ -119,6 +119,10 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
             net.response = response
 
             if (resp.status.value >= 400) {
+                val text = resp.bodyAsText()
+                context.log(KtorLoggingIds.WARN_REQUEST_FAILED) {
+                    warn("Request {${net.request?.method}: ${net.request?.url}} failed with status ${resp.status.value}: $text")
+                }
                 next()
             }
         }
