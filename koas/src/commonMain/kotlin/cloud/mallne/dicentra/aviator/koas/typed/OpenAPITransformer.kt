@@ -226,7 +226,35 @@ private class OpenAPITransformer(private val openAPI: OpenApiDoc) {
 
         JsonType.OBJECT -> toObject(context)
         JsonType.NULL -> Model.Primitive.Unit(description)
-        is JsonSchema.SchemaType.AnyOf -> TODO("JsonType.AnyOf is not defined Behaviour")
+        is JsonSchema.SchemaType.AnyOf -> {
+            val anyOfType = type as JsonSchema.SchemaType.AnyOf
+            val cases = anyOfType.types.map { jsonType ->
+                val model: Model = when (jsonType) {
+                    JsonType.STRING -> Model.Primitive.String(default(), description, Constraints.Text(this))
+                    JsonType.INTEGER -> Model.Primitive.Int(default(), description, Constraints.Number(this))
+                    JsonType.NUMBER -> Model.Primitive.Double(default(), description, Constraints.Number(this))
+                    JsonType.BOOLEAN -> Model.Primitive.Boolean(default(), description)
+                    JsonType.NULL -> Model.Primitive.Unit(description)
+                    JsonType.ARRAY -> {
+                        if (items != null) {
+                            collection(context)
+                        } else {
+                            Model.FreeFormJson(description, Constraints.Object(this))
+                        }
+                    }
+                    JsonType.OBJECT -> {
+                        if (properties?.isNotEmpty() == true || additionalProperties != null) {
+                            toObject(context)
+                        } else {
+                            Model.FreeFormJson(description, Constraints.Object(this))
+                        }
+                    }
+                    else -> Model.FreeFormJson(description, null)
+                }
+                Model.Union.Case(context, model)
+            }
+            Model.Union(context, cases.sortedWith(unionSchemaComparator), singleDefaultOrNull(), description, emptyList())
+        }
         null -> when {
             // If no type is defined, but we find properties, or additionalProperties, we assume it's
             // an object.
