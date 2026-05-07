@@ -225,7 +225,7 @@ private class OpenAPITransformer(private val openAPI: OpenApiDoc) {
         )
 
         JsonType.OBJECT -> toObject(context)
-        JsonType.NULL -> TODO("JsonType.Null is not defined Behaviour")
+        JsonType.NULL -> Model.Primitive.Unit(description)
         is JsonSchema.SchemaType.AnyOf -> TODO("JsonType.AnyOf is not defined Behaviour")
         null -> when {
             // If no type is defined, but we find properties, or additionalProperties, we assume it's

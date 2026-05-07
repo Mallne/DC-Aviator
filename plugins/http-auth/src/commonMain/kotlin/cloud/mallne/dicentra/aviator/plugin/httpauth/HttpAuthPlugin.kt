@@ -44,7 +44,7 @@ object HttpAuthPlugin : AviatorPlugin<HttpAuthPluginConfig> {
                 context.networkChain.forEach { chain ->
                     chain.request?.headers?.values?.put(
                         key = PARAMETER,
-                        value = RequestParameter.Single("${(using.scheme as? HttpSecurityScheme)?.scheme}: $encoded")
+                        value = RequestParameter.Single("${(using.scheme as? HttpSecurityScheme)?.scheme} $encoded")
                     )
                 }
             }
