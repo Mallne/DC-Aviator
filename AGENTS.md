@@ -72,3 +72,17 @@ The project uses Gradle with Kotlin DSL.
 - `gradle/libs.versions.toml`: Centralized dependency management.
 - `core/.../AviatorExtensionSpec.kt`: Defines the custom OpenAPI extensions used by the framework.
 - `koas/.../OpenAPI.kt`: The root model for OpenAPI specifications.
+
+---
+
+## Published Documentation (Notary)
+
+The Aviator documentation is published in the DiCentra collection with the following hierarchy:
+
+- [Aviator](https://docs.mallne.cloud/doc/aviator-RdNz6f71NO) — Hub/overview
+  - [Core Framework](https://docs.mallne.cloud/doc/core-framework-a6bcINJOwY) ⚙️ — Converter, pipeline, plugin system, I/O
+  - [KOAS — OpenAPI Specification Model](https://docs.mallne.cloud/doc/koas-openapi-specification-model-WiZ6yZLdXV) 📋 — Route/API/Root model, type hierarchy
+  - [Ktor Client](https://docs.mallne.cloud/doc/ktor-client-fxIUjBdbe2) 🌐 — HTTP client service execution
+  - [Mock Client](https://docs.mallne.cloud/doc/mock-client-sF8hqYkIQN) 🎭 — In-memory mock for testing
+  - [Plugins](https://docs.mallne.cloud/doc/plugins-ucXpKbmw4T) 🧩 — Plugin directory (adapter-json, adapter-xml, http-auth, interception, weaver, synapse)
+  - [Resource Server](https://docs.mallne.cloud/doc/resource-server-lNvQj1ixfv) 🖥️ — Reference/test server
