@@ -16,8 +16,8 @@ internal object XmlResponseAdapter : ResponseBodyAdapter {
             val string = body.decodeToString()
             context.dataHolder.xml.decodeFromString(context.outputClazz.third, string)
         } catch (e: Exception) {
-            context.log("JsonParse") {
-                warn("Json could not be parsed to ${context.outputClazz.first}", e)
+            context.log("XMLParse") {
+                warn("XML could not be parsed to ${context.outputClazz.first}", e)
             }
             null
         }

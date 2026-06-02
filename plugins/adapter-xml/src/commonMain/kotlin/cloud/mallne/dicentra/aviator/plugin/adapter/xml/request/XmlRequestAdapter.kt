@@ -23,8 +23,8 @@ internal object XmlRequestAdapter : RequestBodyAdapter<XmlBody> {
                 )
             )
         } catch (e: Exception) {
-            context.log("JSONEncoding") {
-                warn("Json Encoding failed", e)
+            context.log("XMLEncoding") {
+                warn("XML Encoding failed", e)
             }
             null
         }
@@ -37,10 +37,10 @@ internal object XmlRequestAdapter : RequestBodyAdapter<XmlBody> {
         return try {
             context.dataHolder.xml.encodeToString(body.xml)
         } catch (e: Exception) {
-            context.log("JSONDecoding") {
-                warn("Json Decoding failed", e)
+            context.log("XMLDecoding") {
+                warn("XML Decoding failed", e)
             }
-            "{}"
+            ""
         }
     }
 

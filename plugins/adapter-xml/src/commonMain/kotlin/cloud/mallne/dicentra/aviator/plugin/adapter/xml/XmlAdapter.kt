@@ -8,7 +8,7 @@ import nl.adaptivity.xmlutil.dom2.Element
 import nl.adaptivity.xmlutil.serialization.XML
 
 object XmlAdapter : AviatorPlugin<XmlAdapterPluginConfig> {
-    override val identity: String = "adapter:JSON"
+    override val identity: String = "adapter:XML"
     override fun install(config: XmlAdapterPluginConfig.() -> Unit): AviatorPluginInstance {
         val pluginConfig = XmlAdapterPluginConfig()
         config.invoke(pluginConfig)
