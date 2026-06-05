@@ -5,13 +5,12 @@ import cloud.mallne.dicentra.aviator.client.mock.MockExecutionContext
 import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec
 import cloud.mallne.dicentra.aviator.exceptions.AviatorValidationException
 import cloud.mallne.dicentra.aviator.exceptions.ServiceException
-import cloud.mallne.dicentra.aviator.koas.OpenAPI
 import cloud.mallne.dicentra.aviator.koas.exceptions.ExplicitTypeException
 import cloud.mallne.dicentra.aviator.koas.exceptions.IngestArgumentViolation
 import cloud.mallne.dicentra.aviator.koas.exceptions.OpenAPIConstraintViolation
 import cloud.mallne.dicentra.aviator.koas.exceptions.OpenAPISerializationException
-import cloud.mallne.dicentra.aviator.koas.info.Info
 import io.ktor.http.*
+import io.ktor.openapi.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
@@ -40,7 +39,7 @@ fun Application.validateRoutes() {
                 )
             }
             try {
-                val koas = call.receive<OpenAPI>()
+                val koas = call.receive<OpenApiDoc>()
                 val serv = conv.build(koas)
                 val outp = serv.associate { service ->
                     service.serviceLocator.toString() to service.requestContextful()
@@ -62,13 +61,13 @@ fun Application.validateRoutes() {
         }
 
         get("test") {
-            val koas = OpenAPI(
-                info = Info(
+            val koas = OpenApiDoc(
+                info = OpenApiInfo(
                     title = "OpenAPI Title",
                     version = AviatorExtensionSpec.SpecVersion,
                 )
             )
-            call.respond(koas, typeInfo<OpenAPI>())
+            call.respond(koas, typeInfo<OpenApiDoc>())
         }
     }
 
