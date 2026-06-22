@@ -1,6 +1,6 @@
 [versions]
 # @pin
-agp = "9.0.1"
+agp = "9.2.1"
 # @keep
 android-compileSdk = "36"
 # @keep
@@ -10,10 +10,10 @@ ben-manes-versions-v = "0.54.0"
 dc-aviator = "1.0.0-SNAPSHOT"
 dc-polyfill = "1.0.0-SNAPSHOT"
 dc-weaver = "1.0.0-SNAPSHOT"
-dependency-analysis-v = "3.14.1"
-koin = "4.2.1"
-koin-plugin = "1.0.0"
-kotlin = "2.3.21"
+dependency-analysis-v = "3.15.0"
+koin = "4.2.2"
+koin-plugin = "1.0.1"
+kotlin = "2.4.0"
 ktor = "3.5.0"
 logback = "1.5.34"
 serialization = "1.11.0"
@@ -68,5 +68,5 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 koin-compiler = { id = "io.insert-koin.compiler.plugin", version.ref = "koin-plugin" }
 ktor = { id = "io.ktor.plugin", version.ref = "ktor" }
-mavenPublish = "com.vanniktech.maven.publish:0.36.0"
+mavenPublish = "com.vanniktech.maven.publish:0.37.0"
 version-catalog-update = { id = "nl.littlerobots.version-catalog-update", version.ref = "version-catalog-update-v" }
