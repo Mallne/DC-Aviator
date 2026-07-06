@@ -16,7 +16,7 @@ object XmlAdapter : AviatorPlugin<XmlAdapterPluginConfig> {
     }
 
     val <T : AviatorServiceDataHolder> T.xml: XML
-        get() = serializers.find { it is XML } as? XML ?: XML()
+        get() = serializers.find { it is XML } as? XML ?: XML.recommended_1_0()
 
     fun XML.parseToElement(content: String): Element = decodeFromString(content)
     fun <T> XML.encodeToElement(serializer: SerializationStrategy<T>, value: T): Element {
