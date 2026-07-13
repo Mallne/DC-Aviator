@@ -1,6 +1,6 @@
 [versions]
 # @pin
-agp = "9.0.1"
+agp = "9.2.1"
 # @keep
 android-compileSdk = "36"
 # @keep
@@ -10,15 +10,15 @@ ben-manes-versions-v = "0.54.0"
 dc-aviator = "1.0.0-SNAPSHOT"
 dc-polyfill = "1.0.0-SNAPSHOT"
 dc-weaver = "1.0.0-SNAPSHOT"
-dependency-analysis-v = "3.16.0"
+dependency-analysis-v = "3.16.1"
 koin = "4.2.2"
 koin-plugin = "1.0.1"
 kotlin = "2.4.0"
 ktor = "3.5.1"
-logback = "1.5.37"
+logback = "1.5.38"
 serialization = "1.11.0"
 version-catalog-update-v = "1.1.0"
-xmlutil = "1.0.0"
+xmlutil = "1.0.1"
 
 [libraries]
 antlr-runtime = { module = "com.strumenta:antlr-kotlin-runtime", version.ref = "antlr" }
