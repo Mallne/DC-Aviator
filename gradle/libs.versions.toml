@@ -1,6 +1,6 @@
 [versions]
 # @pin
-agp = "9.1.1"
+agp = "9.3.0"
 # @keep
 android-compileSdk = "36"
 # @keep
@@ -10,10 +10,10 @@ ben-manes-versions-v = "0.54.0"
 dc-aviator = "1.0.0-SNAPSHOT"
 dc-polyfill = "1.0.0-SNAPSHOT"
 dc-weaver = "1.0.0-SNAPSHOT"
-dependency-analysis-v = "3.16.1"
+dependency-analysis-v = "3.17.0"
 koin = "4.2.2"
-koin-plugin = "1.0.1"
-kotlin = "2.4.0"
+koin-plugin = "1.0.2"
+kotlin = "2.4.10"
 ktor = "3.5.1"
 logback = "1.5.38"
 serialization = "1.11.0"
