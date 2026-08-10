@@ -81,4 +81,5 @@ kotlin {
             }
         }
     }
+    jvmToolchain(25)
 }

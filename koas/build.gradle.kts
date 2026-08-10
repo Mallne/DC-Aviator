@@ -49,6 +49,7 @@ kotlin {
             }
         }
     }
+    jvmToolchain(25)
 }
 
 mavenPublishing {
