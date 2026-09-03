@@ -5,20 +5,21 @@ agp = "9.1.1"
 android-compileSdk = "36"
 # @keep
 android-minSdk = "24"
-antlr = "1.0.10"
-ben-manes-versions-v = "0.54.0"
+antlr = "1.0.13"
+ben-manes-versions-v = "0.61.0"
 dc-aviator = "1.0.0-SNAPSHOT"
 dc-polyfill = "1.0.0-SNAPSHOT"
 dc-weaver = "1.0.0-SNAPSHOT"
-dependency-analysis-v = "3.16.1"
+dependency-analysis-v = "3.19.1"
 koin = "4.2.2"
-koin-plugin = "1.0.1"
-kotlin = "2.4.0"
-ktor = "3.5.1"
-logback = "1.5.38"
+koin-plugin = "1.1.0"
+kotlin = "2.4.10"
+ktor = "3.5.2"
+logback = "1.6.3"
 serialization = "1.11.0"
-version-catalog-update-v = "1.1.0"
-xmlutil = "1.0.1"
+version-catalog-update-v = "1.1.1"
+opentelemetry-kotlin = "0.7.0"
+xmlutil = "1.0.2.1"
 
 [libraries]
 antlr-runtime = { module = "com.strumenta:antlr-kotlin-runtime", version.ref = "antlr" }
@@ -37,6 +38,9 @@ koin-annotations = { module = "io.insert-koin:koin-annotations", version.ref = "
 koin-ktor = { module = "io.insert-koin:koin-ktor", version.ref = "koin" }
 koin-logger-slf4j = { module = "io.insert-koin:koin-logger-slf4j", version.ref = "koin" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
+opentelemetry-kotlin-api = { module = "io.opentelemetry.kotlin:api", version.ref = "opentelemetry-kotlin" }
+opentelemetry-kotlin-exporters-inmemory = { module = "io.opentelemetry.kotlin:exporters-in-memory", version.ref = "opentelemetry-kotlin" }
+opentelemetry-kotlin-testing = { module = "io.opentelemetry.kotlin:testing", version.ref = "opentelemetry-kotlin" }
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-http = { module = "io.ktor:ktor-http", version.ref = "ktor" }
