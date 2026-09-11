@@ -62,7 +62,7 @@ kotlin {
     iosSimulatorArm64()
 
     sourceSets {
-        val commonMain by getting {
+        getByName("commonMain") {
             dependencies {
                 implementation(libs.kotlinx.serialization.json)
                 implementation(project(":core"))
@@ -71,11 +71,10 @@ kotlin {
                 implementation(libs.opentelemetry.kotlin.api)
             }
         }
-        val commonTest by getting {
+        getByName("commonTest") {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(libs.opentelemetry.kotlin.exporters.inmemory)
-                implementation(libs.opentelemetry.kotlin.testing)
             }
         }
     }

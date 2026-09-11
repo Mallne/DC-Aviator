@@ -8,6 +8,10 @@ plugins {
 group = "cloud.mallne.dicentra.aviator"
 version = "0.0.1"
 
+kotlin {
+    jvmToolchain(25)
+}
+
 application {
     mainClass.set("io.ktor.server.netty.EngineMain")
 }
@@ -29,6 +33,11 @@ dependencies {
     implementation(libs.ktor.server.netty)
     implementation(libs.logback.classic)
     implementation(libs.ktor.server.config.yaml)
+    //OpenTelemetry
+    implementation(libs.opentelemetry.ktor)
+    implementation(libs.opentelemetry.logback)
+    implementation(libs.opentelemetry.autoconfigure)
+    //aviator
     implementation(project(":clients:ktor"))
     implementation(project(":clients:mock"))
 }

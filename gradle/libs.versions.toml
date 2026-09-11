@@ -19,6 +19,8 @@ logback = "1.6.3"
 serialization = "1.11.0"
 version-catalog-update-v = "1.1.1"
 opentelemetry-kotlin = "0.7.0"
+opentelemetry = "1.65.0"
+opentelemetry-instrumentation = "2.26.1-alpha"
 xmlutil = "1.0.2.1"
 
 [libraries]
@@ -29,6 +31,7 @@ dc-aviator-client-ktor = { module = "cloud.mallne.dicentra.aviator.client:ktor",
 dc-aviator-core = { module = "cloud.mallne.dicentra.aviator:core", version.ref = "dc-aviator" }
 dc-aviator-koas = { module = "cloud.mallne.dicentra.aviator:koas", version.ref = "dc-aviator" }
 dc-aviator-plugin-interception = { module = "cloud.mallne.dicentra.aviator.plugin:interception", version.ref = "dc-aviator" }
+dc-aviator-plugin-otel = { module = "cloud.mallne.dicentra.aviator.plugin:otel", version.ref = "dc-aviator" }
 dc-aviator-plugin-weaver = { module = "cloud.mallne.dicentra.aviator.plugin:weaver", version.ref = "dc-aviator" }
 dc-aviator-ressourceserver = { module = "cloud.mallne.dicentra.aviator:aviator-resourcee-server", version.ref = "dc-aviator" }
 dc-polyfill = { module = "cloud.mallne.dicentra:polyfill", version.ref = "dc-polyfill" }
@@ -40,7 +43,9 @@ koin-logger-slf4j = { module = "io.insert-koin:koin-logger-slf4j", version.ref =
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 opentelemetry-kotlin-api = { module = "io.opentelemetry.kotlin:api", version.ref = "opentelemetry-kotlin" }
 opentelemetry-kotlin-exporters-inmemory = { module = "io.opentelemetry.kotlin:exporters-in-memory", version.ref = "opentelemetry-kotlin" }
-opentelemetry-kotlin-testing = { module = "io.opentelemetry.kotlin:testing", version.ref = "opentelemetry-kotlin" }
+opentelemetry-ktor = { module = "io.opentelemetry.instrumentation:opentelemetry-ktor-3.0", version.ref = "opentelemetry-instrumentation" }
+opentelemetry-logback = { module = "io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0", version.ref = "opentelemetry-instrumentation" }
+opentelemetry-autoconfigure = { module = "io.opentelemetry:opentelemetry-sdk-extension-autoconfigure", version.ref = "opentelemetry" }
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-http = { module = "io.ktor:ktor-http", version.ref = "ktor" }

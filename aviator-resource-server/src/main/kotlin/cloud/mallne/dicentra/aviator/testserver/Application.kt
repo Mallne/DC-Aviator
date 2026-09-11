@@ -9,5 +9,6 @@ fun main(args: Array<String>) {
 
 fun Application.module() {
     configureHTTP()
+    configureTelemetry("aviator-resource-server")
     validateRoutes()
 }
