@@ -55,7 +55,7 @@ kotlin {
         minSdk = libs.versions.android.minSdk.get().toInt()
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
         compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_21)
+            jvmTarget.set(JvmTarget.JVM_25)
         }
     }
     js {
