@@ -17,8 +17,8 @@ object LoggingPlugin : AviatorPlugin<LoggingPluginConfig> {
             configurationBundle = pluginConfig,
             identity = identity,
             x = PluginStagedExecutorBuilder.steps {
-                before(AviatorExecutionStages.Invocation) {
-                    it.logger = pluginConfig.logger
+                before(AviatorExecutionStages.Invocation) { context ->
+                    context.logger = pluginConfig.logger?.let { DeferredAviatorLogger(it) }
                 }
             }
         )

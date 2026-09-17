@@ -6,4 +6,5 @@ import cloud.mallne.dicentra.aviator.model.ServiceLocator
 interface AviatorPluginConfigScope {
     var serviceFilter: MutableList<ServiceLocator>
     val silentLoggingTags: MutableList<String>
+        get() = mutableListOf()
 }

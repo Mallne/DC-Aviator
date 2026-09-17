@@ -3,6 +3,7 @@ package cloud.mallne.dicentra.aviator.core.execution
 import cloud.mallne.dicentra.aviator.core.InternalAviatorAPI
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginInstance
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonPrimitive
 
 
 class AviatorExecutionPipeline<C : AviatorExecutionContext<in O, in B>, O : @Serializable Any, B : @Serializable Any>(
@@ -62,7 +63,14 @@ class AviatorExecutionPipeline<C : AviatorExecutionContext<in O, in B>, O : @Ser
             AviatorExecutionStages.FormingRequest -> {
                 context.stage = AviatorExecutionStages.Requesting
                 plugins.forEach { value -> value.x.beforeRequesting(context) }
-                executor.onRequesting(context)
+                try {
+                    executor.onRequesting(context)
+                } catch (e: Exception) {
+                    context.bundle[TRANSPORT_EXCEPTION_KEY] = JsonPrimitive(e.message ?: e::class.simpleName ?: "unknown")
+                    plugins.forEach { value -> value.x.afterRequesting(context) }
+                    plugins.forEach { value -> value.x.afterPaintingResponse(context) }
+                    throw e
+                }
                 plugins.forEach { value -> value.x.afterRequesting(context) }
                 escalate()
             }
@@ -87,5 +95,9 @@ class AviatorExecutionPipeline<C : AviatorExecutionContext<in O, in B>, O : @Ser
 
             }
         }
+    }
+
+    companion object {
+        const val TRANSPORT_EXCEPTION_KEY = "dc-otel-transport-exception"
     }
 }

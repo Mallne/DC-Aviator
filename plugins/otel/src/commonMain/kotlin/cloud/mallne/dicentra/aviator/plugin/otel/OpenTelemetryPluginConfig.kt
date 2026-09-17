@@ -15,4 +15,10 @@ class OpenTelemetryPluginConfig : AviatorPluginConfigScope {
     var openTelemetry: OpenTelemetry? = null
 
     var errorStatusCodes: IntRange = 500..599
+
+    /**
+     * Inject W3C traceparent headers into outgoing Aviator HTTP requests.
+     * Enables end-to-end trace correlation: App → Aviator → Server.
+     */
+    var enableContextPropagation: Boolean = true
 }

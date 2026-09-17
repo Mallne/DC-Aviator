@@ -16,7 +16,6 @@ object OpenTelemetryPlugin : AviatorPlugin<OpenTelemetryPluginConfig> {
         }
         return OpenTelemetryPluginInstance(
             configurationBundle = pluginConfig,
-            identity = identity,
             x = OpenTelemetryPluginExecutor(pluginConfig)
         )
     }
