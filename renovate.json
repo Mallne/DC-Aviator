@@ -1,6 +1,21 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
-  ]
+    "config:recommended",
+    ":semanticCommits"
+  ],
+  "packageRules": [
+    {
+      "description": "Group all Gradle dependencies",
+      "matchManagers": ["gradle", "gradle-wrapper"],
+      "groupName": "all Gradle dependencies",
+      "automerge": true,
+      "automergeType": "pr"
+    }
+  ],
+  "labels": ["dependencies"],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security"]
+  }
 }
