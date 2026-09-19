@@ -12,8 +12,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: master
 
       - uses: actions/setup-java@v6
         with:
@@ -49,4 +47,4 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add gradle.properties
           git commit -m "chore: bump version to ${NEXT_VERSION} [skip ci]"
-          git push origin master
+          git push origin HEAD:master
