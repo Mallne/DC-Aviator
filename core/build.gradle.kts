@@ -5,7 +5,7 @@ import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 group = "cloud.mallne.dicentra.aviator"
-version = project.findProperty("VERSION_NAME") ?: "1.0.0-SNAPSHOT"
+version = "1.0.0-SNAPSHOT"
 description = "The core compponents of DiCentra Aviator."
 
 plugins {

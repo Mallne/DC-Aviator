@@ -6,7 +6,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 group = "cloud.mallne.dicentra.aviator.plugin.adapter"
 description = "DiCentra Aviator Adapter for XML Bodies"
-version = project.findProperty("VERSION_NAME") ?: "1.0.0-SNAPSHOT"
+version = "1.0.0-SNAPSHOT"
 
 plugins {
     alias(libs.plugins.mavenPublish)
