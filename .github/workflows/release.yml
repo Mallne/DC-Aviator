@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: master
 
       - uses: actions/setup-java@v6
         with:
@@ -42,7 +44,6 @@ jobs:
           PATCH=$(echo "$TAG_VERSION" | cut -d. -f3)
           NEXT_PATCH=$((PATCH + 1))
           NEXT_VERSION="${MAJOR}.${MINOR}.${NEXT_PATCH}-SNAPSHOT"
-          git checkout master
           sed -i "s/^VERSION_NAME=.*/VERSION_NAME=${NEXT_VERSION}/" gradle.properties
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
