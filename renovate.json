@@ -4,15 +4,21 @@
     "config:recommended",
     ":semanticCommits"
   ],
-  "labels": ["dependencies"],
+  "labels": [
+    "dependencies"
+  ],
   "vulnerabilityAlerts": {
     "enabled": true,
-    "labels": ["security"]
+    "labels": [
+      "security"
+    ]
   },
   "packageRules": [
     {
-      "matchPackagePrefixes": ["cloud.mallne"],
-      "allowedVersions": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+      "matchPackagePrefixes": [
+        "cloud.mallne"
+      ],
+      "versioning": "maven"
     }
   ]
 }
