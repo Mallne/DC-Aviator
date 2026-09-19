@@ -78,8 +78,8 @@ mavenPublishing {
                     maven {
                         url = uri("https://registry.mallne.cloud/repository/DiCentraArtefacts/")
                         credentials {
-                            username = project.findProperty("dc.username") as String?
-                            password = project.findProperty("dc.password") as String?
+                            username = project.findProperty("dc.username") as? String ?: ""
+                            password = project.findProperty("dc.password") as? String ?: ""
                         }
                     }
                 }
