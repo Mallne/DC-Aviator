@@ -87,9 +87,6 @@ mavenPublishing {
         }
     }
 
-    if (project.findProperty("dc.signingKey") != null) {
-        signAllPublications()
-    }
 
     coordinates(group.toString(), project.name)
 }

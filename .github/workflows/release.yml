@@ -37,8 +37,6 @@ jobs:
         env:
           ORG_GRADLE_PROJECT_dc.username: ${{ secrets.NEXUS_USERNAME }}
           ORG_GRADLE_PROJECT_dc.password: ${{ secrets.NEXUS_PASSWORD }}
-          ORG_GRADLE_PROJECT_dc.signingKey: ${{ secrets.GPG_SIGNING_KEY }}
-          ORG_GRADLE_PROJECT_dc.signingPassword: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Create GitHub Release
         run: gh release create ${{ github.ref_name }} --generate-notes --title ${{ github.ref_name }}
