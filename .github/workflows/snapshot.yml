@@ -32,5 +32,5 @@ jobs:
       - name: Publish SNAPSHOT
         run: ./gradlew --no-daemon publish -PVERSION_NAME="${{ steps.version.outputs.version }}"
         env:
-          ORG_GRADLE_PROJECT_dc.username: ${{ secrets.NEXUS_USERNAME }}
-          ORG_GRADLE_PROJECT_dc.password: ${{ secrets.NEXUS_PASSWORD }}
+          NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
+          NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
