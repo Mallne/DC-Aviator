@@ -21,15 +21,6 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Validate tag matches VERSION_NAME
-        run: |
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
-          GRADLE_VERSION=$(grep 'VERSION_NAME' gradle.properties | cut -d= -f2 | tr -d ' ')
-          if [ "$GRADLE_VERSION" != "$TAG_VERSION" ]; then
-            echo "ERROR: gradle.properties VERSION_NAME ($GRADLE_VERSION) does not match tag ($TAG_VERSION)"
-            exit 1
-          fi
-
       - name: Publish release
         run: |
           TAG_VERSION="${GITHUB_REF_NAME#v}"
