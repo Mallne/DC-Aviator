@@ -16,7 +16,19 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+
 publishing {
+    repositories {
+        maven {
+            name = "DiCentraArtefacts"
+            url = uri("https://registry.mallne.cloud/repository/DiCentraArtefacts/")
+            credentials {
+                username = project.findProperty("dc.username") as? String ?: ""
+                password = project.findProperty("dc.password") as? String ?: ""
+            }
+        }
+    }
+
     publications {
         create<MavenPublication>("maven") {
             groupId = project.group.toString()
@@ -32,15 +44,6 @@ publishing {
                     developer {
                         name = "Mallne"
                         url = "mallne.cloud"
-                    }
-                }
-            }
-            repositories {
-                maven {
-                    url = uri("https://registry.mallne.cloud/repository/DiCentraArtefacts/")
-                    credentials {
-                        username = project.findProperty("dc.username") as? String ?: ""
-                        password = project.findProperty("dc.password") as? String ?: ""
                     }
                 }
             }

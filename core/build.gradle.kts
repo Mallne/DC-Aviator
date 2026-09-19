@@ -54,8 +54,20 @@ kotlin {
     jvmToolchain(25)
 }
 
+
 mavenPublishing {
     publishing {
+        repositories {
+            maven {
+                name = "DiCentraArtefacts"
+                url = uri("https://registry.mallne.cloud/repository/DiCentraArtefacts/")
+                credentials {
+                    username = project.findProperty("dc.username") as? String ?: ""
+                    password = project.findProperty("dc.password") as? String ?: ""
+                }
+            }
+        }
+
         publications {
             create<MavenPublication>("maven") {
                 groupId = project.group.toString()
@@ -74,19 +86,9 @@ mavenPublishing {
                         }
                     }
                 }
-                repositories {
-                    maven {
-                        url = uri("https://registry.mallne.cloud/repository/DiCentraArtefacts/")
-                        credentials {
-                            username = project.findProperty("dc.username") as? String ?: ""
-                            password = project.findProperty("dc.password") as? String ?: ""
-                        }
-                    }
-                }
             }
         }
     }
-
 
     coordinates(group.toString(), project.name)
 }
