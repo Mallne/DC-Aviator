@@ -2,8 +2,8 @@ import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 group = "cloud.mallne.dicentra.aviator.plugin"
-version = "1.0.0-SNAPSHOT"
 description = "DiCentra Aviator Plugin for OpenTelemetry distributed tracing"
+version = project.findProperty("VERSION_NAME") ?: "1.0.0-SNAPSHOT"
 
 plugins {
     alias(libs.plugins.mavenPublish)

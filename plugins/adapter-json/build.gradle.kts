@@ -5,8 +5,8 @@ import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 group = "cloud.mallne.dicentra.aviator.plugin.adapter"
-version = "1.0.0-SNAPSHOT"
 description = "DiCentra Aviator Adapter for JSON Bodies"
+version = project.findProperty("VERSION_NAME") ?: "1.0.0-SNAPSHOT"
 
 plugins {
     alias(libs.plugins.mavenPublish)

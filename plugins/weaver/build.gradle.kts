@@ -5,8 +5,8 @@ import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 group = "cloud.mallne.dicentra.aviator.plugin"
-version = "1.0.0-SNAPSHOT"
 description = "DiCentra Aviator Plugin that uses Weaver to translate input and Output"
+version = project.findProperty("VERSION_NAME") ?: "1.0.0-SNAPSHOT"
 
 plugins {
     alias(libs.plugins.mavenPublish)

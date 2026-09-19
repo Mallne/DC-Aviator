@@ -5,7 +5,7 @@ import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 group = "cloud.mallne.dicentra.aviator"
-version = "1.0.0-SNAPSHOT"
+version = project.findProperty("VERSION_NAME") ?: "1.0.0-SNAPSHOT"
 description = "The core compponents of DiCentra Aviator."
 
 plugins {
@@ -87,7 +87,9 @@ mavenPublishing {
         }
     }
 
-    signAllPublications()
+    if (project.findProperty("dc.signingKey") != null) {
+        signAllPublications()
+    }
 
-    coordinates(group.toString(), project.name, version.toString())
+    coordinates(group.toString(), project.name)
 }

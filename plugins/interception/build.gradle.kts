@@ -5,9 +5,9 @@ import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 group = "cloud.mallne.dicentra.aviator.plugin"
-version = "1.0.0-SNAPSHOT"
 description =
     "DiCentra Aviator Plugin wehre You can manuallyy intercept the Request on each pipeline step"
+version = project.findProperty("VERSION_NAME") ?: "1.0.0-SNAPSHOT"
 
 plugins {
     alias(libs.plugins.mavenPublish)
