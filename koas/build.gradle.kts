@@ -55,27 +55,6 @@ kotlin {
 
 mavenPublishing {
     publishing {
-        publications {
-            create<MavenPublication>("maven") {
-                groupId = project.group.toString()
-                artifactId = project.name
-                version = project.version.toString()
-
-                pom {
-                    name = "Dicentra Aviator Koas"
-                    description =
-                        "An Kotlin Multiplatform OpenAPI specification and parser utilizing kotlinx.serialization"
-                    inceptionYear = "2024"
-                    developers {
-                        developer {
-                            name = "Mallne"
-                            url = "mallne.cloud"
-                        }
-                    }
-                }
-            }
-        }
-
         repositories {
             maven {
                 name = "DiCentraArtefacts"
@@ -88,6 +67,16 @@ mavenPublishing {
         }
     }
 
-
     coordinates(group.toString(), project.name)
+    pom {
+        name = "Dicentra Aviator Koas"
+        description = "An Kotlin Multiplatform OpenAPI specification and parser utilizing kotlinx.serialization"
+        inceptionYear = "2024"
+        developers {
+            developer {
+                name = "Mallne"
+                url = "mallne.cloud"
+            }
+        }
+    }
 }

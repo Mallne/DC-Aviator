@@ -13,34 +13,29 @@ plugins {
 }
 
 
-publishing {
-    repositories {
-        maven {
-            name = "DiCentraArtefacts"
-            url = uri("https://registry.mallne.cloud/repository/DiCentraArtefacts/")
-            credentials {
-                username = providers.environmentVariable("NEXUS_USERNAME").getOrElse("")
-                password = providers.environmentVariable("NEXUS_PASSWORD").getOrElse("")
+mavenPublishing {
+    publishing {
+        repositories {
+            maven {
+                name = "DiCentraArtefacts"
+                url = uri("https://registry.mallne.cloud/repository/DiCentraArtefacts/")
+                credentials {
+                    username = providers.environmentVariable("NEXUS_USERNAME").getOrElse("")
+                    password = providers.environmentVariable("NEXUS_PASSWORD").getOrElse("")
+                }
             }
         }
     }
 
-    publications {
-        create<MavenPublication>("maven") {
-            groupId = project.group.toString()
-            artifactId = project.name
-            version = project.version.toString()
-
-            pom {
-                name = "DiCentra Aviator OpenTelemetry Plugin"
-                description = "DiCentra Aviator Plugin for OpenTelemetry distributed tracing"
-                inceptionYear = "2025"
-                developers {
-                    developer {
-                        name = "Mallne"
-                        url = "mallne.cloud"
-                    }
-                }
+    coordinates(group.toString(), project.name)
+    pom {
+        name = "DiCentra Aviator OpenTelemetry Plugin"
+        description = "DiCentra Aviator Plugin for OpenTelemetry distributed tracing"
+        inceptionYear = "2025"
+        developers {
+            developer {
+                name = "Mallne"
+                url = "mallne.cloud"
             }
         }
     }

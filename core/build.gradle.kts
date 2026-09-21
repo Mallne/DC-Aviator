@@ -67,28 +67,18 @@ mavenPublishing {
                 }
             }
         }
-
-        publications {
-            create<MavenPublication>("maven") {
-                groupId = project.group.toString()
-                artifactId = project.name
-                version = project.version.toString()
-
-                pom {
-                    name = "DiCentra Aviator Core"
-                    description =
-                        "Essential Interfaces and Methods for DiCentra Aviator"
-                    inceptionYear = "2025"
-                    developers {
-                        developer {
-                            name = "Mallne"
-                            url = "mallne.cloud"
-                        }
-                    }
-                }
-            }
-        }
     }
 
     coordinates(group.toString(), project.name)
+    pom {
+        name = "DiCentra Aviator Core"
+        description = "Essential Interfaces and Methods for DiCentra Aviator"
+        inceptionYear = "2025"
+        developers {
+            developer {
+                name = "Mallne"
+                url = "mallne.cloud"
+            }
+        }
+    }
 }
