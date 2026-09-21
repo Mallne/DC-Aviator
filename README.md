@@ -30,13 +30,12 @@ executable Kotlin service logic.
 
 The project is highly modular, allowing you to include only what you need:
 
-| Module                         | Description                                                             |
-|:-------------------------------|:------------------------------------------------------------------------|
-| **`:core`**                    | The heart of Aviator. Handles service conversion and plugin management. |
-| **`:koas`**                    | Kotlin-native models and utilities for OpenAPI 3.x specifications.      |
-| **`:clients`**                 | Implementations for consuming Aviator services.                         |
-| **`:plugins`**                 | Extensions for various cross-cutting concerns.                          |
-| **`:aviator-resource-server`** | A reference Ktor server for testing and validation.                     |
+| Module          | Description                                                             |
+|:----------------|:------------------------------------------------------------------------|
+| **`:core`**     | The heart of Aviator. Handles service conversion and plugin management. |
+| **`:koas`**     | Kotlin-native models and utilities for OpenAPI 3.x specifications.      |
+| **`:clients`**  | Implementations for consuming Aviator services.                         |
+| **`:plugins`**  | Extensions for various cross-cutting concerns.                          |
 
 ---
 
@@ -138,14 +137,6 @@ Aviator provides multiple client implementations to suit different environments 
 
 ```bash
 ./gradlew build
-```
-
-### Running the Test Server
-
-To see Aviator in action, you can run the built-in resource server:
-
-```bash
-./gradlew :aviator-resource-server:run
 ```
 
 ---

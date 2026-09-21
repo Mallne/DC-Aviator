@@ -28,7 +28,6 @@ aviator/
 |   +-- interception/        # Middleware/interceptor support
 |   +-- weaver/              # Weaver integration plugin
 |   +-- synapse/             # Synapse integration plugin
-+-- aviator-resource-server/ # Reference/test Ktor server
 ```
 
 ## Data Flow

@@ -16,5 +16,4 @@
 
 ```bash
 ./gradlew build
-./gradlew :aviator-resource-server:run
 ```
