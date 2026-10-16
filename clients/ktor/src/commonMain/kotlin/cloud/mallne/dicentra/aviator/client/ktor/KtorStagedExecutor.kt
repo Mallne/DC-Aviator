@@ -6,6 +6,7 @@ import cloud.mallne.dicentra.aviator.client.ktor.io.manualPipeline
 import cloud.mallne.dicentra.aviator.core.execution.RequestParameters
 import cloud.mallne.dicentra.aviator.core.execution.StagedExecutor
 import cloud.mallne.dicentra.aviator.core.io.NetworkBody
+import cloud.mallne.dicentra.aviator.core.io.RawRequestBody
 import cloud.mallne.dicentra.aviator.core.io.NetworkChain
 import cloud.mallne.dicentra.aviator.core.io.NetworkHeader
 import cloud.mallne.dicentra.aviator.core.io.adapter.request.FormAdapter
@@ -34,7 +35,10 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
         val route = context.dataHolder.route
         val fallbackCT = route.body.types.keys.firstOrNull()
         context.networkChain.forEach { net ->
-            val body = if (context.body != null && context.bodyClazz != null) {
+            val raw = context.body as? RawRequestBody
+            val body = if (raw != null) {
+                NetworkBody.Empty to ContentType.parse(raw.contentType)
+            } else if (context.body != null && context.bodyClazz != null) {
                 val adapter =
                     route.body.mapNotNull { bdy -> context.adapterFor(bdy.key)?.let { it to bdy.key } }.firstOrNull()
                 adapter?.let { adpt -> adpt.first.buildBody(context.body, context)?.let { it to adpt.second } }
@@ -65,7 +69,15 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
             context.log(KtorLoggingIds.TRACE_CREATE_REQUEST) { trace("Creating Network Request for ${net.url}") }
             val resp = context.dataHolder.client.request {
                 url(net.url)
-                when (net.request?.outgoingContent) {
+                val raw = context.body as? RawRequestBody
+                if (raw != null) {
+                    // Preserve serialized bytes even when a provider plugin forms its own body.
+                    setBody(object : OutgoingContent.ByteArrayContent() {
+                        override val contentType = ContentType.parse(raw.contentType)
+                        override val contentLength = raw.bytes.size.toLong()
+                        override fun bytes(): ByteArray = raw.bytes
+                    })
+                } else when (net.request?.outgoingContent) {
                     is NetworkBody.Form -> {
                         if (ContentType.Application.FormUrlEncoded.match(
                                 net.request?.contentType ?: ContentType.Text.Plain
@@ -109,7 +121,12 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
                     }
                 }
                 method = net.request!!.method
-                net.request!!.headers.values.forEach { (k, v) -> header(k, v.toString()) }
+                net.request!!.headers.values.forEach { (k, v) ->
+                    if (raw == null || (!k.equals(HttpHeaders.ContentType, ignoreCase = true) &&
+                                !k.equals(HttpHeaders.ContentLength, ignoreCase = true))) {
+                        header(k, v.toString())
+                    }
+                }
             }
             val contentTypeRecieved = resp.headers["Content-Type"]?.let { ContentType.parse(it) }
             val content = resp.bodyAsChannel()

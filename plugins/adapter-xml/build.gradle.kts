@@ -78,6 +78,11 @@ kotlin {
                 implementation(libs.ktor.http)
             }
         }
+        val jvmTest = getByName("jvmTest") {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
     }
     jvmToolchain(25)
 }
