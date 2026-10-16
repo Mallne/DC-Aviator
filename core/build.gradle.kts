@@ -50,6 +50,11 @@ kotlin {
                 api(project(":koas"))
             }
         }
+        val commonTest = getByName("commonTest") {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
     }
     jvmToolchain(25)
 }

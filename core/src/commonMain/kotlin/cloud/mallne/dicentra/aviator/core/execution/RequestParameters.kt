@@ -1,6 +1,7 @@
 package cloud.mallne.dicentra.aviator.core.execution
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.KSerializer
 
 @Serializable
 data class RequestParameters(
@@ -10,10 +11,11 @@ data class RequestParameters(
     fun toStringList(): Map<String, List<String>> {
         return value.map { (template, param) ->
             template to when (param) {
-            is RequestParameter.Single<*> -> listOf(param.toString())
-            is RequestParameter.Multi<*> -> param.toStringList()
+                is RequestParameter.Single<*> -> listOf(param.toString())
+                is RequestParameter.Multi<*> -> param.toStringList()
         } }.toMap()
     }
+
 }
 
 sealed interface RequestParameter {
@@ -27,6 +29,8 @@ sealed interface RequestParameter {
     data class Multi<T>(
         val value: List<T>,
         val stringify: (T) -> String = { it.toString() },
+        /** Optional wire serializer for consumers that need typed parameter values. */
+        val valueSerializer: KSerializer<T>? = null,
     ) : RequestParameter, List<T> by value {
         override fun toString(): String = value.joinToString(separator = ",") { stringify(it) }
         fun toStringList(): List<String> = value.map { stringify(it) }
@@ -36,6 +40,8 @@ sealed interface RequestParameter {
     data class Single<T>(
         val value: T,
         val stringify: (T) -> String = { it.toString() },
+        /** Optional wire serializer for consumers that need typed parameter values. */
+        val valueSerializer: KSerializer<T>? = null,
     ) : RequestParameter {
         override fun toString(): String = stringify(value)
         override val size: Int
@@ -45,4 +51,5 @@ sealed interface RequestParameter {
 
         override fun <Tt> asType(): Tt? = value as? Tt
     }
+
 }

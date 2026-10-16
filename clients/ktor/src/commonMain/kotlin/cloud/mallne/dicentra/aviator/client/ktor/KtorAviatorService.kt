@@ -34,6 +34,7 @@ data class KtorAviatorService(
     override val adapters: List<RequestBodyAdapter<out NetworkBody>>,
     override val deserializers: List<ResponseBodyAdapter>,
     override val serializers: List<SerialFormat> = listOf(Json),
+    val maxResponseBytes: Long = 16_777_216,
 ) : AviatorServiceDataHolder {
 
     init {

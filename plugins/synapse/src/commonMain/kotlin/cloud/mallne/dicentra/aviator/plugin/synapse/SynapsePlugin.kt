@@ -31,8 +31,8 @@ object SynapsePlugin : AviatorPlugin<SynapsePluginConfig> {
                     null
                 }
                 context.body = CatalystRequest(
-                    parameters = context.requestParams.toStringList(),
-                    body = body
+                    body = body,
+                    typedParameters = context.requestParams.toCatalystParameters(context.dataHolder.json),
                 )
                 context.bodyClazz = Triple(
                     CatalystRequest::class,

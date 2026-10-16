@@ -77,6 +77,11 @@ kotlin {
                 implementation(libs.ktor.client.core)
             }
         }
+        val commonTest = getByName("commonTest") {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
     }
     jvmToolchain(25)
 }

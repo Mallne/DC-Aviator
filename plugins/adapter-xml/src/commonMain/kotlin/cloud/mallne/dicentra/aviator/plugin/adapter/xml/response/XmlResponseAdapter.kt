@@ -6,6 +6,8 @@ import cloud.mallne.dicentra.aviator.plugin.adapter.xml.XmlAdapter.xml
 import cloud.mallne.dicentra.aviator.plugin.adapter.xml.request.XmlRequestAdapter
 import io.ktor.http.*
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonPrimitive
 
 internal object XmlResponseAdapter : ResponseBodyAdapter {
     override fun <O : @Serializable Any, B : @Serializable Any> deserialize(
@@ -14,7 +16,14 @@ internal object XmlResponseAdapter : ResponseBodyAdapter {
     ): O? {
         return try {
             val string = body.decodeToString()
-            context.dataHolder.xml.decodeFromString(context.outputClazz.third, string)
+            if (context.outputClazz.first == JsonElement::class) {
+                // Generic gateway callers have no provider-specific XML model. Preserve the wire
+                // document as a JSON string; provider plugins can still replace this result later.
+                @Suppress("UNCHECKED_CAST")
+                JsonPrimitive(string) as O
+            } else {
+                context.dataHolder.xml.decodeFromString(context.outputClazz.third, string)
+            }
         } catch (e: Exception) {
             context.log("XMLParse") {
                 warn("XML could not be parsed to ${context.outputClazz.first}", e)

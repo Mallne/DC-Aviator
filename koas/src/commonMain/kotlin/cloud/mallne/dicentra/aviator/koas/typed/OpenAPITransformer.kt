@@ -58,7 +58,21 @@ private class OpenAPITransformer(private val openAPI: OpenApiDoc) {
                 })
         }
 
-        val inputs = operation.input(::context)
+        // Inputs must align with all effective path and operation parameters. Using only
+        // operation.parameters here dropped path-level declarations from Route.input even though
+        // they were retained in Route.parameter for URL construction.
+        val parameters = pathItem.condenseParameters { operation }
+        val inputs = parameters.map { param ->
+            val resolved = param.schema?.resolve()
+                ?: throw OpenAPIConstraintViolation("No Schema for Parameter ${param.name} of operation ${operation.operationId}/${operation.description}.")
+            val modelContext = resolved.namedOr {
+                val operationId = ensureNotNull(operation.operationId) {
+                    OpenAPIConstraintViolation("operationId currently required to generate inline schemas for operation parameters.")
+                }
+                context(NamingContext.RouteParam(param.name, operationId, "Request"))
+            }
+            resolved.toModel(modelContext)
+        }
         val nestedInput = inputs.mapNotNull { (it as? Resolved.Value)?.value }
         val nestedResponses = operation.responses?.responses?.mapNotNull { (_, refOrResponse) ->
             when (refOrResponse) {
@@ -124,14 +138,13 @@ private class OpenAPITransformer(private val openAPI: OpenApiDoc) {
             path = path,
             method = method,
             body = toRequestBody(operation, operation.requestBody?.get(), ::context),
-            input = inputs.zip(operation.parameters ?: listOf()) { model, p ->
-                val param = p.get()
+            input = inputs.zip(parameters) { model, param ->
                 Route.Input(param.name, model.value, param.required, param.`in`!!, param.description)
             },
             returnType = toResponses(operation, ::context),
             extensions = operation.extensions ?: mapOf(),
             nested = nestedInput + (nestedResponses ?: listOf()) + nestedBody,
-            parameter = pathItem.condenseParameters { operation },
+            parameter = parameters,
             securities = Route.Securities(securities, anonymousAllowed)
         )
     }

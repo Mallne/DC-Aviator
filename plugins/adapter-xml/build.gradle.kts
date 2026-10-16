@@ -73,6 +73,7 @@ kotlin {
         val commonMain = getByName("commonMain") {
             dependencies {
                 implementation(libs.xmlutil.serialization)
+                implementation(libs.kotlinx.serialization.json)
                 implementation(project(":core"))
                 implementation(libs.ktor.http)
             }

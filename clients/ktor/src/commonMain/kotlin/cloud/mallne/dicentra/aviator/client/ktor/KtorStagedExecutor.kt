@@ -12,6 +12,8 @@ import cloud.mallne.dicentra.aviator.core.io.adapter.request.FormAdapter
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
+import io.ktor.utils.io.readBuffer
+import kotlinx.io.readByteArray
 import io.ktor.http.*
 import io.ktor.http.content.*
 import io.ktor.openapi.*
@@ -110,9 +112,15 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
                 net.request!!.headers.values.forEach { (k, v) -> header(k, v.toString()) }
             }
             val contentTypeRecieved = resp.headers["Content-Type"]?.let { ContentType.parse(it) }
+            val content = resp.bodyAsChannel()
+                .readBuffer(context.dataHolder.maxResponseBytes + 1)
+                .readByteArray()
+            check(content.size.toLong() <= context.dataHolder.maxResponseBytes) {
+                "Aviator response exceeded the configured maximum of ${context.dataHolder.maxResponseBytes} bytes"
+            }
             val response = AvKtorResponse(
                 ktorPrimitive = resp,
-                content = resp.bodyAsBytes(),
+                content = content,
                 contentType = contentTypeRecieved ?: context.dataHolder.route.returnType[resp.status]?.toList()
                     ?.first()?.first ?: ContentType.Any,
             )

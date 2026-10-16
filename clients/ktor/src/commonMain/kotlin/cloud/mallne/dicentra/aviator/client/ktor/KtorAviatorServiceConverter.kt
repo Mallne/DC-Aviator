@@ -25,8 +25,14 @@ import kotlinx.serialization.json.Json
 class KtorAviatorServiceConverter(
     val httpClient: HttpClient = HttpClient(),
     val serializers: List<SerialFormat> = listOf(Json),
+    val maxResponseBytes: Long = 16_777_216,
 ) : APIToServiceConverter {
-    constructor(httpClient: HttpClient, json: Json = Json) : this(httpClient, mutableListOf(json))
+    constructor(httpClient: HttpClient, json: Json = Json, maxResponseBytes: Long = 16_777_216) :
+        this(httpClient, mutableListOf(json), maxResponseBytes)
+
+    init {
+        require(maxResponseBytes in 1 until Int.MAX_VALUE.toLong()) { "maxResponseBytes must be between 1 and Int.MAX_VALUE - 1" }
+    }
 
     fun swapPlugins(
         to: KtorAviatorService,
@@ -78,6 +84,7 @@ class KtorAviatorServiceConverter(
                     adapters = adapters + CommonAdapter.adapters,
                     deserializers = deserializers + CommonAdapter.deserializers,
                     serializers = serializers,
+                    maxResponseBytes = maxResponseBytes,
                 )
             } else null
         }
