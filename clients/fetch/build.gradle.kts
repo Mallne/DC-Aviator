@@ -13,6 +13,7 @@ kotlin {
         nodejs()
         browser()
         binaries.library()
+        generateTypeScriptDefinitions()
     }
 
     sourceSets {
