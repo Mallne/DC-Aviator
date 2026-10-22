@@ -13,6 +13,7 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.mavenPublish)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.kotlin.npm.publish)
 }
 
 kotlin {
@@ -28,6 +29,7 @@ kotlin {
     }
     js {
         nodejs()
+        binaries.library()
         browser()
     }
     wasmJs {
@@ -84,6 +86,22 @@ mavenPublishing {
                 name = "Mallne"
                 url = "mallne.cloud"
             }
+        }
+    }
+}
+
+npmPublish {
+    organization = "dicentra"
+    registries {
+        register("nodeRegistry") {
+            uri.set("https://registry.mallne.cloud/repository/NodeRegistry/")
+            auth.set(providers.environmentVariable("NPM_TOKEN").orNull)
+        }
+    }
+    packages {
+        named("js") {
+            packageName = "aviator-core"
+            version = project.version.toString().replace("-SNAPSHOT", "-snapshot")
         }
     }
 }

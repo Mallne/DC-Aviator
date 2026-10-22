@@ -14,6 +14,7 @@ plugins {
     alias(libs.plugins.kmp)
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.kotlin.npm.publish)
 }
 
 
@@ -58,6 +59,7 @@ kotlin {
     }
     js {
         nodejs()
+        binaries.library()
         browser()
     }
     wasmJs {
@@ -81,4 +83,20 @@ kotlin {
         }
     }
     jvmToolchain(25)
+}
+
+npmPublish {
+    organization = "dicentra"
+    registries {
+        register("nodeRegistry") {
+            uri.set("https://registry.mallne.cloud/repository/NodeRegistry/")
+            auth.set(providers.environmentVariable("NPM_TOKEN").orNull)
+        }
+    }
+    packages {
+        named("js") {
+            packageName = "aviator-plugin-interception"
+            version = project.version.toString().replace("-SNAPSHOT", "-snapshot")
+        }
+    }
 }

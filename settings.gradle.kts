@@ -24,6 +24,7 @@ dependencyResolutionManagement {
 }
 
 include(":clients:ktor")
+include(":clients:fetch")
 include(":clients:mock")
 include(":plugins:adapter-json")
 include(":plugins:adapter-xml")

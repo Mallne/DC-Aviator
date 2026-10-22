@@ -1,4 +1,6 @@
 import nl.littlerobots.vcu.plugin.resolver.VersionSelectors
+import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsEnvSpec
+import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin
 
 plugins {
     id("maven-publish")
@@ -9,6 +11,14 @@ plugins {
     alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.version.catalog.update)
     alias(libs.plugins.ben.manes.versions)
+}
+
+allprojects {
+    plugins.withType<NodeJsPlugin> {
+        extensions.configure<NodeJsEnvSpec> {
+            download = false
+        }
+    }
 }
 
 versionCatalogUpdate {
