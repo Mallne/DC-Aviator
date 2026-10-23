@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalJsExport::class)
+
 package cloud.mallne.dicentra.aviator.plugin.synapse
 
 import cloud.mallne.dicentra.aviator.core.AviatorServiceDataHolder.Companion.json
@@ -11,10 +13,13 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.serializer
 import kotlin.io.encoding.Base64
+import kotlin.js.ExperimentalJsExport
+import kotlin.js.JsExport
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
 
+@JsExport
 object SynapsePlugin : AviatorPlugin<SynapsePluginConfig> {
     override val identity: String = "DC-AVSyn"
     override fun install(config: SynapsePluginConfig.() -> Unit): AviatorPluginInstance {

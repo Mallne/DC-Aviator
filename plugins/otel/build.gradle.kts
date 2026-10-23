@@ -56,6 +56,7 @@ kotlin {
     js {
         nodejs()
         binaries.library()
+        generateTypeScriptDefinitions()
         browser()
     }
     iosArm64()

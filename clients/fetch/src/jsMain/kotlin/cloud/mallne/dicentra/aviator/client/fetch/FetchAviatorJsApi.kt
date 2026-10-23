@@ -1,13 +1,13 @@
 @file:OptIn(ExperimentalJsExport::class)
 
-package cloud.mallne.dicentra.aviator.client.fetch
-
 import cloud.mallne.dicentra.aviator.core.InternalAviatorAPI
 import cloud.mallne.dicentra.aviator.core.NoBody
 import cloud.mallne.dicentra.aviator.core.execution.RequestParameter
 import cloud.mallne.dicentra.aviator.core.execution.RequestParameters
-import io.ktor.openapi.OpenApiDoc
-import kotlinx.serialization.encodeToString
+import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginActivationScope
+import cloud.mallne.dicentra.aviator.client.fetch.FetchAviatorService
+import cloud.mallne.dicentra.aviator.client.fetch.FetchAviatorServiceConverter
+import io.ktor.openapi.*
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.buildJsonObject
@@ -27,6 +27,10 @@ class FetchAviatorJsClient internal constructor(
     /** Operation IDs available in the supplied Aviator OpenAPI document. */
     val operationIds: Array<String>
         get() = services.keys.toTypedArray()
+
+    /** Plugin identities activated for at least one operation in this client. */
+    val pluginIdentities: Array<String>
+        get() = services.values.flatMap { service -> service.plugins.map { it.identity } }.distinct().toTypedArray()
 
     /**
      * Execute an operation and return a JSON envelope containing HTTP status, content type, and
@@ -56,10 +60,14 @@ class FetchAviatorJsClient internal constructor(
 
 /** Create a JavaScript-callable client from serialized Aviator OpenAPI and a Fetch-compatible function. */
 @JsExport
-fun createFetchAviatorJsClient(openApiJson: String, fetcher: dynamic): FetchAviatorJsClient {
+fun createFetchAviatorJsClient(
+    openApiJson: String,
+    fetcher: dynamic,
+    plugins: AviatorPluginActivationScope.() -> Unit = {},
+): FetchAviatorJsClient {
     val openApi = Json.decodeFromString<OpenApiDoc>(openApiJson)
     val services = FetchAviatorServiceConverter(fetcher = fetcher)
-        .build(openApi) {}
+        .build(openApi, plugins)
         .filterIsInstance<FetchAviatorService>()
         .mapNotNull { service -> service.route.operationId?.let { it to service } }
         .toMap()

@@ -1,10 +1,15 @@
+@file:OptIn(ExperimentalJsExport::class)
+
 package cloud.mallne.dicentra.aviator.core.plugins
 
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionContext
 import cloud.mallne.dicentra.aviator.core.execution.logging.AviatorLogger
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
+import kotlin.js.ExperimentalJsExport
+import kotlin.js.JsExport
 
+@JsExport
 interface AviatorPluginInstance {
     val configurationBundle: AviatorPluginConfigScope
     val identity: String

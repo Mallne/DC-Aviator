@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalJsExport::class)
+
 package cloud.mallne.dicentra.aviator.plugin.httpauth
 
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionStages
@@ -6,7 +8,10 @@ import cloud.mallne.dicentra.aviator.core.plugins.AviatorPlugin
 import cloud.mallne.dicentra.aviator.core.plugins.PluginStagedExecutorBuilder
 import io.ktor.openapi.*
 import kotlin.io.encoding.Base64
+import kotlin.js.ExperimentalJsExport
+import kotlin.js.JsExport
 
+@JsExport
 object HttpAuthPlugin : AviatorPlugin<HttpAuthPluginConfig> {
     const val PARAMETER = "Authorization"
     const val SCHEME_HINT = "SECURITY_REQUIREMENT_HINT"

@@ -1,8 +1,13 @@
+@file:OptIn(ExperimentalJsExport::class)
+
 package cloud.mallne.dicentra.aviator.plugin.interception
 
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPlugin
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginInstance
+import kotlin.js.ExperimentalJsExport
+import kotlin.js.JsExport
 
+@JsExport
 object InterceptionPlugin : AviatorPlugin<InterceptionPluginConfig> {
     override val identity: String = "DC-AV-Interception"
     override fun install(config: InterceptionPluginConfig.() -> Unit): AviatorPluginInstance {

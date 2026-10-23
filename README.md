@@ -124,6 +124,56 @@ Aviator provides multiple client implementations to suit different environments 
   context (headers, body, parameters) and allows you to simulate service responses, making it ideal for unit and
   integration tests.
 
+### JavaScript / TypeScript packages
+
+Aviator publishes JavaScript packages to the DiCentra Node registry at
+`https://registry.mallne.cloud/repository/NodeRegistry/`. Configure your npm-compatible client for the
+`@dicentra` scope and authenticate with a registry token (`NPM_TOKEN`); do not commit credentials.
+
+The packages are released together at the same version. The current release is **1.0.6**:
+
+| npm package | Module |
+|:--|:--|
+| `@dicentra/aviator-core` | Core Aviator service and plugin APIs |
+| `@dicentra/aviator-koas` | OpenAPI models and transformation utilities |
+| `@dicentra/aviator-client-fetch` | Fetch-based client, including its JavaScript façade |
+| `@dicentra/aviator-plugin-adapter-json` | Optional JSON serialization adapter |
+| `@dicentra/aviator-plugin-adapter-xml` | Optional XML serialization adapter |
+| `@dicentra/aviator-plugin-http-auth` | HTTP authentication plugin |
+| `@dicentra/aviator-plugin-interception` | Request/response interception plugin |
+| `@dicentra/aviator-plugin-otel` | OpenTelemetry plugin |
+| `@dicentra/aviator-plugin-synapse` | Synapse integration plugin |
+| `@dicentra/aviator-plugin-weaver` | Weaver transformation plugin |
+
+Install the Fetch client with your package manager, for example:
+
+```bash
+npm install @dicentra/aviator-client-fetch@1.0.6
+```
+
+The package exposes Kotlin/JS exports under `cloud.mallne.dicentra.aviator.client.fetch`. Its
+`createFetchAviatorJsClient(openApiJson, fetcher)` factory accepts an OpenAPI JSON string and a
+Fetch-compatible function. The façade indexes operations by `operationId`; call `request` with the
+operation ID and an optional JSON object of string-valued path/query/header parameters. It resolves
+to a JSON string containing the raw HTTP `status`, `contentType`, and response `body` text. It does
+not deserialize response bodies or install serialization adapters:
+
+```ts
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+const { cloud } = require('@dicentra/aviator-client-fetch');
+const { createFetchAviatorJsClient } = cloud.mallne.dicentra.aviator.client.fetch;
+
+const client = createFetchAviatorJsClient(openApiJson, globalThis.fetch);
+const rawResponse = JSON.parse(await client.request('findParcels', JSON.stringify({ q: 'A 1' })));
+// { status: 200, contentType: 'application/json', body: '{...}' }
+```
+
+Serialization adapters remain **optional**. Install and activate JSON, XML, or other adapters only
+when the application needs typed serialization; the Fetch JavaScript façade does not enable one by
+default.
+
 ---
 
 ## 🛠️ Getting Started

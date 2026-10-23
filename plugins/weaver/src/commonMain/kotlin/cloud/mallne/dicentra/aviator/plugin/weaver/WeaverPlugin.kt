@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalJsExport::class)
+
 package cloud.mallne.dicentra.aviator.plugin.weaver
 
 import cloud.mallne.dicentra.aviator.core.AviatorServiceDataHolder.Companion.json
@@ -8,10 +10,12 @@ import cloud.mallne.dicentra.aviator.core.plugins.PluginStagedExecutorBuilder
 import cloud.mallne.dicentra.aviator.model.AviatorServiceUtils
 import cloud.mallne.dicentra.weaver.core.specification.WeaverSchema
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import kotlin.js.ExperimentalJsExport
+import kotlin.js.JsExport
 
+@JsExport
 object WeaverPlugin : AviatorPlugin<WeaverPluginConfig> {
     const val RESULT = "WV-Result"
     override val identity: String = "DC-WVxAV"

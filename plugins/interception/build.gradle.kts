@@ -60,6 +60,7 @@ kotlin {
     js {
         nodejs()
         binaries.library()
+        generateTypeScriptDefinitions()
         browser()
     }
     wasmJs {

@@ -1,10 +1,15 @@
+@file:OptIn(ExperimentalJsExport::class)
+
 package cloud.mallne.dicentra.aviator.plugin.otel
 
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPlugin
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginInstance
 import io.opentelemetry.kotlin.ExperimentalApi
+import kotlin.js.ExperimentalJsExport
+import kotlin.js.JsExport
 
 @OptIn(ExperimentalApi::class)
+@JsExport
 object OpenTelemetryPlugin : AviatorPlugin<OpenTelemetryPluginConfig> {
     override val identity: String = "DC-AV-OpenTelemetry"
 

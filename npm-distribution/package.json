@@ -1,0 +1,14 @@
+{
+  "name": "@dicentra/aviator-npm-distribution-build",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "pack": "node manage-packages.mjs pack",
+    "verify:fetch": "node manage-packages.mjs verify",
+    "publish:shared": "node manage-packages.mjs publish"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "typescript": "^7.0.2"
+  }
+}

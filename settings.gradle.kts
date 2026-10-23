@@ -35,6 +35,7 @@ include(":plugins:otel")
 include(":plugins:synapse")
 include(":core")
 include(":koas")
+include(":npm-distribution")
 val apiDest = file("../polyfill")
 if (apiDest.exists()) {
     includeBuild(apiDest.absolutePath) {
