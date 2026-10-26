@@ -4,14 +4,15 @@ package cloud.mallne.dicentra.aviator.plugin.weaver
 
 import cloud.mallne.dicentra.aviator.core.AviatorServiceDataHolder.Companion.json
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionStages
+import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionContext
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPlugin
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginInstance
 import cloud.mallne.dicentra.aviator.core.plugins.PluginStagedExecutorBuilder
-import cloud.mallne.dicentra.aviator.model.AviatorServiceUtils
-import cloud.mallne.dicentra.weaver.core.specification.WeaverSchema
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlin.js.ExperimentalJsExport
 import kotlin.js.JsExport
 
@@ -29,56 +30,40 @@ object WeaverPlugin : AviatorPlugin<WeaverPluginConfig> {
             }
 
             preExecution { context ->
-                val schema = pluginConfig.schema ?: serviceSchema(context)
+                val schema = pluginConfig.schema ?: serviceOptions(context)?.schema
                 if (schema == null) return@preExecution
                 val current = getThisPlugin<WVPInstance>(context)
                 current?.engine = pluginConfig.weaver.engine(schema)
             }
 
+            before(AviatorExecutionStages.PaintingResponse) { context ->
+                // The normal response adapter must see the mapped shape, not upstream JSON.
+                if (!pluginConfig.preserveDefaultOutput) transformResponse(context)
+            }
             after(AviatorExecutionStages.PaintingResponse) { context ->
-                val current = getThisPlugin<WVPInstance>(context)
-                val engine = current?.engine
-                val response = context.networkChain
-                    .firstOrNull { (it.response?.status?.value ?: 500) < 400 }
-                    ?.response ?: return@after
-                val content = response.content ?: return@after
-                if (engine == null) return@after
-
-                val input = context.dataHolder.json.parseToJsonElement(content.decodeToString())
-                val transformed = engine.executeElement(input)
-                val transformedBytes = context.dataHolder.json.encodeToString(JsonElement.serializer(), transformed).encodeToByteArray()
-                response.content = transformedBytes
-                context.bundle.plus(RESULT to transformedBytes)
-                if (!pluginConfig.preserveDefaultOutput) {
-                    context.result = try {
-                        context.deserializerFor(response.contentType)?.deserialize(transformedBytes, context)
-                    } catch (_: SerializationException) {
-                        null
-                    } catch (_: IllegalArgumentException) {
-                        null
-                    }
-                }
+                // Explicit preservation still returns the original deserialized response.
+                if (pluginConfig.preserveDefaultOutput) transformResponse(context)
             }
         })
     }
 
-    private fun serviceSchema(
-        context: cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionContext<*, *>,
-    ): WeaverSchema? = try {
-        serviceOptions(context)?.schema
-    } catch (_: SerializationException) {
-        null
-    } catch (_: IllegalArgumentException) {
-        null
+    private fun transformResponse(context: AviatorExecutionContext<*, *>) {
+        val engine = getThisPlugin<WVPInstance>(context)?.engine ?: return
+        val response = context.networkChain.firstOrNull { (it.response?.status?.value ?: 500) < 400 }?.response ?: return
+        val content = response.content ?: return
+        val transformed = engine.executeElement(context.dataHolder.json.parseToJsonElement(content.decodeToString()))
+        response.content = context.dataHolder.json.encodeToString(JsonElement.serializer(), transformed).encodeToByteArray()
+        context.bundle[RESULT] = transformed
     }
 
     private fun serviceOptions(
-        context: cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionContext<*, *>,
+        context: AviatorExecutionContext<*, *>,
     ): WeaverServiceObject? = try {
-        AviatorServiceUtils.optionBundle<WeaverServiceObject>(
-            context.dataHolder.options,
-            json = Json(context.dataHolder.json) { ignoreUnknownKeys = true },
-        )
+        val configuredJson = context.dataHolder.json
+        val optionsJson = if (configuredJson.configuration.ignoreUnknownKeys) configuredJson else {
+            Json(configuredJson) { ignoreUnknownKeys = true }
+        }
+        optionsJson.decodeFromJsonElement<WeaverServiceObject>(configuredJson.encodeToJsonElement(context.dataHolder.options))
     } catch (_: SerializationException) {
         null
     } catch (_: IllegalArgumentException) {
