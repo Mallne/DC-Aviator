@@ -524,7 +524,7 @@ private class OpenAPITransformer(private val openAPI: OpenApiDoc) {
         val items =
             ensureNotNull(items?.resolve()) { OpenAPIConstraintViolation("Array type requires items to be defined.") }
         val inner = items.toModel(items.namedOr { context })
-        val default = Json.encodeToString(default)
+        val default = default?.let { Json.encodeToString(GenericElementSerializer(), it) }
         return if (uniqueItems == true) Model.Collection.List(
             inner.value,
             default,
