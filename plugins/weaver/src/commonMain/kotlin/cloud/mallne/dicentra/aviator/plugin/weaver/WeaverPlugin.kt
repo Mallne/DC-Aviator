@@ -3,6 +3,7 @@
 package cloud.mallne.dicentra.aviator.plugin.weaver
 
 import cloud.mallne.dicentra.aviator.core.AviatorServiceDataHolder.Companion.json
+import cloud.mallne.dicentra.aviator.core.InternalAviatorAPI
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionStages
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionContext
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPlugin
@@ -20,13 +21,17 @@ import kotlin.js.JsExport
 object WeaverPlugin : AviatorPlugin<WeaverPluginConfig> {
     const val RESULT = "WV-Result"
     override val identity: String = "DC-WVxAV"
+    @OptIn(InternalAviatorAPI::class)
     override fun install(config: WeaverPluginConfig.() -> Unit): AviatorPluginInstance {
         val pluginConfig = WeaverPluginConfig()
         config.invoke(pluginConfig)
         return WVPInstance(pluginConfig, identity, PluginStagedExecutorBuilder.steps {
             before(AviatorExecutionStages.PathMatching) { context ->
-                val serviceOptions = serviceOptions(context) ?: return@before
-                serviceOptions.adaptRequestParameters(context.requestParams)
+                val serviceOptions = serviceOptions(context)
+                serviceOptions?.let {
+                    context.requestRoute = it.adaptRequestParameters(context.requestParams, context.requestRoute, pluginConfig.weaver, context.dataHolder.json)
+                }
+                serviceOptions?.adaptRequestBody(context, pluginConfig.weaver)
             }
 
             preExecution { context ->

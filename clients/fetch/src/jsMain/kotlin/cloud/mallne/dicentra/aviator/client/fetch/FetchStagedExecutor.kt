@@ -1,6 +1,7 @@
 package cloud.mallne.dicentra.aviator.client.fetch
 
 import cloud.mallne.dicentra.aviator.core.execution.RequestParameter
+import cloud.mallne.dicentra.aviator.core.InternalAviatorAPI
 import cloud.mallne.dicentra.aviator.core.execution.RequestParameters
 import cloud.mallne.dicentra.aviator.core.execution.StagedExecutor
 import cloud.mallne.dicentra.aviator.core.io.NetworkBody
@@ -18,17 +19,18 @@ import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
 @Suppress("UnsafeCastFromDynamic")
+@OptIn(InternalAviatorAPI::class)
 class FetchStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
     StagedExecutor<FetchExecutionContext<O, B>, O, B> {
 
     override suspend fun onPathMatching(context: FetchExecutionContext<O, B>) {
         context.networkChain.addAll(
-            AviatorServiceUtils.catchPaths(context.dataHolder, context.requestParams).map(::NetworkChain)
+            AviatorServiceUtils.catchPaths(context.dataHolder, context.requestParams, context.requestRoute).map(::NetworkChain)
         )
     }
 
     override suspend fun onFormingRequest(context: FetchExecutionContext<O, B>) {
-        val route = context.dataHolder.route
+        val route = context.requestRoute
         val defaultContentType = route.body.types.keys.firstOrNull()
         context.networkChain.forEach { chain ->
             val raw = context.body as? RawRequestBody

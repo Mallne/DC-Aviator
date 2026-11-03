@@ -1,6 +1,7 @@
 package cloud.mallne.dicentra.aviator.core.execution
 
 import cloud.mallne.dicentra.aviator.core.AviatorServiceDataHolder
+import cloud.mallne.dicentra.aviator.koas.typed.Route
 import cloud.mallne.dicentra.aviator.core.InternalAviatorAPI
 import cloud.mallne.dicentra.aviator.core.MutableRequestOptions
 import cloud.mallne.dicentra.aviator.core.execution.logging.AviatorLogger
@@ -105,6 +106,10 @@ interface AviatorExecutionContext<O : @Serializable Any, B : @Serializable Any> 
      * after service creation.
      */
     val dataHolder: AviatorServiceDataHolder
+
+    /** Per-request provider contract, initially the caller-facing route; never mutate the shared route. */
+    @InternalAviatorAPI
+    var requestRoute: Route
 
     /**
      * Triple of (KClass, KType, KSerializer) for the response type [O].

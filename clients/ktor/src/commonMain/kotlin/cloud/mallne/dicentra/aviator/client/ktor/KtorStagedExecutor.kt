@@ -5,6 +5,8 @@ import cloud.mallne.dicentra.aviator.client.ktor.io.AvKtorResponse
 import cloud.mallne.dicentra.aviator.client.ktor.io.manualPipeline
 import cloud.mallne.dicentra.aviator.core.execution.RequestParameters
 import cloud.mallne.dicentra.aviator.core.execution.StagedExecutor
+import cloud.mallne.dicentra.aviator.model.AviatorServiceUtils
+import cloud.mallne.dicentra.aviator.core.InternalAviatorAPI
 import cloud.mallne.dicentra.aviator.core.io.NetworkBody
 import cloud.mallne.dicentra.aviator.core.io.RawRequestBody
 import cloud.mallne.dicentra.aviator.core.io.NetworkChain
@@ -21,18 +23,19 @@ import io.ktor.openapi.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 
+@OptIn(InternalAviatorAPI::class)
 class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
     StagedExecutor<KtorExecutionContext<O, B>, O, B> {
 
     override suspend fun onPathMatching(context: KtorExecutionContext<O, B>) {
-        context.networkChain.addAll(context.dataHolder.catchPaths(context.requestParams).map {
+        context.networkChain.addAll(AviatorServiceUtils.catchPaths(context.dataHolder, context.requestParams, context.requestRoute).map {
             context.log(KtorLoggingIds.TRACE_CREATE_CHAIN) { trace("Creating Network Chain with target $it") }
             NetworkChain(it)
         })
     }
 
     override suspend fun onFormingRequest(context: KtorExecutionContext<O, B>) {
-        val route = context.dataHolder.route
+        val route = context.requestRoute
         val fallbackCT = route.body.types.keys.firstOrNull()
         context.networkChain.forEach { net ->
             val raw = context.body as? RawRequestBody

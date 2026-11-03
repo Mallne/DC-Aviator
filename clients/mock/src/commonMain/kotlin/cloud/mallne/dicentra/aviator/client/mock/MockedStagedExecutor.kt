@@ -2,6 +2,7 @@ package cloud.mallne.dicentra.aviator.client.mock
 
 import cloud.mallne.dicentra.aviator.core.AviatorServiceDataHolder.Companion.json
 import cloud.mallne.dicentra.aviator.core.NoBody
+import cloud.mallne.dicentra.aviator.core.InternalAviatorAPI
 import cloud.mallne.dicentra.aviator.core.execution.StagedExecutor
 import cloud.mallne.dicentra.aviator.core.io.NetworkBody
 import cloud.mallne.dicentra.aviator.core.io.NetworkChain
@@ -14,18 +15,19 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.serializer
 
+@OptIn(InternalAviatorAPI::class)
 class MockedStagedExecutor :
     StagedExecutor<MockExecutionContext, JsonElement, NoBody> {
 
     override suspend fun onPathMatching(context: MockExecutionContext) {
-        val l = AviatorServiceUtils.catchPaths(context.dataHolder, context.requestParams).map {
+        val l = AviatorServiceUtils.catchPaths(context.dataHolder, context.requestParams, context.requestRoute).map {
             NetworkChain<MockedRequest, MockedResponse, MockedHeader>(it)
         }
         context.networkChain.addAll(l)
     }
 
     override suspend fun onFormingRequest(context: MockExecutionContext) {
-        val route = context.dataHolder.route
+        val route = context.requestRoute
         context.networkChain.forEach { net ->
             net.request = MockedRequest(
                 method = route.method,

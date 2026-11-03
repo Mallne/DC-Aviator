@@ -510,7 +510,9 @@ private class OpenAPITransformer(private val openAPI: OpenApiDoc) {
         })
     }
 
-    private fun JsonSchema.singleDefaultOrNull(): String? = (default)?.toString()
+    private fun JsonSchema.singleDefaultOrNull(): String? = default?.let {
+        Json.encodeToString(GenericElementSerializer(), it)
+    }
 
     fun JsonSchema.toOpenEnum(context: NamingContext, values: List<String>): Model.Enum.Open {
         ensure(values.isNotEmpty()) { OpenAPIConstraintViolation("OpenEnum requires at least 1 possible value") }

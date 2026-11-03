@@ -52,9 +52,10 @@ object AviatorServiceUtils {
 
     fun catchPaths(
         dataHolder: AviatorServiceDataHolder,
-        requestParams: RequestParameters = mockMandatoryParams(dataHolder)
+        requestParams: RequestParameters = mockMandatoryParams(dataHolder),
+        requestRoute: Route = dataHolder.route,
     ): List<String> {
-        val pathSlug = dataHolder.route.parsePath(requestParams.toStringList())
+        val pathSlug = requestRoute.parsePath(requestParams.toStringList())
         val serverSlugs = dataHolder.oas.servers?.map { "${it.parsePath(requestParams.toStringList())}$pathSlug" }
         return serverSlugs ?: listOf()
     }

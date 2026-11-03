@@ -1,6 +1,7 @@
 package cloud.mallne.dicentra.aviator.core.execution
 
 import cloud.mallne.dicentra.aviator.core.AviatorServiceDataHolder
+import cloud.mallne.dicentra.aviator.koas.typed.Route
 import cloud.mallne.dicentra.aviator.core.InternalAviatorAPI
 import cloud.mallne.dicentra.aviator.core.MutableRequestOptions
 import cloud.mallne.dicentra.aviator.core.execution.logging.AviatorLogger
@@ -28,5 +29,7 @@ data class BasicExecutionContext<O : @Serializable Any, B : @Serializable Any> @
     override val options: MutableRequestOptions = mutableMapOf(),
     override var requestParams: RequestParameters = RequestParameters(),
     @property:InternalAviatorAPI
-    override var logger: AviatorLogger? = null
+    override var logger: AviatorLogger? = null,
+    @property:InternalAviatorAPI
+    override var requestRoute: Route = dataHolder.route,
 ) : AviatorExecutionContext<O, B>

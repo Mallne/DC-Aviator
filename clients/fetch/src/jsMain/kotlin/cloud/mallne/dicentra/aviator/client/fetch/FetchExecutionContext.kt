@@ -1,6 +1,7 @@
 package cloud.mallne.dicentra.aviator.client.fetch
 
 import cloud.mallne.dicentra.aviator.core.InternalAviatorAPI
+import cloud.mallne.dicentra.aviator.koas.typed.Route
 import cloud.mallne.dicentra.aviator.core.MutableRequestOptions
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionContext
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionStages
@@ -25,4 +26,6 @@ data class FetchExecutionContext<O : @Serializable Any, B : @Serializable Any> @
     override val networkChain: MutableList<NetworkChain<FetchRequest, FetchResponse, FetchHeaders>> = mutableListOf(),
     override var requestParams: RequestParameters = RequestParameters(),
     @property:InternalAviatorAPI override var logger: AviatorLogger? = null,
+    @property:InternalAviatorAPI
+    override var requestRoute: Route = dataHolder.route,
 ) : AviatorExecutionContext<O, B>

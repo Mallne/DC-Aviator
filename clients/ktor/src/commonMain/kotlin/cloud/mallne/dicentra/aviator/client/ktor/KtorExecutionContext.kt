@@ -3,6 +3,7 @@ package cloud.mallne.dicentra.aviator.client.ktor
 import cloud.mallne.dicentra.aviator.client.ktor.io.AvKtorRequest
 import cloud.mallne.dicentra.aviator.client.ktor.io.AvKtorResponse
 import cloud.mallne.dicentra.aviator.core.InternalAviatorAPI
+import cloud.mallne.dicentra.aviator.koas.typed.Route
 import cloud.mallne.dicentra.aviator.core.MutableRequestOptions
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionContext
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionStages
@@ -31,4 +32,6 @@ data class KtorExecutionContext<O : @Serializable Any, B : @Serializable Any> @O
     override var requestParams: RequestParameters = RequestParameters(),
     @property:InternalAviatorAPI
     override var logger: AviatorLogger? = null,
+    @property:InternalAviatorAPI
+    override var requestRoute: Route = dataHolder.route,
 ) : AviatorExecutionContext<O, B>
