@@ -38,9 +38,30 @@ jobs:
           # publish tasks require Gradle-managed Node, so enable its download for release.
           ./gradlew --no-daemon --max-workers=2 -PVERSION_NAME="$TAG_VERSION" \
             -PomitWasmJsForRelease=true kotlinUpgradePackageLock
+          printf '//registry.mallne.cloud/repository/NodeRegistry/:_authToken=%s\n' "$NPM_TOKEN" > "$HOME/.npmrc"
+          printf '@dicentra:registry=https://registry.mallne.cloud/repository/NodeRegistry/\n' >> "$HOME/.npmrc"
+          # npm forbids overwriting published versions. Skip only package tasks whose exact
+          # version already exists; publish all remaining package artifacts.
+          declare -a NPM_PUBLISH_EXCLUDES=()
+          while IFS='|' read -r project package; do
+            if npm view "@dicentra/${package}@${TAG_VERSION}" version --registry=https://registry.mallne.cloud/repository/NodeRegistry/ >/dev/null 2>&1; then
+              NPM_PUBLISH_EXCLUDES+=("-x" ":${project}:publishJsPackageToNodeRegistryRegistry")
+            fi
+          done <<'EOF'
+          core|aviator-core
+          koas|aviator-koas
+          clients:fetch|aviator-client-fetch
+          plugins:adapter-json|aviator-plugin-adapter-json
+          plugins:adapter-xml|aviator-plugin-adapter-xml
+          plugins:http-auth|aviator-plugin-http-auth
+          plugins:interception|aviator-plugin-interception
+          plugins:otel|aviator-plugin-otel
+          plugins:synapse|aviator-plugin-synapse
+          plugins:weaver|aviator-plugin-weaver
+          EOF
           ./gradlew --no-daemon --max-workers=2 -Dorg.gradle.jvmargs=-Xmx3g \
             -Pkotlin.daemon.jvmargs=-Xmx3g -PdownloadNodeForRelease=true publish \
-            -PVERSION_NAME="$TAG_VERSION" -PomitWasmJsForRelease=true
+            -PVERSION_NAME="$TAG_VERSION" -PomitWasmJsForRelease=true "${NPM_PUBLISH_EXCLUDES[@]}"
 
       - name: Create GitHub Release
         run: gh release create ${{ github.ref_name }} --generate-notes --title ${{ github.ref_name }}
