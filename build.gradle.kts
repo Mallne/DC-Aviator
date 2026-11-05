@@ -16,7 +16,7 @@ plugins {
 allprojects {
     plugins.withType<NodeJsPlugin> {
         extensions.configure<NodeJsEnvSpec> {
-            download = false
+            download = providers.gradleProperty("downloadNodeForRelease").orNull == "true"
         }
     }
 }

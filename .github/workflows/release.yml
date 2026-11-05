@@ -33,11 +33,12 @@ jobs:
           # Aviator's JS-exported APIs are not supported by the Wasm compiler yet.
           # Omit the Wasm target consistently from both Maven and npm publications.
           # Refresh the generated npm lock at the release version, then keep JS compilation
-          # within the memory available on GitHub-hosted runners.
+          # within the memory available on GitHub-hosted runners. The Kotlin/JS npm
+          # publish tasks require Gradle-managed Node, so enable its download for release.
           ./gradlew --no-daemon --max-workers=2 -PVERSION_NAME="$TAG_VERSION" \
             -PomitWasmJsForRelease=true kotlinUpgradePackageLock
           ./gradlew --no-daemon --max-workers=2 -Dorg.gradle.jvmargs=-Xmx3g \
-            -Pkotlin.daemon.jvmargs=-Xmx3g publish \
+            -Pkotlin.daemon.jvmargs=-Xmx3g -PdownloadNodeForRelease=true publish \
             -PVERSION_NAME="$TAG_VERSION" -PomitWasmJsForRelease=true
 
       - name: Create GitHub Release
