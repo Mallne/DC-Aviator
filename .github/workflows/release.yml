@@ -13,7 +13,6 @@ jobs:
     env:
       NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
       NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
-      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
       - uses: actions/checkout@v7
 
@@ -28,21 +27,32 @@ jobs:
       - name: Test JVM targets
         run: ./gradlew --no-daemon jvmTest
 
+      - name: Set up Node for npm publication
+        uses: actions/setup-node@v7
+        with:
+          node-version: '26'
+
+      - name: Configure Node home for npm publication
+        run: |
+          NODE_HOME="$(dirname "$(dirname "$(command -v node)")")"
+          echo "NODE_HOME=$NODE_HOME" >> "$GITHUB_ENV"
+
       - name: Publish release
         run: |
           TAG_VERSION="${GITHUB_REF_NAME#v}"
           # Aviator's JS-exported APIs are not supported by the Wasm compiler yet.
           # Omit the Wasm target consistently from both Maven and npm publications.
           # Refresh the generated npm lock at the release version, then keep JS compilation
-          # within the memory available on GitHub-hosted runners. The Kotlin/JS npm
-          # publish tasks require Gradle-managed Node, so enable its download for release.
+          # within the memory available on GitHub-hosted runners.
           ./gradlew --no-daemon --max-workers=2 -PVERSION_NAME="$TAG_VERSION" \
             -PomitWasmJsForRelease=true kotlinUpgradePackageLock
-          printf '//registry.mallne.cloud/repository/NodeRegistry/:_authToken=%s\n' "$NPM_TOKEN" > "$HOME/.npmrc"
-          printf '@dicentra:registry=https://registry.mallne.cloud/repository/NodeRegistry/\n' >> "$HOME/.npmrc"
           ./gradlew --no-daemon --max-workers=2 -Dorg.gradle.jvmargs=-Xmx3g \
-            -Pkotlin.daemon.jvmargs=-Xmx3g -PdownloadNodeForRelease=true publish \
+            -Pkotlin.daemon.jvmargs=-Xmx3g publish \
             -PVERSION_NAME="$TAG_VERSION" -PomitWasmJsForRelease=true
+        env:
+          NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
+          NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create GitHub Release
         run: gh release create ${{ github.ref_name }} --generate-notes --title ${{ github.ref_name }}

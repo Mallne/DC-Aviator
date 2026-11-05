@@ -10,14 +10,6 @@ pluginManagement {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
     repositories {
-        ivy {
-            name = "NodeJsDistributions"
-            url = uri("https://nodejs.org/dist")
-            patternLayout {
-                artifact("[revision]/[artifact]-v[revision]-[classifier].[ext]")
-            }
-            metadataSources { artifact() }
-        }
         google()
         mavenCentral()
         maven {

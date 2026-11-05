@@ -95,6 +95,7 @@ kotlin {
 }
 
 npmPublish {
+    providers.environmentVariable("NODE_HOME").orNull?.let { nodeHome.set(file(it)) }
     organization = "dicentra"
     registries {
         register("nodeRegistry") {
