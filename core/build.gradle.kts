@@ -4,6 +4,8 @@ import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
+val omitWasmJsForRelease = providers.gradleProperty("omitWasmJsForRelease").orNull == "true"
+
 group = "cloud.mallne.dicentra.aviator"
 version = project.findProperty("VERSION_NAME") ?: "1.0.0-SNAPSHOT"
 description = "The core compponents of DiCentra Aviator."
@@ -32,10 +34,12 @@ kotlin {
         binaries.library()
         browser()
     }
-    wasmJs {
-        browser()
-        nodejs()
-        d8()
+    if (!omitWasmJsForRelease) {
+        wasmJs {
+            browser()
+            nodejs()
+            d8()
+        }
     }
     iosX64()
     iosArm64()

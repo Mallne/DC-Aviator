@@ -4,6 +4,8 @@ import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
+val omitWasmJsForRelease = providers.gradleProperty("omitWasmJsForRelease").orNull == "true"
+
 group = "cloud.mallne.dicentra.aviator.plugin"
 description =
     "DiCentra Aviator Plugin wehre You can manuallyy intercept the Request on each pipeline step"
@@ -63,10 +65,12 @@ kotlin {
         generateTypeScriptDefinitions()
         browser()
     }
-    wasmJs {
-        browser()
-        nodejs()
-        d8()
+    if (!omitWasmJsForRelease) {
+        wasmJs {
+            browser()
+            nodejs()
+            d8()
+        }
     }
     iosX64()
     iosArm64()
