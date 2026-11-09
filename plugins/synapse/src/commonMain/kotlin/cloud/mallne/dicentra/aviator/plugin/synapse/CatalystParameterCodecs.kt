@@ -3,6 +3,7 @@ package cloud.mallne.dicentra.aviator.plugin.synapse
 import cloud.mallne.dicentra.aviator.core.execution.RequestParameter
 import cloud.mallne.dicentra.aviator.core.execution.RequestParameters
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -23,9 +24,28 @@ class CatalystParameterCodecs(serializers: Iterable<KSerializer<*>>) {
     fun decode(codec: String, json: Json, value: JsonElement): Any {
         val serializer = byId[codec]
             ?: throw IllegalArgumentException("Unsupported Catalyst parameter codec '$codec'")
-        return json.decodeFromJsonElement(serializer as KSerializer<Any>, value)
+        return try {
+            json.decodeFromJsonElement(serializer as KSerializer<Any>, value)
+        } catch (cause: SerializationException) {
+            // Numeric OpenAPI values are schema-typed by Catalyst. A stale narrow
+            // numeric codec must not prevent a decimal from reaching that validator.
+            if (codec in numericCodecIds && value is JsonPrimitive && value.isString.not()) {
+                value.content.toDoubleOrNull() ?: throw cause
+            } else {
+                throw cause
+            }
+        }
     }
 }
+
+private val numericCodecIds = setOf(
+    Byte.serializer().descriptor.serialName,
+    Short.serializer().descriptor.serialName,
+    Int.serializer().descriptor.serialName,
+    Long.serializer().descriptor.serialName,
+    Float.serializer().descriptor.serialName,
+    Double.serializer().descriptor.serialName,
+)
 
 /** Encodes core Aviator parameters into Catalyst's typed transport representation. */
 fun RequestParameters.toCatalystParameters(json: Json): Map<String, CatalystParameterValue> =

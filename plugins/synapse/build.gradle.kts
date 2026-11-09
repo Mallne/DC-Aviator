@@ -81,7 +81,9 @@ kotlin {
             dependencies {
                 implementation(libs.kotlinx.serialization.json)
                 implementation(project(":core"))
+                implementation(project(":koas"))
                 implementation(libs.ktor.client.core)
+                implementation(libs.ktor.openapi.schema)
             }
         }
         val commonTest = getByName("commonTest") {
