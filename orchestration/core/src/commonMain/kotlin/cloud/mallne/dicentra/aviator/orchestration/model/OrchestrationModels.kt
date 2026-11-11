@@ -1,5 +1,6 @@
 package cloud.mallne.dicentra.aviator.orchestration.model
 
+import kotlin.jvm.JvmInline
 import kotlinx.serialization.Serializable
 
 /** Stable identity of a workflow definition, independent of any execution of it. */

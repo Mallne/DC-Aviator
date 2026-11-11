@@ -36,6 +36,8 @@ include(":plugins:synapse")
 include(":core")
 include(":koas")
 include(":npm-distribution")
+include(":orchestration:core")
+include(":orchestration:arazzo")
 val apiDest = file("../polyfill")
 if (apiDest.exists()) {
     includeBuild(apiDest.absolutePath) {

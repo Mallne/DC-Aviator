@@ -1,6 +1,6 @@
 # Aviator Orchestration Core
 
-Status: AV-5 portable contracts and deterministic contract tests are implemented. No production orchestration runtime or repository Gradle project registration is implemented yet. Verification scope is recorded in [PLAN.md](PLAN.md).
+Status: AV-5 portable contracts and deterministic contract tests are implemented. AV-6 registers this as an optional KMP module with a distinct Maven group. No production orchestration runtime is implemented yet. Verification scope is recorded in [PLAN.md](PLAN.md).
 
 This module will define Aviator's optional, format-independent orchestration contracts. Applications can coordinate multiple Aviator operations without depending on Synapse or a particular workflow specification.
 

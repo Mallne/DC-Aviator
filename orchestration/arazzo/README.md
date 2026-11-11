@@ -1,6 +1,6 @@
 # Aviator Arazzo Orchestrator
 
-Status: proposed module; documentation scaffold only. No parser, runtime or Gradle project is implemented yet.
+Status: AV-6 registers this as an optional KMP module depending on orchestration core. The Arazzo parser, models and runtime remain planned.
 
 This module will implement the Arazzo workflow specification using [Aviator Orchestration Core](../core/README.md). It is an orchestrator, not an Aviator request-pipeline plugin.
 
