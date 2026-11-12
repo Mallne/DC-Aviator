@@ -28,11 +28,30 @@ class ArazzoBindingStepExecutor(
     private val binding: OperationBinding<JsonElement>,
     private val operationIndex: List<ConstituentIdentity>,
     private val policy: CapabilityPolicy,
+    private val sourceIdsByName: Map<String, String> = emptyMap(),
     private val json: Json = Json,
     private val plugins: OrchestrationPluginRegistry = OrchestrationPluginRegistry.Empty,
-) : ArazzoStepExecutor {
+) : ArazzoStepExecutor, ArazzoWorkflowPreflight {
+    override suspend fun preflight(
+        workflow: cloud.mallne.dicentra.aviator.orchestration.arazzo.model.ArazzoWorkflow,
+        scope: InvocationScope,
+    ): ExecutionFailure? {
+        for (step in workflow.steps) {
+            when (val resolution = resolveArazzoOperation(step, operationIndex, policy, sourceIdsByName)) {
+                is ArazzoOperationResolution.Failed -> return ExecutionFailure(
+                    resolution.code, resolution.message, workflowId = workflow.workflowId, stepId = step.stepId,
+                )
+                is ArazzoOperationResolution.Resolved -> {
+                    val identity = checkNotNull(resolution.invocation.constituents).single()
+                    scope.authorize(identity)?.let { return it.copy(workflowId = workflow.workflowId, stepId = step.stepId) }
+                }
+            }
+        }
+        return null
+    }
+
     override suspend fun execute(step: ArazzoStep, inputs: String, scope: InvocationScope): ArazzoStepExecution {
-        val resolution = resolveArazzoOperation(step, operationIndex, policy)
+        val resolution = resolveArazzoOperation(step, operationIndex, policy, sourceIdsByName)
         if (resolution is ArazzoOperationResolution.Failed) {
             return ArazzoStepExecution.Failed(ExecutionFailure(resolution.code, resolution.message))
         }

@@ -2,13 +2,18 @@ package cloud.mallne.dicentra.aviator.orchestration.arazzo.validation
 
 import cloud.mallne.dicentra.aviator.orchestration.arazzo.ArazzoSupport
 import cloud.mallne.dicentra.aviator.orchestration.arazzo.model.ArazzoDocument
+import cloud.mallne.dicentra.aviator.orchestration.arazzo.model.ArazzoDocumentLocation
 import cloud.mallne.dicentra.aviator.orchestration.arazzo.model.ArazzoStep
 import cloud.mallne.dicentra.aviator.orchestration.arazzo.model.ArazzoWorkflow
+import cloud.mallne.dicentra.aviator.orchestration.arazzo.execution.isSupportedArazzoCriterionSyntax
+import cloud.mallne.dicentra.aviator.orchestration.arazzo.execution.isSupportedArazzoExpressionSyntax
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonPrimitive
 
 /** Machine-readable failure location, using JSON Pointer syntax (empty string is document root). */
 data class ArazzoDiagnostic(val code: String, val message: String, val location: String)
@@ -25,7 +30,7 @@ sealed interface ArazzoValidationResult {
 object ArazzoValidator {
     private val json = Json { ignoreUnknownKeys = true }
 
-    fun parseAndValidate(source: String): ArazzoValidationResult {
+    fun parseAndValidate(source: String, retrievalUri: String? = null): ArazzoValidationResult {
         val parsedElement = try {
             json.parseToJsonElement(source)
         } catch (exception: SerializationException) {
@@ -43,6 +48,12 @@ object ArazzoValidator {
             return invalid("invalid-model", exception.message ?: "Document does not match the supported model", "")
         }
         retainExtensions(document, objectValue)
+        document.location = ArazzoDocumentLocation(
+            retrievalUri = retrievalUri,
+            baseUri = retrievalUri,
+            selfUri = document.self,
+        )
+        document.workflows.forEach { it.documentLocation = document.location }
         validate(document, diagnostics)
         return if (diagnostics.isEmpty()) ArazzoValidationResult.Valid(document)
         else ArazzoValidationResult.Invalid(diagnostics)
@@ -66,10 +77,19 @@ object ArazzoValidator {
             if (workflow.inputs != null) out += ArazzoDiagnostic("unsupported-input-schema", "JSON Schema 2020-12 validation is not implemented; workflow inputs are rejected", "$base/inputs")
             if (workflow.dependsOn.isNotEmpty()) out += ArazzoDiagnostic("unsupported-feature", "Workflow dependencies are outside the sequential HTTP profile", "$base/dependsOn")
             unique(workflow.steps.map { it.stepId }, "$base/steps", "step-id", out)
+            val workflowStepIds = workflow.steps.map { it.stepId }.toSet()
             val earlier = mutableSetOf<String>()
             workflow.steps.forEachIndexed { si, step ->
                 validateStep(step, workflow, wi, si, earlier, sourceNames, workflowIds, out)
                 earlier += step.stepId
+            }
+            workflow.outputs.orEmpty().forEach { (name, expression) ->
+                STEP_OUTPUT_REFERENCE.findAll(expression).map { it.groupValues[1] }
+                    .filter { it !in workflowStepIds }
+                    .forEach { id -> out += ArazzoDiagnostic("unresolved-step-output", "Workflow output references unknown step '$id'", "$base/outputs/${escape(name)}") }
+                if (!isSupportedArazzoExpressionSyntax(expression)) {
+                    out += ArazzoDiagnostic("unsupported-expression", "Workflow output uses an unsupported runtime expression", "$base/outputs/${escape(name)}")
+                }
             }
         }
     }
@@ -86,16 +106,37 @@ object ArazzoValidator {
         if (step.dependsOn.isNotEmpty()) out += ArazzoDiagnostic("unsupported-feature", "Explicit dependencies are not supported by the sequential profile", "$path/dependsOn")
         step.parameters.forEachIndexed { pi, parameter ->
             if (parameter.`in` !in setOf("path", "query", "header", "cookie")) out += ArazzoDiagnostic("unsupported-feature", "Parameter location must be path, query, header, or cookie", "$path/parameters/$pi/in")
+            validateExpressionValues(parameter.value, "$path/parameters/$pi/value", out)
         }
-        if (step.requestBody != null) out += ArazzoDiagnostic("unsupported-feature", "Request-body mapping is not supported by the initial profile", "$path/requestBody")
+        step.requestBody?.let { validateExpressionValues(it, "$path/requestBody", out) }
+        step.parameters.withIndex().groupBy { (_, parameter) ->
+            parameter.`in` to if (parameter.`in` == "header") parameter.name.lowercase() else parameter.name
+        }.values.filter { it.size > 1 }.forEach { duplicates ->
+            duplicates.drop(1).forEach { (pi, _) ->
+                out += ArazzoDiagnostic("duplicate-parameter", "Duplicate parameter name and location", "$path/parameters/$pi")
+            }
+        }
+        if (step.successCriteria?.isEmpty() == true) {
+            out += ArazzoDiagnostic("invalid-success-criteria", "successCriteria must contain at least one criterion", "$path/successCriteria")
+        }
         step.successCriteria?.forEachIndexed { ci, criterion ->
-            if (criterion.type != null || criterion.context != null) out += ArazzoDiagnostic("unsupported-feature", "Only simple condition criteria are supported", "$path/successCriteria/$ci")
+            if ((criterion.type != null && criterion.type != "simple") || criterion.context != null) {
+                out += ArazzoDiagnostic("unsupported-feature", "Only simple condition criteria are supported", "$path/successCriteria/$ci")
+            }
+            if (!isSupportedArazzoCriterionSyntax(criterion.condition)) {
+                out += ArazzoDiagnostic("unsupported-criterion", "Condition is outside the supported simple comparison grammar", "$path/successCriteria/$ci/condition")
+            }
+        }
+        step.outputs.orEmpty().forEach { (name, expression) ->
+            if (!isSupportedArazzoExpressionSyntax(expression)) {
+                out += ArazzoDiagnostic("unsupported-expression", "Step output uses an unsupported runtime expression", "$path/outputs/${escape(name)}")
+            }
         }
         // Step output expressions may only refer to completed steps in this sequential profile.
-        (step.outputs.orEmpty().values + workflow.outputs.orEmpty().values).forEach { expression ->
+        step.outputs.orEmpty().forEach { (name, expression) ->
             val refsInExpression = STEP_OUTPUT_REFERENCE.findAll(expression).map { it.groupValues[1] }
             refsInExpression.filter { it !in earlier }.forEach { id ->
-                out += ArazzoDiagnostic("unresolved-step-output", "Step output '$id' is unresolved or forward-referenced", path)
+                out += ArazzoDiagnostic("unresolved-step-output", "Step output '$id' is unresolved or forward-referenced", "$path/outputs/${escape(name)}")
             }
         }
         step.operationId?.let { reference ->
@@ -105,6 +146,18 @@ object ArazzoValidator {
             }
         }
         if (step.workflowId != null && step.workflowId !in workflowIds) out += ArazzoDiagnostic("unresolved-workflow", "Unknown workflow '${step.workflowId}'", "$path/workflowId")
+    }
+
+    private fun validateExpressionValues(value: JsonElement, path: String, out: MutableList<ArazzoDiagnostic>) {
+        when (value) {
+            is JsonObject -> value.forEach { (key, child) -> validateExpressionValues(child, "$path/${escape(key)}", out) }
+            is JsonArray -> value.forEachIndexed { index, child -> validateExpressionValues(child, "$path/$index", out) }
+            is JsonPrimitive -> if (value.isString && (value.content.startsWith("$") || value.content.contains("{$")) &&
+                !isSupportedArazzoExpressionSyntax(value.content)
+            ) {
+                out += ArazzoDiagnostic("unsupported-expression", "Mapping value uses an unsupported runtime expression", path)
+            }
+        }
     }
 
     private fun unique(values: List<String>, path: String, code: String, out: MutableList<ArazzoDiagnostic>) {

@@ -18,6 +18,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -27,6 +28,208 @@ class ArazzoRunExecutorTest {
     private val workflowIdentity = WorkflowIdentity("arazzo", "1.1.0", "workflow:test", "revision-1")
     private val workflow = ArazzoWorkflow("weather", listOf(ArazzoStep("first", operationId = "getWeather"), ArazzoStep("second", operationId = "getForecast")))
     private val constituent = ConstituentIdentity(ServiceLocator("weather>get"), "provider", "source", "rev")
+
+    @Test
+    fun carriesDocumentLocationInRunMetadataWithoutChangingSourceEndpoint() = runTest {
+        val location = cloud.mallne.dicentra.aviator.orchestration.arazzo.model.ArazzoDocumentLocation(
+            "https://workflow.example/retrieved.json", "https://workflow.example/retrieved.json", "https://workflow.example/self",
+        )
+        val workflow = ArazzoWorkflow("located", listOf(ArazzoStep("one", operationId = "getWeather"))).also {
+            it.documentLocation = location
+        }
+        val result = CapabilityResult(constituent.locator, CapabilityOutcome.Succeeded(BodyValue.Empty), emptyList())
+        val sink = RecordingSink()
+
+        ArazzoRunExecutor(ArazzoStepExecutor { _, _, _ -> ArazzoStepExecution.Completed(result) })
+            .execute(workflow, workflowIdentity, RunId("located"), events = sink)
+
+        val metadata = sink.events.first().metadata.values
+        assertEquals(location.retrievalUri, metadata["arazzo.document.retrievalUri"])
+        assertEquals(location.baseUri, metadata["arazzo.document.baseUri"])
+        assertEquals(location.selfUri, metadata["arazzo.document.selfUri"])
+    }
+
+    @Test
+    fun evaluatesTypedStepAndWorkflowOutputsFromRealResponseSnapshot() = runTest {
+        val responseBody = Json.parseToJsonElement("""{"data":{"id":17}}""")
+        val snapshot = ResponseSnapshot(BodyValue.JsonValue(responseBody), http = HttpResponseMetadata(200))
+        val result = CapabilityResult(
+            constituent.locator,
+            CapabilityOutcome.Succeeded(BodyValue.JsonValue(responseBody)),
+            listOf(ConstituentResult(
+                constituent,
+                ConstituentOutcome.Succeeded(BodyValue.JsonValue(responseBody)),
+                snapshot,
+            )),
+        )
+        val executor = ArazzoRunExecutor(ArazzoStepExecutor { _, _, _ -> ArazzoStepExecution.Completed(result) })
+        val workflow = ArazzoWorkflow(
+            "outputs",
+            listOf(ArazzoStep(
+                "first",
+                operationId = "getWeather",
+                outputs = mapOf("id" to "\$steps.first.response.body#/data/id"),
+            )),
+            outputs = mapOf("result" to "\$steps.first.outputs.id"),
+        )
+
+        val resultValue = executor.execute(workflow, workflowIdentity, RunId("run-outputs"))
+
+        assertEquals("""{"result":17}""", assertIs<ExecutionOutcome.Succeeded>(resultValue.outcome).outputs)
+    }
+
+    @Test
+    fun omittedCriteriaUseHttpTwoHundredDefaultAndExplicitCriteriaOverrideIt() = runTest {
+        fun response(status: Int) = CapabilityResult(
+            constituent.locator,
+            CapabilityOutcome.Succeeded(BodyValue.Empty),
+            listOf(ConstituentResult(
+                constituent,
+                ConstituentOutcome.Succeeded(BodyValue.Empty),
+                ResponseSnapshot(BodyValue.Empty, http = HttpResponseMetadata(status)),
+            )),
+        )
+
+        val executor = ArazzoRunExecutor(ArazzoStepExecutor { step, _, _ ->
+            ArazzoStepExecution.Completed(response(if (step.stepId == "explicit") 404 else 204))
+        })
+        val omitted = ArazzoWorkflow("default", listOf(ArazzoStep("omitted", operationId = "getWeather")))
+        val explicit = ArazzoWorkflow("explicit", listOf(ArazzoStep(
+            "explicit",
+            operationId = "getWeather",
+            successCriteria = listOf(cloud.mallne.dicentra.aviator.orchestration.arazzo.model.ArazzoCriterion("\$statusCode == 404")),
+        )))
+
+        assertIs<ExecutionOutcome.Succeeded>(executor.execute(omitted, workflowIdentity, RunId("run-default-2xx")).outcome)
+        assertIs<ExecutionOutcome.Succeeded>(executor.execute(explicit, workflowIdentity, RunId("run-explicit-404")).outcome)
+        val redirect = ArazzoWorkflow("redirect", listOf(ArazzoStep("omitted", operationId = "getWeather")))
+        val redirectExecutor = ArazzoRunExecutor(ArazzoStepExecutor { _, _, _ -> ArazzoStepExecution.Completed(response(302)) })
+        assertEquals("success_criteria", assertIs<ExecutionOutcome.Failed>(
+            redirectExecutor.execute(redirect, workflowIdentity, RunId("run-default-302")).outcome,
+        ).failure.code)
+    }
+
+    @Test
+    fun mapsTypedParametersAndJsonRequestBodyBeforeOperationInvocation() = runTest {
+        var operationInput: String? = null
+        val executor = ArazzoRunExecutor(ArazzoStepExecutor { _, inputs, _ ->
+            operationInput = inputs
+            succeeded()
+        })
+        val workflow = ArazzoWorkflow("mapping", listOf(ArazzoStep(
+            "first",
+            operationId = "createPet",
+            parameters = listOf(
+                cloud.mallne.dicentra.aviator.orchestration.arazzo.model.ArazzoParameter(
+                    "petId", "path", Json.parseToJsonElement("\"\$inputs.user.id\""),
+                ),
+                cloud.mallne.dicentra.aviator.orchestration.arazzo.model.ArazzoParameter(
+                    "trace", "header", Json.parseToJsonElement("\"\$inputs.user.trace\""),
+                ),
+            ),
+            requestBody = Json.parseToJsonElement("""{"ownerId":"${'$'}inputs.user.id","labels":["ok",null]}"""),
+        )))
+
+        val outcome = executor.execute(
+            workflow, workflowIdentity, RunId("run-mapping"),
+            inputs = """{"user":{"id":29,"trace":"${'$'}env.VALUE"}}""",
+        ).outcome
+
+        assertIs<ExecutionOutcome.Succeeded>(outcome)
+        assertEquals(
+            Json.parseToJsonElement("""{"inputs":{"user":{"id":29,"trace":"${'$'}env.VALUE"}},"parameters":{"path":{"petId":29},"header":{"trace":"${'$'}env.VALUE"}},"requestBody":{"ownerId":29,"labels":["ok",null]}}"""),
+            Json.parseToJsonElement(requireNotNull(operationInput)),
+        )
+    }
+
+    @Test
+    fun rejectsDuplicateParameterTargetsWithoutInvokingTheOperation() = runTest {
+        var calls = 0
+        val executor = ArazzoRunExecutor(ArazzoStepExecutor { _, _, _ -> calls++; succeeded() })
+        val step = ArazzoStep(
+            "first",
+            operationId = "getPet",
+            parameters = listOf(
+                cloud.mallne.dicentra.aviator.orchestration.arazzo.model.ArazzoParameter("X-Trace", "header", Json.parseToJsonElement("\"a\"")),
+                cloud.mallne.dicentra.aviator.orchestration.arazzo.model.ArazzoParameter("x-trace", "header", Json.parseToJsonElement("\"b\"")),
+            ),
+        )
+
+        val failure = assertIs<ExecutionOutcome.Failed>(
+            executor.execute(ArazzoWorkflow("duplicates", listOf(step)), workflowIdentity, RunId("run-duplicates")).outcome,
+        )
+
+        assertEquals(0, calls)
+        assertEquals("input_mapping", failure.failure.code)
+    }
+
+    @Test
+    fun criteriaFailureRetainsHttpStatusWhenTypedResponseDecodingFailed() = runTest {
+        val snapshot = ResponseSnapshot(BodyValue.DecodeFailure(ExecutionFailure("decode", "decode failed")), http = HttpResponseMetadata(422))
+        val result = CapabilityResult(
+            constituent.locator,
+            CapabilityOutcome.Failed(ExecutionFailure("decode", "decode failed")),
+            listOf(ConstituentResult(constituent, ConstituentOutcome.Failed(ExecutionFailure("decode", "decode failed")), snapshot)),
+        )
+        val executor = ArazzoRunExecutor(ArazzoStepExecutor { _, _, _ -> ArazzoStepExecution.Completed(result) })
+
+        val failure = assertIs<ExecutionOutcome.Failed>(
+            executor.execute(
+                ArazzoWorkflow("decode", listOf(ArazzoStep("first", operationId = "getPet"))),
+                workflowIdentity,
+                RunId("run-decode-failure"),
+            ).outcome,
+        ).failure
+
+        assertEquals("success_criteria", failure.code)
+        assertEquals("422", failure.details["status"])
+    }
+
+    @Test
+    fun missingAggregateHttpMetadataIsNotInventedForDefaultCriteria() = runTest {
+        val result = CapabilityResult(constituent.locator, CapabilityOutcome.Succeeded(BodyValue.Empty), emptyList())
+        val executor = ArazzoRunExecutor(ArazzoStepExecutor { _, _, _ -> ArazzoStepExecution.Completed(result) })
+        val workflow = ArazzoWorkflow("native-aggregate", listOf(ArazzoStep("aggregate", operationId = "getPet")))
+
+        val failure = assertIs<ExecutionOutcome.Failed>(
+            executor.execute(workflow, workflowIdentity, RunId("run-no-http-metadata")).outcome,
+        ).failure
+
+        assertEquals("success_criteria", failure.code)
+        assertEquals(emptyMap(), failure.details)
+    }
+
+    @Test
+    fun mapsEarlierStepOutputIntoLaterOperationParameter() = runTest {
+        var secondInput: String? = null
+        val firstBody = Json.parseToJsonElement("""{"token":"opaque-token"}""")
+        val executor = ArazzoRunExecutor(ArazzoStepExecutor { step, inputs, _ ->
+            if (step.stepId == "second") secondInput = inputs
+            val body = if (step.stepId == "first") firstBody else Json.parseToJsonElement("{}")
+            val snapshot = ResponseSnapshot(BodyValue.JsonValue(body), http = HttpResponseMetadata(200))
+            ArazzoStepExecution.Completed(CapabilityResult(
+                constituent.locator,
+                CapabilityOutcome.Succeeded(BodyValue.JsonValue(body)),
+                listOf(ConstituentResult(constituent, ConstituentOutcome.Succeeded(BodyValue.JsonValue(body)), snapshot)),
+            ))
+        })
+        val workflow = ArazzoWorkflow("chain", listOf(
+            ArazzoStep("first", operationId = "login", outputs = mapOf("token" to "\$steps.first.response.body#/token")),
+            ArazzoStep(
+                "second",
+                operationId = "getPet",
+                parameters = listOf(cloud.mallne.dicentra.aviator.orchestration.arazzo.model.ArazzoParameter(
+                    "Authorization", "header", Json.parseToJsonElement("\"\$steps.first.outputs.token\""),
+                )),
+            ),
+        ))
+
+        assertIs<ExecutionOutcome.Succeeded>(executor.execute(workflow, workflowIdentity, RunId("run-chain")).outcome)
+        assertEquals(
+            Json.parseToJsonElement("""{"inputs":{},"parameters":{"header":{"Authorization":"opaque-token"}}}"""),
+            Json.parseToJsonElement(requireNotNull(secondInput)),
+        )
+    }
 
     @Test
     fun runStartedSinkFailureStillNotifiesFailureAndCleansUpPartialRun() = runTest {
@@ -360,7 +563,7 @@ class ArazzoRunExecutorTest {
 
         val result = executor.execute(
             workflow.copy(steps = listOf(workflow.steps.first().copy(successCriteria = listOf(
-                cloud.mallne.dicentra.aviator.orchestration.arazzo.model.ArazzoCriterion("\$response.statusCode == 200"),
+                cloud.mallne.dicentra.aviator.orchestration.arazzo.model.ArazzoCriterion("\$response.statusCode == 200", type = "jsonpath"),
             )))),
             workflowIdentity, RunId("run-unsupported"), events = sink,
         )
@@ -483,7 +686,15 @@ class ArazzoRunExecutorTest {
     }
 
     private fun succeeded() = ArazzoStepExecution.Completed(
-        CapabilityResult(constituent.locator, CapabilityOutcome.Succeeded(BodyValue.Empty), emptyList()),
+        CapabilityResult(
+            constituent.locator,
+            CapabilityOutcome.Succeeded(BodyValue.Empty),
+            listOf(ConstituentResult(
+                constituent,
+                ConstituentOutcome.Succeeded(BodyValue.Empty),
+                ResponseSnapshot(BodyValue.Empty, http = HttpResponseMetadata(200)),
+            )),
+        ),
     )
     private fun failed(failure: ExecutionFailure) = ArazzoStepExecution.Completed(
         CapabilityResult(constituent.locator, CapabilityOutcome.Failed(failure), emptyList()),

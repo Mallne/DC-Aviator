@@ -33,6 +33,12 @@ Core remains one-to-many even where standard Arazzo references require an exact 
 
 This is an implementation profile, not permission to reinterpret specification semantics. Reject documents containing executable features outside the supported profile before making calls. Documentation annotations and extension preservation need a separate, explicit policy.
 
+### Implemented expression and binding-input subset (AV-9 in progress)
+
+Expressions are parsed as exact references; they are never interpolated into host-language code. Statically unsupported expressions, malformed pointers, unsupported criterion types/operators, and forward/unresolved step-output references are rejected during document preflight with JSON-Pointer locations. The current runtime supports `$inputs`, `$inputs.<field.path>`, `$inputs#/pointer`, `$steps.<id>.outputs.<name>`, `$steps.<id>.response.body` with an optional JSON Pointer, `$response.body`, `$statusCode` / `$response.statusCode`, and `$response.header.<name>`. Header lookup is case-insensitive; one value is a JSON string and multiple values are a JSON array. Missing targets and unavailable response evidence fail the step. Simple criteria support `==`, `!=`, `<`, `<=`, `>`, and `>=`; every criterion must pass. Without explicit criteria, an HTTP step requires a real constituent HTTP response with a 2xx status. Non-2xx status is retained in failure details even when typed response decoding failed.
+
+When parameters or a request body are mapped, the binding receives a JSON envelope with the original run value under `inputs`, parameter values grouped by declared location under `parameters`, and the mapped JSON body under `requestBody`. Exact runtime-expression values preserve JSON types; nested request-body arrays/objects are recursively mapped. Header names are retained as authored, while duplicate header targets are compared case-insensitively. No parameter/body mapping leaves the legacy input value unchanged. This is the adapter-to-`OperationBinding<JsonElement>` contract, not an HTTP wire representation; transport serialization remains operation-binding-owned.
+
 ## Phase 1 — Models and validation
 
 - [x] Recheck published specification and schemas before implementation; use 1.1.0 as the current design reference.

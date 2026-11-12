@@ -19,10 +19,20 @@ fun resolveArazzoOperation(
     step: ArazzoStep,
     operationIndex: List<ConstituentIdentity>,
     policy: CapabilityPolicy,
+    sourceIdsByName: Map<String, String> = emptyMap(),
 ): ArazzoOperationResolution {
-    val operationId = step.operationId
+    val reference = step.operationId
         ?: return ArazzoOperationResolution.Failed("missing_operation_id", "Arazzo step has no operationId")
-    val matches = operationIndex.filter { it.operationId == operationId }
+    val parsed = parseSourceQualifiedOperationId(reference)
+    if (parsed == null && reference.startsWith("$" + "sourceDescriptions.")) {
+        return ArazzoOperationResolution.Failed("invalid_operation_reference", "Arazzo operationId reference is malformed")
+    }
+    val (operationId, sourceId) = parsed?.let { (sourceName, id) ->
+        val resolvedSourceId = sourceIdsByName[sourceName]
+            ?: return ArazzoOperationResolution.Failed("source_not_found", "No supplied source matches '$sourceName'")
+        id to resolvedSourceId
+    } ?: (reference to null)
+    val matches = operationIndex.filter { it.operationId == operationId && (sourceId == null || it.sourceId == sourceId) }
     return when (matches.size) {
         0 -> ArazzoOperationResolution.Failed("operation_not_found", "No source operation matches '$operationId'")
         1 -> ArazzoOperationResolution.Resolved(
@@ -32,4 +42,12 @@ fun resolveArazzoOperation(
             "ambiguous_operation_id", "Operation '$operationId' matches multiple source-qualified operations",
         )
     }
+}
+
+private fun parseSourceQualifiedOperationId(reference: String): Pair<String, String>? {
+    val prefix = "$" + "sourceDescriptions."
+    if (!reference.startsWith(prefix)) return null
+    val separator = reference.indexOf('.', prefix.length)
+    if (separator <= prefix.length || separator == reference.lastIndex) return null
+    return reference.substring(prefix.length, separator) to reference.substring(separator + 1)
 }

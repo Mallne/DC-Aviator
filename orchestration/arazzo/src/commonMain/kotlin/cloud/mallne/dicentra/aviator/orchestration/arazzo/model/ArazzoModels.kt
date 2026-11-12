@@ -15,8 +15,17 @@ data class ArazzoDocument(
     val workflows: List<ArazzoWorkflow>,
     val components: ArazzoComponents? = null,
     @SerialName("$" + "self") val self: String? = null,
+    /** Caller-supplied document location; never used to fetch a source description. */
+    @Transient var location: ArazzoDocumentLocation? = null,
     /** Specification extensions are inert data and are never interpreted as execution directives. */
     @Transient var extensions: Map<String, JsonElement> = emptyMap(),
+)
+
+/** Keeps retrieval, effective base and `$self` identity separate from provider endpoints. */
+data class ArazzoDocumentLocation(
+    val retrievalUri: String?,
+    val baseUri: String?,
+    val selfUri: String?,
 )
 
 @Serializable
@@ -45,6 +54,7 @@ data class ArazzoWorkflow(
     val dependsOn: List<String> = emptyList(),
     val summary: String? = null,
     val description: String? = null,
+    @Transient var documentLocation: ArazzoDocumentLocation? = null,
     @Transient var extensions: Map<String, JsonElement> = emptyMap(),
 )
 

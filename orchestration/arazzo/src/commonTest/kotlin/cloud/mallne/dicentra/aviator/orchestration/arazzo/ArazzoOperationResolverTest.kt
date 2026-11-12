@@ -44,4 +44,30 @@ class ArazzoOperationResolverTest {
         )
         assertEquals("ambiguous_operation_id", failed.code)
     }
+
+    @Test
+    fun sourceQualifiedReferenceSelectsOnlyItsDeclaredSource() {
+        val first = ConstituentIdentity(locator, "provider-a", "spec-a", "rev-a", "getForecast", "/forecast")
+        val second = ConstituentIdentity(locator, "provider-b", "spec-b", "rev-b", "getForecast", "/forecast")
+
+        val resolved = assertIs<ArazzoOperationResolution.Resolved>(
+            resolveArazzoOperation(
+                ArazzoStep("forecast", operationId = "\$sourceDescriptions.api.getForecast"),
+                listOf(first, second), policy, mapOf("api" to "spec-b"),
+            ),
+        )
+        assertEquals(setOf(second), resolved.invocation.constituents)
+    }
+
+    @Test
+    fun sourceQualifiedReferenceWithoutSuppliedSourceFails() {
+        val only = ConstituentIdentity(locator, "provider-a", "spec-a", "rev-a", "getForecast", "/forecast")
+        val failed = assertIs<ArazzoOperationResolution.Failed>(
+            resolveArazzoOperation(
+                ArazzoStep("forecast", operationId = "\$sourceDescriptions.missing.getForecast"),
+                listOf(only), policy,
+            ),
+        )
+        assertEquals("source_not_found", failed.code)
+    }
 }

@@ -18,6 +18,111 @@ import kotlin.test.assertIs
 
 class ArazzoPluginBindingTest {
     @Test
+    fun laterInvalidReferenceIsPreflightedBeforeEarlierStepCanDispatch() = runTest {
+        val locator = ServiceLocator("weather>get")
+        val identity = ConstituentIdentity(locator, "provider", "source", "rev", operationId = "forecast")
+        var dispatches = 0
+        val binding = object : OperationBinding<kotlinx.serialization.json.JsonElement> {
+            override suspend fun resolve(invocation: CapabilityInvocation) = object : ResolvedOperation {
+                override val invocation = invocation
+            }
+            override suspend fun invoke(
+                operation: ResolvedOperation,
+                input: kotlinx.serialization.json.JsonElement,
+                scope: InvocationScope,
+            ): CapabilityResult {
+                dispatches++
+                return CapabilityResult(locator, CapabilityOutcome.Succeeded(BodyValue.JsonValue(input)), emptyList())
+            }
+        }
+        val runner = ArazzoRunExecutor(ArazzoBindingStepExecutor(binding, listOf(identity), policy))
+        val workflow = ArazzoWorkflow("weather", listOf(
+            ArazzoStep("valid", operationId = "forecast"),
+            ArazzoStep("invalid", operationId = "\$sourceDescriptions.missing.forecast"),
+        ))
+
+        val result = runner.execute(
+            workflow, WorkflowIdentity("arazzo", "1.1.0", "doc", "rev"), RunId("preflight"),
+        )
+
+        val failure = assertIs<ExecutionOutcome.Failed>(result.outcome).failure
+        assertEquals("source_not_found", failure.code)
+        assertEquals("invalid", failure.stepId)
+        assertEquals(0, dispatches)
+    }
+
+    @Test
+    fun authorizationIsRecheckedAtInvocationAfterSuccessfulPreflight() = runTest {
+        val locator = ServiceLocator("weather>get")
+        val identity = ConstituentIdentity(locator, "provider", "source", "rev", operationId = "forecast")
+        var authorizationChecks = 0
+        var transportCalls = 0
+        val baseScope = EnforcedInvocationScope(
+            ExecutionMetadata(RunId("permission-change"), WorkflowIdentity("arazzo", "1.1.0", "doc", "rev")),
+            ExecutionBudget(),
+        )
+        val scope = object : InvocationScope by baseScope {
+            override suspend fun authorize(identity: ConstituentIdentity): ExecutionFailure? {
+                authorizationChecks++
+                return if (authorizationChecks == 1) null else ExecutionFailure("forbidden", "Permission changed")
+            }
+        }
+        val binding = object : OperationBinding<kotlinx.serialization.json.JsonElement> {
+            override suspend fun resolve(invocation: CapabilityInvocation) = object : ResolvedOperation {
+                override val invocation = invocation
+            }
+            override suspend fun invoke(
+                operation: ResolvedOperation,
+                input: kotlinx.serialization.json.JsonElement,
+                scope: InvocationScope,
+            ): CapabilityResult {
+                controlledAviatorCall(call = { transportCalls++ })
+                return CapabilityResult(locator, CapabilityOutcome.Succeeded(BodyValue.JsonValue(input)), emptyList())
+            }
+        }
+        val stepExecutor = ArazzoBindingStepExecutor(binding, listOf(identity), policy)
+        assertEquals(null, stepExecutor.preflight(
+            ArazzoWorkflow("weather", listOf(ArazzoStep("one", operationId = "forecast"))), scope,
+        ))
+
+        val result = stepExecutor.execute(ArazzoStep("one", operationId = "forecast"), "{}", scope)
+
+        assertEquals("forbidden", assertIs<ArazzoStepExecution.Failed>(result).failure.code)
+        assertEquals(2, authorizationChecks)
+        assertEquals(0, transportCalls)
+    }
+
+    @Test
+    fun missingSourceQualificationFailsBeforeBindingOrDispatch() = runTest {
+        val locator = ServiceLocator("weather>get")
+        val identity = ConstituentIdentity(locator, "provider", "source", "rev", operationId = "forecast")
+        var resolutions = 0
+        var invocations = 0
+        val binding = object : OperationBinding<kotlinx.serialization.json.JsonElement> {
+            override suspend fun resolve(invocation: CapabilityInvocation): ResolvedOperation {
+                resolutions++
+                return object : ResolvedOperation { override val invocation = invocation }
+            }
+            override suspend fun invoke(operation: ResolvedOperation, input: kotlinx.serialization.json.JsonElement, scope: InvocationScope): CapabilityResult {
+                invocations++
+                return CapabilityResult(locator, CapabilityOutcome.Succeeded(BodyValue.JsonValue(input)), emptyList())
+            }
+        }
+        val executor = ArazzoBindingStepExecutor(binding, listOf(identity), policy)
+        val scope = EnforcedInvocationScope(
+            ExecutionMetadata(RunId("missing-source"), WorkflowIdentity("arazzo", "1.1.0", "doc", "rev")), ExecutionBudget(),
+        )
+
+        val result = executor.execute(
+            ArazzoStep("one", operationId = "\$sourceDescriptions.unknown.forecast"), "{}", scope,
+        )
+
+        assertEquals("source_not_found", assertIs<ArazzoStepExecution.Failed>(result).failure.code)
+        assertEquals(0, resolutions)
+        assertEquals(0, invocations)
+    }
+
+    @Test
     fun thrownResolutionAndSelectionHooksBecomeSanitizedRunFailuresWithCleanup() = runTest {
         for (failingStage in listOf(OrchestrationStage.RESOLVE, OrchestrationStage.SELECT)) {
             val locator = ServiceLocator("weather>get")
