@@ -4,7 +4,7 @@
 
 Deliver the first implementation of Aviator's format-independent orchestrator contract. Execute Arazzo workflows through existing Aviator operations in client or server applications, without coupling the runtime to Synapse.
 
-Depends on the contracts and execution bindings described in [Orchestration Core's plan](../core/PLAN.md). All items below are unimplemented; no runtime, build registration or conformance claim is included in this scaffold.
+Depends on the contracts and execution bindings described in [Orchestration Core's plan](../core/PLAN.md). AV-10 covers serializable document models and a fail-closed JSON profile validator. A narrow sequential runner/binding seam is in progress, not the full AV-11 scheduler. AV-21 depends on AV-5/AV-6/AV-7/AV-8 and precedes AV-11; AV-9/AV-10/AV-12 format work remains parallel according to its dependencies. Application proofs, qualification and release follow the scheduler work.
 
 ## Adapter boundary: Arazzo references and Aviator capabilities
 
@@ -35,14 +35,14 @@ This is an implementation profile, not permission to reinterpret specification s
 
 ## Phase 1 — Models and validation
 
-- [ ] Recheck published specification and schemas before implementation; use 1.1.0 as the current design reference.
-- [ ] Define serializable models separately from runtime state. Preserve extensions without enabling arbitrary behavior.
-- [ ] Distinguish specification version (`arazzo`) from document version (`info.version`). Publish the supported version/feature matrix.
+- [x] Recheck published specification and schemas before implementation; use 1.1.0 as the current design reference.
+- [x] Define serializable models separately from runtime state. Preserve extensions without enabling arbitrary behavior.
+- [x] Distinguish specification version (`arazzo`) from document version (`info.version`). Publish the supported version/feature matrix.
 - [ ] Parse complete supplied documents before resolving references. Maintain retrieval/base URI and `$self` identity where applicable.
-- [ ] Validate required fields, unique IDs, mutually exclusive operation/workflow references, source names and reusable component references.
-- [ ] Validate sequential dependency order and reject unresolved/forward output references for the initial profile.
-- [ ] Decide input JSON Schema 2020-12 validation support explicitly; do not assume existing OpenAPI input validators implement the complete dialect. Reject unsupported validation constructs.
-- [ ] Return useful diagnostics identifying workflow, step and document location.
+- [x] Validate required fields, unique IDs, mutually exclusive operation/workflow references, source names and reusable component references.
+- [x] Validate sequential dependency order and reject unresolved/forward output references for the initial profile.
+- [x] Decide input JSON Schema 2020-12 validation support explicitly; do not assume existing OpenAPI input validators implement the complete dialect. Reject unsupported validation constructs.
+- [x] Return useful diagnostics identifying workflow, step and document location.
 
 ## Phase 2 — Resolve and prepare execution
 
@@ -55,6 +55,8 @@ This is an implementation profile, not permission to reinterpret specification s
 
 ## Phase 3 — First executable vertical slice
 
+AV-21's staged plugin contracts are a foundational design input, not an observer API bolted onto a finished scheduler. Design the binding/attempt integration alongside AV-7/AV-8 and implement the shared extension path before AV-11 completion. Follow [base Aviator parity requirements](../core/PLAN.md#base-aviator-parity-requirements); format-specific stage adapters expose Arazzo semantics without moving them into core.
+
 - [ ] Implement per-run state for inputs, completed step outputs and final outputs; no shared mutable state between runs.
 - [ ] Parse supported runtime expressions with a dedicated grammar, not host-language evaluation or unrestricted string interpolation.
 - [ ] Preserve JSON types in parameter/body mapping and distinguish missing values from explicit JSON null.
@@ -62,8 +64,9 @@ This is an implementation profile, not permission to reinterpret specification s
 - [ ] Evaluate supported success criteria against the declared operation response: the constituent response for a concrete reference, or the real aggregate gateway response for a gateway reference. Preserve error responses and metadata even when typed decoding is unavailable. Never invent aggregate HTTP metadata; define criteria/output contexts before accepting a native locator extension.
 - [ ] Implement specification-defined success/failure defaults for supported HTTP steps, including explicit tests for omitted `successCriteria`.
 - [ ] Execute sequential steps through shared ServiceLocator execution bindings with explicit targeting/policy, an isolated request context per constituent invocation, and aggregate/constituent outcomes where exposed.
+- [ ] Route preparation/validation, reference resolution, selection, scheduling, input/output mapping, actual constituent attempts, result/aggregation and terminal handling through typed plugin stages. Support controlled transformation and short-circuit behavior, not only events. Test that scheduling and ordinary operation plugins compose without bypassing host authorization, targeting restrictions, cancellation or provenance.
 - [ ] Stop on failure or cancellation as required; emit structured events and terminal outcomes without claiming previous side effects were rolled back.
-- [ ] Enforce whole-run and per-step budgets counting actual constituent calls/concurrency/retries and aggregate plus constituent retention, with secret-aware diagnostic redaction.
+- [ ] Integrate AV-21 optional orchestration plugins for whole-run/per-step policies counting actual constituent calls/concurrency/retries, with secret-aware diagnostic redaction. Existing non-byte budget/authorization implementations remain until extracted; do not treat their presence as a completed plugin SPI. Retained-byte accounting, aggregate estimates and copy reservations are removed from core. Optional payload limits must document wire/serialized-size semantics and cannot claim a heap-memory bound.
 
 ## Phase 4 — Application proofs
 
@@ -95,7 +98,7 @@ This is an implementation profile, not permission to reinterpret specification s
 
 ## Verification and build integration
 
-- [ ] Register `:orchestration:arazzo` and add a KMP build following existing conventions once implementation begins. Keep dependencies directed toward orchestration core and needed Aviator APIs, never applications.
+- [x] Register `:orchestration:arazzo` as an optional KMP module (AV-6). Keep dependencies directed toward orchestration core and needed Aviator APIs, never applications; cross-target qualification remains open.
 - [ ] Test deterministic workflows, source qualification, status/header/body expressions, JSON types, null/missing distinctions, parameter-location collisions, bodyless responses and non-2xx outcomes.
 - [ ] Test different operation IDs sharing a locator aggregate at the core binding level; different flavours remain separate; standard concrete Arazzo references stay restricted; aggregate gateway references use their public contract; no aggregate HTTP metadata is invented. Cover per-constituent authorization, provenance, partial outcomes and actual-call budgets.
 - [ ] Test invalid/unsupported documents cause zero operation calls; failed criteria prevent later steps; concurrent runs remain isolated.
@@ -108,3 +111,7 @@ This is an implementation profile, not permission to reinterpret specification s
 ## First milestone acceptance
 
 A locally supplied, supported Arazzo document runs two read-only steps through ServiceLocator-native Aviator bindings with explicit reference targeting, passes a selected output into the second request, checks success criteria and returns declared outputs. Core bindings support aggregation of different operations sharing a locator; standard concrete Arazzo operation references do not silently fan out. The same runtime accepts application-local and server-policy bindings. Invalid references, unsupported features, authorization rejection and cancellation prevent inappropriate further calls. All support limitations are documented and tested.
+
+## Current simplification verification (2026-11-11)
+
+The byte-accounting removal passed 14 Arazzo JVM tests alongside core/client fixtures (82 tests total, zero failures/errors/skips) under pinned Java 25.0.4.1. See [the core verification record](../core/PLAN.md#byte-accounting-simplification-verification-2026-11-11) for exact commands and the JS lock-verification exclusion. This does not implement AV-21, complete AV-11 or qualify the full milestone above; expressions, criteria, output-to-input mapping and broader specification semantics remain separately scoped.

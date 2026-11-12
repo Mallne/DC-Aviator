@@ -26,6 +26,13 @@ data class ExecutionMetadata(
     val values: Map<String, String> = emptyMap(),
 )
 
+/** Redacts credential-like metadata keys before they are included in diagnostics or events. */
+fun ExecutionMetadata.redacted(): ExecutionMetadata = copy(values = values.mapValues { (key, value) ->
+    val normalized = key.lowercase().filter(Char::isLetterOrDigit)
+    if (normalized in setOf("authorization", "proxyauthorization", "accesstoken", "refreshtoken", "token", "password", "clientsecret", "secret", "apikey", "credential", "cookie", "setcookie") ||
+        normalized.endsWith("secret") || normalized.endsWith("password") || normalized.endsWith("token") || normalized.endsWith("apikey")) "[REDACTED]" else value
+})
+
 /** Inputs are an opaque JSON value to the format-independent contract. */
 @Serializable
 data class ExecutionRequest(
@@ -76,7 +83,11 @@ data class ExecutionEvent(
     val metadata: ExecutionMetadata,
     val kind: ExecutionEventKind,
     val constituent: ConstituentIdentity? = null,
+    val terminal: ExecutionEventOutcome? = null,
 )
+
+@Serializable
+enum class ExecutionEventOutcome { SUCCEEDED, FAILED, CANCELLED }
 
 @Serializable
 enum class ExecutionEventKind {
@@ -94,4 +105,9 @@ fun interface ExecutionEventSink {
     object Ignore : ExecutionEventSink {
         override suspend fun emit(event: ExecutionEvent) = Unit
     }
+}
+
+/** Decorates any sink so event metadata is redacted before it leaves the execution boundary. */
+fun ExecutionEventSink.redacting(): ExecutionEventSink = ExecutionEventSink { event ->
+    emit(event.copy(metadata = event.metadata.redacted()))
 }

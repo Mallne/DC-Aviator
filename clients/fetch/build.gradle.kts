@@ -21,11 +21,14 @@ kotlin {
             api(project(":core"))
             api(project(":koas"))
             implementation(libs.kotlinx.serialization.json)
+            implementation(libs.kotlinx.coroutines.core)
             implementation(libs.dc.polyfill)
         }
         jsTest.dependencies {
             implementation(kotlin("test"))
             implementation(project(":plugins:adapter-json"))
+            implementation(project(":orchestration:core"))
+            implementation(project(":orchestration:arazzo"))
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
         }
     }

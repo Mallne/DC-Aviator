@@ -85,6 +85,11 @@ kotlin {
                 api(libs.ktor.openapi.schema)
             }
         }
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+            implementation(libs.kotlinx.coroutines.test)
+            implementation(project(":orchestration:core"))
+        }
     }
     jvmToolchain(25)
 }

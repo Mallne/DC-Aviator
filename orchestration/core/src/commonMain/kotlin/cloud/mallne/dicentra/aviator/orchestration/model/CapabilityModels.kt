@@ -56,11 +56,18 @@ data class ConstituentResult(
 @Serializable
 sealed interface ConstituentOutcome {
     @Serializable
-    data class Succeeded(val value: BodyValue) : ConstituentOutcome
+    data class Succeeded(
+        val value: BodyValue,
+        val representation: ResultRepresentation = ResultRepresentation.UNKNOWN,
+    ) : ConstituentOutcome
 
     @Serializable
     data class Failed(val failure: ExecutionFailure) : ConstituentOutcome
 }
+
+/** Describes the successful value; source HTTP bytes remain separately in [ResponseSnapshot]. */
+@Serializable
+enum class ResultRepresentation { SOURCE_DECODED, TRANSFORMED, UNKNOWN }
 
 /** Source response, not a transformed output pretending to be the source contract. */
 @Serializable

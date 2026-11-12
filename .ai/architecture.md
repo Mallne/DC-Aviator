@@ -46,6 +46,14 @@ aviator/
 - **`:clients:mock`** -- In-memory mock client for testing
 - **`:plugins:*`** -- Content negotiation, auth, interception, integration plugins
 
+## Orchestration Boundary
+
+- Core execution identity is `ServiceLocator`, including flavour; Arazzo operation references preserve the concrete operation contract rather than implying locator fanout. Embedded and hosted aggregation both use the existing Aviator operation pipeline. Synapse and AreaAssist are consumers/proof environments, not orchestration dependencies.
+- The completed simplification removed retained-byte accounting, its estimator/reservations and transport body-copy budget callbacks, not source response snapshots or cancellation. Other current budget and per-constituent authorization implementations remain in place; do not treat this as completed plugin extraction.
+- [AV-21](https://dicentra.youtrack.cloud/issue/AV-21) is a foundational staged plugin architecture with expressive parity to base Aviator's `AviatorPlugin`, `AviatorPluginInstance`, configuration scopes and `PluginStagedExecutor`, not a minimal call/result SPI or observer/limiter layer. Design it alongside AV-7/AV-8 before API stabilization; integrate actual binding/attempt boundaries before AV-11. Completion dependencies do not make plugins an afterthought. This architecture remains planned, not implemented or qualified.
+- Planned parity includes public installation/configuration DSL, identity/lookup, applicability filtering, reconfiguration with in-flight snapshots, metadata providers and typed run/step/attempt extension contexts. Suspending before/after hooks cover preparation/validation, resolution, selection, scheduling, input mapping, actual attempts/retries, response/results, aggregation, output mapping and terminal cleanup. Plugins can perform controlled mutation and rejection/short-circuiting, with deterministic composition, concurrent-state ownership and cleanup on success, failure or cancellation. See the [parity matrix](../orchestration/core/PLAN.md#base-aviator-parity-requirements).
+- Format engines expose explicit stage adapters without embedding Arazzo language semantics in core. Existing operation plugins remain separate and composable. Hooks must preserve cancellation, mandatory host authorization, explicit targeting restrictions and truthful provenance. Optional policy plugins are one use case of this general extension system, not its purpose or mandatory defaults; future wire/serialized payload limits must not claim heap/retained-size accounting.
+
 ## Dependencies on Other Modules
 
 - **Polyfill** -- Utility functions and contracts

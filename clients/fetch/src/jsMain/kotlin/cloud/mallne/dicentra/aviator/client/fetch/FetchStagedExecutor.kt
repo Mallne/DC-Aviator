@@ -4,6 +4,7 @@ import cloud.mallne.dicentra.aviator.core.execution.RequestParameter
 import cloud.mallne.dicentra.aviator.core.InternalAviatorAPI
 import cloud.mallne.dicentra.aviator.core.execution.RequestParameters
 import cloud.mallne.dicentra.aviator.core.execution.StagedExecutor
+import cloud.mallne.dicentra.aviator.core.execution.controlledAviatorCall
 import cloud.mallne.dicentra.aviator.core.io.NetworkBody
 import cloud.mallne.dicentra.aviator.core.io.NetworkChain
 import cloud.mallne.dicentra.aviator.core.io.RawRequestBody
@@ -14,9 +15,9 @@ import io.ktor.openapi.ParameterType
 import io.ktor.util.date.GMTDate
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
 
 @Suppress("UnsafeCastFromDynamic")
 @OptIn(InternalAviatorAPI::class)
@@ -78,9 +79,13 @@ class FetchStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
 
     override suspend fun onRequesting(context: FetchExecutionContext<O, B>) {
         val pending = context.networkChain.filter { it.request != null && it.response == null }
-        for (chain in pending) {
+        for ((attemptIndex, chain) in pending.withIndex()) {
             val request = chain.request ?: continue
             val init: dynamic = js("({})")
+            val controller: dynamic = js("new AbortController()")
+            init.signal = controller.signal
+            // Prevent native Fetch from following unbudgeted redirects.
+            init.redirect = "error"
             init.method = request.method.value
             val headers: dynamic = js("new Headers()")
             request.headers.values.forEach { (name, value) -> headers.append(name, value.toString()) }
@@ -104,8 +109,9 @@ class FetchStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
                 else -> outgoing.fetchRepresentation(context)?.let { init.body = it }
             }
 
-            val response = awaitFetch(context.dataHolder.fetcher(request.url.toString(), init))
-            val buffer = awaitFetch(response.arrayBuffer())
+            val (response, status) = controlledAviatorCall(retry = attemptIndex > 0, call = {
+            val response = awaitFetch(controller) { context.dataHolder.fetcher(request.url.toString(), init) }
+            val buffer = awaitFetch(controller) { response.arrayBuffer() }
             val bytes = arrayBufferToByteArray(buffer)
             check(bytes.size <= context.dataHolder.maxResponseBytes) {
                 "Aviator response exceeded the configured maximum of ${context.dataHolder.maxResponseBytes} bytes"
@@ -117,14 +123,17 @@ class FetchStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
             response.headers.forEach { value: String, key: String ->
                 responseHeaders.values[key] = RequestParameter.Single(value)
             }
-            chain.response = FetchResponse(
+            val responseSnapshot = FetchResponse(
                 status = HttpStatusCode.fromValue(response.status as Int),
                 content = bytes,
                 time = GMTDate(),
                 headers = responseHeaders,
                 contentType = contentType,
             )
-            if ((response.status as Int) < 400) break
+            responseSnapshot to (response.status as Int)
+            })
+            chain.response = response
+            if (status < 400) break
         }
     }
 
@@ -145,8 +154,10 @@ class FetchStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
 private fun routeResponseContentType(context: FetchExecutionContext<*, *>, status: Int): ContentType =
     context.dataHolder.route.returnType[HttpStatusCode.fromValue(status)]?.toList()?.firstOrNull()?.first ?: ContentType.Any
 
-private suspend fun awaitFetch(promise: dynamic): dynamic = suspendCoroutine { continuation ->
-    promise.then(
+private suspend fun awaitFetch(controller: dynamic, start: () -> dynamic): dynamic = suspendCancellableCoroutine { continuation ->
+    continuation.invokeOnCancellation { controller.abort() }
+    if (!continuation.isActive) return@suspendCancellableCoroutine
+    start().then(
         { value: dynamic -> continuation.resume(value) },
         { error: dynamic -> continuation.resumeWithException(Throwable(error.toString())) },
     )

@@ -1,8 +1,10 @@
 # Aviator Arazzo Orchestrator
 
-Status: AV-6 registers this as an optional KMP module depending on orchestration core. The Arazzo parser, models and runtime remain planned.
+Status: AV-10 provides serializable JSON document models and a fail-closed validation boundary. A narrow sequential runner/binding seam is in progress; the full AV-11 scheduler remains planned and depends on the optional plugin work in [AV-21](https://dicentra.youtrack.cloud/issue/AV-21). This module does not claim full Arazzo 1.1.0 conformance.
 
 This module will implement the Arazzo workflow specification using [Aviator Orchestration Core](../core/README.md). It is an orchestrator, not an Aviator request-pipeline plugin.
+
+Orchestration will use AV-21's first-class staged plugin architecture, with expressive parity to base Aviator: configurable installation, scoped context, before/after stage hooks, controlled input/result transformation and short-circuit behavior, not just policy observers. The Arazzo engine must expose its preparation, resolution, scheduling, mapping and completion stages through that architecture before AV-11 stabilizes; operation-level plugins remain independent and composable. Current authorization/non-byte execution budgets remain pending extraction. Core retained-byte accounting and aggregate/copy reservations are removed; Arazzo does not promise a heap-memory limit. Any future payload-size policy must explicitly define wire or serialized-size semantics.
 
 ## Responsibilities
 
@@ -20,7 +22,7 @@ Aviator can aggregate different operations sharing a ServiceLocator. Standard Ar
 
 OpenAPI remains the source of truth for operation contracts. Arazzo defines how operations compose into a workflow. Existing Aviator plugins continue handling operation-level auth, content adaptation, transformation and telemetry.
 
-The current published Arazzo specification is 1.1.0. Initial execution will implement a documented HTTP/OpenAPI subset, not claim full 1.1 conformance. Unsupported executable features must be rejected rather than silently ignored.
+The current published Arazzo specification is 1.1.0. `arazzo` is the specification version; `info.version` is the document version. The initial executable profile accepts JSON, Arazzo 1.1.0, OpenAPI source descriptions, and sequential operationId HTTP steps only. It rejects operationPath, nested workflows, non-OpenAPI sources, request-body mapping, explicit dependencies, criteria extensions, workflow input schemas, and unknown fields. JSON Schema Draft 2020-12 validation is **not implemented**, so workflow `inputs` schemas are rejected rather than treated as validated. YAML, selectors, AsyncAPI, actions/retries, external fetching, and arbitrary `x-` execution are unsupported. `x-` values are preserved as inert data; unrecognized `x-dicentra-aviator-*` keys are rejected pending a separately specified, opt-in Aviator profile defined through `AviatorExtensionSpec`.
 
 ## Intended source layout
 

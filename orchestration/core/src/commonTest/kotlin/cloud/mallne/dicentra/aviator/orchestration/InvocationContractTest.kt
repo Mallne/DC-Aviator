@@ -2,6 +2,7 @@ package cloud.mallne.dicentra.aviator.orchestration
 
 import cloud.mallne.dicentra.aviator.model.ServiceLocator
 import cloud.mallne.dicentra.aviator.orchestration.execution.InvocationScope
+import cloud.mallne.dicentra.aviator.orchestration.execution.EnforcedInvocationScope
 import cloud.mallne.dicentra.aviator.orchestration.execution.OperationBinding
 import cloud.mallne.dicentra.aviator.orchestration.execution.ResolvedOperation
 import cloud.mallne.dicentra.aviator.orchestration.model.BodyValue
@@ -18,6 +19,8 @@ import cloud.mallne.dicentra.aviator.orchestration.model.ExecutionFailure
 import cloud.mallne.dicentra.aviator.orchestration.model.ExecutionMetadata
 import cloud.mallne.dicentra.aviator.orchestration.model.RunId
 import cloud.mallne.dicentra.aviator.orchestration.model.WorkflowIdentity
+import cloud.mallne.dicentra.aviator.orchestration.model.redacted
+import cloud.mallne.dicentra.aviator.orchestration.model.redacting
 import cloud.mallne.dicentra.aviator.orchestration.policy.ConstituentOrdering
 import cloud.mallne.dicentra.aviator.orchestration.policy.EmptySelectionPolicy
 import cloud.mallne.dicentra.aviator.orchestration.policy.ExecutionBudget
@@ -26,6 +29,13 @@ import cloud.mallne.dicentra.aviator.orchestration.policy.PartialFailurePolicy
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.async
+import kotlinx.coroutines.test.runTest
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
@@ -38,6 +48,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotSame
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Instant
 
 /** Tests the common contracts with a deterministic fake, not Aviator's production transport. */
 class InvocationContractTest {
@@ -99,7 +110,7 @@ class InvocationContractTest {
     }
 
     @Test
-    fun budgetsCountConstituentsRetriesConcurrencyAndRetainedData() = runImmediate {
+    fun budgetsCountConstituentsRetriesAndConcurrency() = runImmediate {
         val binding = FakeBinding(listOf(a, b))
         val limited = scope(budget = ExecutionBudget(maxCalls = 1))
         val result = binding.invoke(binding.resolve(CapabilityInvocation(locator, contractPolicy())), JsonPrimitive("input"), limited)
@@ -107,7 +118,7 @@ class InvocationContractTest {
         assertEquals(1, binding.contexts.size)
         assertEquals(listOf(a), limited.admitted)
 
-        val shared = scope(budget = ExecutionBudget(maxCalls = 3, maxRetries = 1, maxConcurrency = 1, maxRetainedBytes = 5, maxTransitions = 1, maxNestingDepth = 0))
+        val shared = scope(budget = ExecutionBudget(maxCalls = 3, maxRetries = 1, maxConcurrency = 1, maxTransitions = 1, maxNestingDepth = 0))
         assertNull(shared.acquireCall(a))
         assertEquals("concurrency", shared.acquireCall(b)?.code)
         shared.releaseCall(a)
@@ -115,10 +126,6 @@ class InvocationContractTest {
         shared.releaseCall(a)
         assertEquals("retries", shared.acquireCall(a, retry = true)?.code)
         assertEquals(2, shared.admitted.size)
-        assertNull(shared.retainBytes(3)) // constituent snapshot
-        assertEquals("bytes", shared.retainBytes(3)?.code) // aggregate also counts
-        shared.releaseBytes(3)
-        assertNull(shared.retainBytes(5))
         assertNull(shared.checkpoint(transitions = 1))
         assertEquals("transitions", shared.checkpoint(transitions = 1)?.code)
         assertEquals("nesting", shared.checkpoint(nestingDepth = 1)?.code)
@@ -184,18 +191,123 @@ class InvocationContractTest {
         assertFailsWith<IllegalArgumentException> { ExecutionBudget(maxConcurrency = -1) }
         assertFailsWith<IllegalArgumentException> { ExecutionBudget(maxTransitions = -1) }
         assertFailsWith<IllegalArgumentException> { ExecutionBudget(maxNestingDepth = -1) }
-        assertFailsWith<IllegalArgumentException> { ExecutionBudget(maxRetainedBytes = -1) }
+        assertFailsWith<IllegalArgumentException> { ExecutionBudget(maxCallsPerStep = -1) }
+        assertFailsWith<IllegalArgumentException> { ExecutionBudget(maxRetriesPerStep = -1) }
         assertEquals(0, ExecutionBudget(maxCalls = 0).maxCalls)
     }
 
     @Test
-    fun sharedDeadlineRejectsCallsAndRetentionBeforeSideEffects() = runImmediate {
-        val runScope = ContractScope(scope().metadata, ExecutionBudget(deadlineEpochMillis = 10), nowEpochMillis = { 10 })
+    fun executionBudgetSerializesTypedAbsoluteDeadline() {
+        val budget = ExecutionBudget(deadline = Instant.fromEpochMilliseconds(1_000L))
+        assertEquals(budget, kotlinx.serialization.json.Json.decodeFromString<ExecutionBudget>(
+            kotlinx.serialization.json.Json.encodeToString(budget),
+        ))
+    }
+
+    @Test
+    fun sharedDeadlineRejectsCallsBeforeSideEffects() = runImmediate {
+        val runScope = ContractScope(scope().metadata, ExecutionBudget(deadline = Instant.fromEpochMilliseconds(10)), now = { Instant.fromEpochMilliseconds(10) })
         assertEquals("deadline", runScope.checkpoint()?.code)
         assertEquals("deadline", runScope.acquireCall(a)?.code)
-        assertEquals("deadline", runScope.retainBytes(1)?.code)
         assertTrue(runScope.admitted.isEmpty())
-        assertEquals(0L, runScope.retained)
+    }
+
+    @Test
+    fun productionScopeAtomicallyEnforcesSharedBudgetsAndReleasesReservations() = runImmediate {
+        val runScope = EnforcedInvocationScope(
+            scope().metadata,
+            ExecutionBudget(maxCalls = 3, maxConcurrency = 1, maxTransitions = 1, maxRetries = 0),
+            now = { Instant.fromEpochMilliseconds(1L) },
+        )
+        assertNull(runScope.acquireCall(a))
+        assertEquals("concurrency", runScope.acquireCall(b)?.code)
+        runScope.releaseCall(a)
+        assertNull(runScope.acquireCall(b))
+        runScope.releaseCall(b)
+        assertEquals("retries", runScope.acquireCall(a, retry = true)?.code)
+        assertNull(runScope.acquireCall(a))
+        runScope.releaseCall(a)
+        assertEquals("calls", runScope.acquireCall(a)?.code)
+        assertNull(runScope.checkpoint(transitions = 1))
+        assertEquals("transitions", runScope.checkpoint(transitions = 1)?.code)
+    }
+
+    @Test
+    fun productionScopeHonorsDeadlineAndMetadataRedaction() = runImmediate {
+        val metadata = scope().metadata.copy(values = mapOf(
+            "trace.id" to "trace-1", "Authorization" to "Bearer secret", "db.password" to "pw", "custom" to "ok",
+        ))
+        assertEquals(mapOf("trace.id" to "trace-1", "Authorization" to "[REDACTED]", "db.password" to "[REDACTED]", "custom" to "ok"), metadata.redacted().values)
+        val expired = EnforcedInvocationScope(metadata, ExecutionBudget(deadline = Instant.fromEpochMilliseconds(10)), now = { Instant.fromEpochMilliseconds(10L) })
+        assertEquals("deadline", expired.checkpoint()?.code)
+        assertEquals("deadline", expired.acquireCall(a)?.code)
+
+        var observed: ExecutionEvent? = null
+        val safeSink = ExecutionEventSink { observed = it }.redacting()
+        safeSink.emit(ExecutionEvent(metadata, ExecutionEventKind.RUN_STARTED))
+        assertEquals("[REDACTED]", checkNotNull(observed).metadata.values.getValue("Authorization"))
+        assertEquals("trace-1", checkNotNull(observed).metadata.values.getValue("trace.id"))
+    }
+
+    @Test
+    fun productionScopeReleasesConcurrencyReservationAfterCallerCancellation() {
+        val runScope = EnforcedInvocationScope(scope().metadata, ExecutionBudget(maxConcurrency = 1))
+        val job = Job()
+        var completion: Result<Unit>? = null
+        val block: suspend () -> Unit = {
+            assertNull(runScope.acquireCall(a))
+            job.cancel()
+            runScope.releaseCall(a)
+        }
+        block.startCoroutine(object : Continuation<Unit> {
+            override val context = job
+            override fun resumeWith(result: Result<Unit>) { completion = result }
+        })
+        assertNull(checkNotNull(completion).exceptionOrNull())
+        runImmediate {
+            assertNull(runScope.acquireCall(b))
+            runScope.releaseCall(b)
+        }
+    }
+
+    @Test
+    fun stepScopedViewsEnforceLocalAndRunWideLimitsTogether() = runImmediate {
+        val run = EnforcedInvocationScope(
+            scope().metadata,
+            ExecutionBudget(maxCalls = 3, maxCallsPerStep = 1),
+        )
+        val first = run.forStep("step-1")
+        assertNull(first.acquireCall(a))
+        first.releaseCall(a)
+        assertEquals("step_calls", first.acquireCall(a)?.code)
+        val second = run.forStep("step-2")
+        assertNull(second.acquireCall(b))
+        second.releaseCall(b)
+        val third = run.forStep("step-3")
+        assertNull(third.acquireCall(a))
+        third.releaseCall(a)
+        assertEquals("calls", run.forStep("step-4").acquireCall(b)?.code)
+
+        val retryScope = EnforcedInvocationScope(scope().metadata, ExecutionBudget(maxCallsPerStep = 2, maxRetriesPerStep = 0)).forStep("retry-step")
+        assertEquals("step_retries", retryScope.acquireCall(a, retry = true)?.code)
+    }
+
+    @Test
+    fun concurrentInvocationsShareOneAtomicConcurrencyReservation() = runTest {
+        val runScope = EnforcedInvocationScope(scope().metadata, ExecutionBudget(maxConcurrency = 1))
+        val releaseFirst = CompletableDeferred<Unit>()
+        val first = async(start = CoroutineStart.UNDISPATCHED) {
+            assertNull(runScope.acquireCall(a))
+            releaseFirst.await()
+            runScope.releaseCall(a)
+        }
+
+        val rejected = async { runScope.acquireCall(b) }.await()
+        assertEquals("concurrency", rejected?.code)
+        releaseFirst.complete(Unit)
+        first.await()
+        assertNull(runScope.acquireCall(b))
+        runScope.releaseCall(b)
     }
 
     private fun identity(provider: String, operation: String, target: ServiceLocator = locator) =

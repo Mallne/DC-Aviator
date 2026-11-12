@@ -43,8 +43,9 @@ interface Orchestrator {
  * Results contain aggregate values and constituent outcomes/provenance, not necessarily
  * one HTTP response. Bindings must not invent aggregate HTTP status/headers. They authorize each
  * selected constituent, isolate its request context and account for actual constituent calls,
- * retries, concurrency and retained bytes. These interfaces do not themselves enforce policy
- * by themselves; production bindings and budget enforcement remain separate implementation work.
+ * retries and concurrency when those limits are configured. Enforcement is supplied by [EnforcedInvocationScope]
+ * and the Aviator core [cloud.mallne.dicentra.aviator.core.execution.AviatorCallControl] transport
+ * boundary; bindings must propagate the caller's coroutine context and must not bypass Aviator.
  */
 interface OperationBinding<in I> {
     suspend fun resolve(invocation: CapabilityInvocation): ResolvedOperation

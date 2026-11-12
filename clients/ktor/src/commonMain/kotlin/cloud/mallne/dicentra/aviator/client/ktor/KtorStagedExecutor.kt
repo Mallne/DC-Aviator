@@ -4,7 +4,11 @@ import cloud.mallne.dicentra.aviator.client.ktor.io.AvKtorRequest
 import cloud.mallne.dicentra.aviator.client.ktor.io.AvKtorResponse
 import cloud.mallne.dicentra.aviator.client.ktor.io.manualPipeline
 import cloud.mallne.dicentra.aviator.core.execution.RequestParameters
+import cloud.mallne.dicentra.aviator.core.execution.RequestParameter
+import cloud.mallne.dicentra.aviator.core.execution.LocatedParameterKey
+import cloud.mallne.dicentra.aviator.core.execution.LocatedRequestParameters
 import cloud.mallne.dicentra.aviator.core.execution.StagedExecutor
+import cloud.mallne.dicentra.aviator.core.execution.controlledAviatorCall
 import cloud.mallne.dicentra.aviator.model.AviatorServiceUtils
 import cloud.mallne.dicentra.aviator.core.InternalAviatorAPI
 import cloud.mallne.dicentra.aviator.core.io.NetworkBody
@@ -12,6 +16,7 @@ import cloud.mallne.dicentra.aviator.core.io.RawRequestBody
 import cloud.mallne.dicentra.aviator.core.io.NetworkChain
 import cloud.mallne.dicentra.aviator.core.io.NetworkHeader
 import cloud.mallne.dicentra.aviator.core.io.adapter.request.FormAdapter
+import cloud.mallne.dicentra.aviator.koas.typed.TemplateParser.parsePath
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
@@ -22,13 +27,29 @@ import io.ktor.http.content.*
 import io.ktor.openapi.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
+import kotlinx.coroutines.currentCoroutineContext
 
 @OptIn(InternalAviatorAPI::class)
 class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
     StagedExecutor<KtorExecutionContext<O, B>, O, B> {
 
     override suspend fun onPathMatching(context: KtorExecutionContext<O, B>) {
-        context.networkChain.addAll(AviatorServiceUtils.catchPaths(context.dataHolder, context.requestParams, context.requestRoute).map {
+        val pathParams = RequestParameters(context.requestParams.value.toMutableMap())
+        val located = currentCoroutineContext()[LocatedRequestParameters]
+        located?.values?.keys?.forEach { pathParams.remove(it.name) }
+        located?.values?.forEach { (key, value) ->
+            if (key.location == ParameterType.path) {
+                pathParams[key.name] = when (value) {
+                    is RequestParameter.Single<*> -> RequestParameter.Single(value.toString().encodeURLPathPart())
+                    is RequestParameter.Multi<*> -> RequestParameter.Multi(value.toStringList().map { it.encodeURLPathPart() })
+                }
+            }
+        }
+        val pathRoute = if (located == null) context.requestRoute else context.requestRoute.copy(
+            parameter = context.requestRoute.parameter.filter { it.`in` == ParameterType.path } +
+                context.requestRoute.parameter.filter { it.`in` != ParameterType.path && it.`in` != ParameterType.query },
+        )
+        context.networkChain.addAll(AviatorServiceUtils.catchPaths(context.dataHolder, pathParams, pathRoute).map {
             context.log(KtorLoggingIds.TRACE_CREATE_CHAIN) { trace("Creating Network Chain with target $it") }
             NetworkChain(it)
         })
@@ -36,6 +57,11 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
 
     override suspend fun onFormingRequest(context: KtorExecutionContext<O, B>) {
         val route = context.requestRoute
+        val locatedParameters = currentCoroutineContext()[LocatedRequestParameters]
+        val located = locatedParameters?.values.orEmpty()
+        fun parameterValue(name: String, location: ParameterType): RequestParameter? =
+            located[LocatedParameterKey(name, location)]
+                ?: if (located.keys.any { it.name == name }) null else context.requestParams[name]
         val fallbackCT = route.body.types.keys.firstOrNull()
         context.networkChain.forEach { net ->
             val raw = context.body as? RawRequestBody
@@ -51,12 +77,26 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
             }
 
             val headers = route.parameter.filter { it.`in` == ParameterType.header }.mapNotNull { parameter ->
-                context.requestParams[parameter.name]?.let { parameter.name to it }
+                parameterValue(parameter.name, ParameterType.header)?.let { parameter.name to it }
             }.toMap()
+            val requestUrl = URLBuilder(net.url).apply {
+                if (locatedParameters != null) {
+                    val queryParameters = route.parameter.filter { it.`in` == ParameterType.query }
+                    val queryValues = queryParameters.mapNotNull { parameter ->
+                        val value = parameterValue(parameter.name, ParameterType.query)
+                        value?.let { parameter.name to it }
+                    }.toMap()
+                    val encodedValues = RequestParameters(queryValues.toMutableMap()).toStringList()
+                        .mapValues { (_, values) -> values.map { it.encodeURLQueryComponent(encodeFull = true) } }
+                    val query = route.copy(path = "", parameter = queryParameters)
+                        .parsePath(encodedValues)
+                    if (query.isNotEmpty()) parameters.appendAll(parseQueryString(query.removePrefix("?")))
+                }
+            }.build()
 
             net.request = AvKtorRequest(
                 method = route.method,
-                url = Url(net.url),
+                url = requestUrl,
                 outgoingContent = body.first,
                 headers = object : NetworkHeader {
                     override var values: RequestParameters = RequestParameters(headers.toMutableMap())
@@ -68,10 +108,12 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
 
     override suspend fun onRequesting(context: KtorExecutionContext<O, B>) {
         val chain = context.networkChain.filter { it.request != null && it.response == null }
+        var attemptIndex = 0
         chain.manualPipeline { net, next ->
             context.log(KtorLoggingIds.TRACE_CREATE_REQUEST) { trace("Creating Network Request for ${net.url}") }
+            val (response, failed) = controlledAviatorCall(retry = attemptIndex++ > 0, call = {
             val resp = context.dataHolder.client.request {
-                url(net.url)
+                url(net.request!!.url)
                 val raw = context.body as? RawRequestBody
                 if (raw != null) {
                     // Preserve serialized bytes even when a provider plugin forms its own body.
@@ -127,7 +169,10 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
                 net.request!!.headers.values.forEach { (k, v) ->
                     if (raw == null || (!k.equals(HttpHeaders.ContentType, ignoreCase = true) &&
                                 !k.equals(HttpHeaders.ContentLength, ignoreCase = true))) {
-                        header(k, v.toString())
+                        when (v) {
+                            is RequestParameter.Single<*> -> header(k, v.toString())
+                            is RequestParameter.Multi<*> -> v.toStringList().forEach { header(k, it) }
+                        }
                     }
                 }
             }
@@ -144,15 +189,16 @@ class KtorStagedExecutor<O : @Serializable Any, B : @Serializable Any> :
                 contentType = contentTypeRecieved ?: context.dataHolder.route.returnType[resp.status]?.toList()
                     ?.first()?.first ?: ContentType.Any,
             )
-            net.response = response
-
             if (resp.status.value >= 400) {
                 val text = resp.bodyAsText()
                 context.log(KtorLoggingIds.WARN_REQUEST_FAILED) {
                     warn("Request {${net.request?.method}: ${net.request?.url}} failed with status ${resp.status.value}: $text")
                 }
-                next()
             }
+            response to (resp.status.value >= 400)
+            })
+            net.response = response
+            if (failed) next()
         }
 
         val successful = context.networkChain.find { (it.response?.status?.value ?: 500) >= 400 }

@@ -16,19 +16,14 @@ interface InvocationScope {
     /**
      * Atomically reserve one actual call (and retry when applicable), plus a concurrency slot.
      * Reject exhausted budgets before any side effect; null means admitted. A binding must call
-     * [releaseCall] in finally after admission, including cancellation. Cumulative counts are not
-     * refunded. Implementations propagate cancellation and enforce the shared deadline.
+     * [releaseCall] in finally after admission, including cancellation. Release must complete even
+     * when the caller's Job is cancelled. Cumulative counts are not refunded. Implementations
+     * propagate cancellation and enforce the shared deadline.
      */
     suspend fun acquireCall(identity: ConstituentIdentity, retry: Boolean = false): ExecutionFailure?
 
     /** Release only the active-call slot, never cumulative call/retry counts. */
-    fun releaseCall(identity: ConstituentIdentity)
-
-    /** Atomically reserve retained aggregate/constituent bytes. Null means admitted. */
-    suspend fun retainBytes(count: Long): ExecutionFailure?
-
-    /** Release discarded data only. Counts must be nonnegative and cannot exceed reservations. */
-    fun releaseBytes(count: Long)
+    suspend fun releaseCall(identity: ConstituentIdentity)
 
     /** Check deadline and charge transitions; validate current nesting, without counting a call. */
     suspend fun checkpoint(transitions: Int = 0, nestingDepth: Int = 0): ExecutionFailure?

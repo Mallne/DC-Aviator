@@ -17,16 +17,23 @@ import cloud.mallne.dicentra.aviator.model.ServiceLocator
 import cloud.mallne.dicentra.polyfill.ensure
 import cloud.mallne.dicentra.polyfill.ensureNotNull
 import io.ktor.client.*
+import io.ktor.client.plugins.HttpSend
 import io.ktor.openapi.*
 import kotlinx.serialization.SerialFormat
 import kotlinx.serialization.json.Json
 
 @OptIn(InternalAviatorAPI::class)
 class KtorAviatorServiceConverter(
-    val httpClient: HttpClient = HttpClient(),
+    httpClient: HttpClient = HttpClient(),
     val serializers: List<SerialFormat> = listOf(Json),
     val maxResponseBytes: Long = 16_777_216,
 ) : APIToServiceConverter {
+    /** Prevent transport-managed redirects/retries from bypassing Aviator's per-attempt control. */
+    val httpClient: HttpClient = httpClient.config {
+        followRedirects = false
+        installOrReplace(HttpSend) { maxSendCount = 1 }
+    }
+
     constructor(httpClient: HttpClient, json: Json = Json, maxResponseBytes: Long = 16_777_216) :
         this(httpClient, mutableListOf(json), maxResponseBytes)
 
@@ -48,7 +55,10 @@ class KtorAviatorServiceConverter(
         to: KtorAviatorService,
         client: HttpClient = httpClient
     ): KtorAviatorService {
-        return to.copy(client = client)
+        return to.copy(client = client.config {
+            followRedirects = false
+            installOrReplace(HttpSend) { maxSendCount = 1 }
+        })
     }
 
     override fun build(

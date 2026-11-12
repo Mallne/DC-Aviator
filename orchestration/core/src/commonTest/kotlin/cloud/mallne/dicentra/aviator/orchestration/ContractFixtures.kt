@@ -8,6 +8,7 @@ import cloud.mallne.dicentra.aviator.orchestration.policy.CapabilityPolicy
 import cloud.mallne.dicentra.aviator.orchestration.policy.ConstituentOrdering
 import cloud.mallne.dicentra.aviator.orchestration.policy.EmptySelectionPolicy
 import cloud.mallne.dicentra.aviator.orchestration.policy.ExecutionBudget
+import kotlin.time.Instant
 import cloud.mallne.dicentra.aviator.orchestration.policy.ExecutionStrategy
 import cloud.mallne.dicentra.aviator.orchestration.policy.PartialFailurePolicy
 
@@ -21,14 +22,12 @@ internal class ContractScope(
     override val metadata: ExecutionMetadata,
     override val budget: ExecutionBudget = ExecutionBudget(),
     private val denied: Set<ConstituentIdentity> = emptySet(),
-    private val nowEpochMillis: () -> Long = { 0L },
+    private val now: () -> Instant = { Instant.fromEpochMilliseconds(0L) },
 ) : InvocationScope {
     val authorized = mutableListOf<ConstituentIdentity>()
     val admitted = mutableListOf<ConstituentIdentity>()
     private val active = mutableMapOf<ConstituentIdentity, Int>()
     var retries = 0
-        private set
-    var retained = 0L
         private set
     private var transitions = 0
 
@@ -48,22 +47,9 @@ internal class ContractScope(
         return null
     }
 
-    override fun releaseCall(identity: ConstituentIdentity) {
+    override suspend fun releaseCall(identity: ConstituentIdentity) {
         val count = checkNotNull(active[identity])
         if (count == 1) active.remove(identity) else active[identity] = count - 1
-    }
-
-    override suspend fun retainBytes(count: Long): ExecutionFailure? {
-        require(count >= 0)
-        deadlineFailure()?.let { return it }
-        if (budget.maxRetainedBytes?.let { count > it - retained } == true) return rejected("bytes")
-        retained += count
-        return null
-    }
-
-    override fun releaseBytes(count: Long) {
-        require(count in 0..retained)
-        retained -= count
     }
 
     override suspend fun checkpoint(transitions: Int, nestingDepth: Int): ExecutionFailure? {
@@ -78,5 +64,5 @@ internal class ContractScope(
     private fun rejected(code: String) = ExecutionFailure(code, "Rejected by test scope")
 
     private fun deadlineFailure(): ExecutionFailure? =
-        if (budget.deadlineEpochMillis?.let { nowEpochMillis() >= it } == true) rejected("deadline") else null
+        if (budget.deadline?.let { now() >= it } == true) rejected("deadline") else null
 }

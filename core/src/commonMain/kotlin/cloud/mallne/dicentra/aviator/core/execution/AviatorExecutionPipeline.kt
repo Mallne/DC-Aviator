@@ -71,6 +71,7 @@ class AviatorExecutionPipeline<C : AviatorExecutionContext<in O, in B>, O : @Ser
                     plugins.forEach { value -> value.x.afterPaintingResponse(context) }
                     throw e
                 }
+                observeSourceResponses(context.networkChain.mapNotNull { it.response })
                 plugins.forEach { value -> value.x.afterRequesting(context) }
                 escalate()
             }

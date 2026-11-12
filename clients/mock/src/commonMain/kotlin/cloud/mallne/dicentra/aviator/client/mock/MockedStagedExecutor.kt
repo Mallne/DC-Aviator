@@ -4,6 +4,7 @@ import cloud.mallne.dicentra.aviator.core.AviatorServiceDataHolder.Companion.jso
 import cloud.mallne.dicentra.aviator.core.NoBody
 import cloud.mallne.dicentra.aviator.core.InternalAviatorAPI
 import cloud.mallne.dicentra.aviator.core.execution.StagedExecutor
+import cloud.mallne.dicentra.aviator.core.execution.controlledAviatorCall
 import cloud.mallne.dicentra.aviator.core.io.NetworkBody
 import cloud.mallne.dicentra.aviator.core.io.NetworkChain
 import cloud.mallne.dicentra.aviator.model.AviatorServiceUtils
@@ -39,15 +40,21 @@ class MockedStagedExecutor :
 
     override suspend fun onRequesting(context: MockExecutionContext) {
         val chain = context.networkChain.filter { it.request != null && it.response == null }
-        AviatorServiceUtils.manualPipeline(chain) { net, next ->
-            val response = MockedResponse(
-                content = context.dataHolder.json.encodeToString(
-                    serializer(),
-                    context.dataHolder.route.nested
-                ).toByteArray(),
-                status = HttpStatusCode.OK,
-                time = GMTDate(),
-                contentType = ContentType.Application.Json.withCharset(Charsets.UTF_8)
+        var attemptIndex = 0
+        AviatorServiceUtils.manualPipeline(chain) { net, _ ->
+            val response = controlledAviatorCall(
+                retry = attemptIndex++ > 0,
+                call = {
+                    MockedResponse(
+                        content = context.dataHolder.json.encodeToString(
+                            serializer(),
+                            context.dataHolder.route.nested,
+                        ).toByteArray(),
+                        status = HttpStatusCode.OK,
+                        time = GMTDate(),
+                        contentType = ContentType.Application.Json.withCharset(Charsets.UTF_8),
+                    )
+                },
             )
             net.response = response
         }
