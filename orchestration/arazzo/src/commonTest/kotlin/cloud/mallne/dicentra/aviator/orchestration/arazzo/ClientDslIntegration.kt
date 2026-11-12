@@ -21,11 +21,11 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
-internal fun clientSpec() = OpenApiDoc(
+internal fun clientSpec(operationId: String = "forecast") = OpenApiDoc(
     info = OpenApiInfo(title = "test", version = "1"),
     servers = listOf(Server(url = "https://weather.test")),
     paths = mapOf("/forecast" to ReferenceOr.Value(PathItem(get = Operation(
-        operationId = "forecast", responses = Responses(responses = mapOf(200 to ReferenceOr.Value(Response(description = "OK")))),
+        operationId = operationId, responses = Responses(responses = mapOf(200 to ReferenceOr.Value(Response(description = "OK")))),
         extensions = mapOf("x-dicentra-aviator-serviceDelegateCall" to GenericElement("weather>get"),
             "x-dicentra-aviator-serviceOptions" to GenericElement("{}")),
     )))),

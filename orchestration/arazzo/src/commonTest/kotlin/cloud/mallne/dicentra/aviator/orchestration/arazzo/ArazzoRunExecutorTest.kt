@@ -232,6 +232,26 @@ class ArazzoRunExecutorTest {
     }
 
     @Test
+    fun failedFirstOperationPreventsSecondOperationAndPreservesCompletedSteps() = runTest {
+        val calls = mutableListOf<String>()
+        val executor = ArazzoRunExecutor(ArazzoStepExecutor { step, _, _ ->
+            calls += step.stepId
+            if (step.stepId == "first") {
+                ArazzoStepExecution.Failed(ExecutionFailure("provider_failure", "First operation failed"))
+            } else {
+                succeeded()
+            }
+        })
+
+        val result = executor.execute(workflow, workflowIdentity, RunId("run-stop-on-failure"))
+
+        val failure = assertIs<ExecutionOutcome.Failed>(result.outcome)
+        assertEquals("provider_failure", failure.failure.code)
+        assertEquals(listOf("first"), calls)
+        assertEquals(emptyList(), failure.completedSteps)
+    }
+
+    @Test
     fun runStartedSinkFailureStillNotifiesFailureAndCleansUpPartialRun() = runTest {
         val lifecycle = mutableListOf<OrchestrationStage>()
         var deliveredEvents = 0
