@@ -68,6 +68,45 @@ See [PLAN.md](PLAN.md) for delivery phases, design decisions and acceptance crit
 
 ## First-class orchestration plugins (AV-21)
 
+### Creating an orchestrator
+
+The format-independent `orchestrator { }` builder delegates each `aviator(converter, api) { ... }`
+block directly to the existing `APIToServiceConverter.build` plugin DSL. Repeat it for multiple
+documents, or pass previously built services with `aviator(services)`. The `engine { environment -> ... }`
+extension point supports other formats; the Arazzo artifact supplies the `arazzo { }` convenience.
+For example, using a Ktor converter and a materialized binding:
+
+```kotlin
+val engine = orchestrator {
+    aviator(converter, openApi) { install(JsonAdapter) } // existing Aviator plugins
+    logger = appLogger
+    plugins { install(executionBudgetPolicyPlugin()) } // orchestration plugins
+    arazzo {
+        workflow = { identity -> workflowRepository.find(identity) }
+        operationIndex = identities // exact ConstituentIdentity values for the services
+        policy = applicationCapabilityPolicy
+        authorize = { identity -> authorization.check(identity) } // null allows
+        binding = { env ->
+            MaterializedOperationBinding(
+                constituents = applicationConstituents(env.services),
+                isUsable = applicationUsability,
+                aggregate = applicationAggregation,
+                plugins = env.plugins,
+            )
+        }
+    }
+}
+val result = engine.execute(ExecutionRequest(workflowIdentity), budget, events)
+```
+
+The host maps services to constituents and supplies explicit aggregation, identity, workflow lookup,
+and authorization; the DSL does not infer operation IDs as locators or create another transport.
+Authorization is required in this builder and checked at preflight and dispatch. Budget limits are
+enforced only when the optional budget policy plugin is installed. The same plugin registry reaches
+the Arazzo runner and step executor; a host-created materialized binding must also receive
+`env.plugins` as shown. Unsupported formats and missing workflows fail before running steps.
+The Arazzo engine supports the current sequential runner subset, not every Arazzo feature.
+
 The portable staged SPI is in the orchestration core artifact, analogous to Aviator's `core.plugins` API. Concrete orchestration plugins are separate optional KMP artifacts under `plugins/`, following the existing Aviator plugin-module layout; core has no runtime dependency on them. A plugin definition creates configured instances; installation snapshots filter/stage sets, duplicate identities are rejected, and registry lookup is by stable identity:
 
 ```kotlin

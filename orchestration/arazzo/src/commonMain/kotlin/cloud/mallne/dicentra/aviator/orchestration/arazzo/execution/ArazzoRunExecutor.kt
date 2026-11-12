@@ -63,6 +63,7 @@ class ArazzoRunExecutor(
     private val stepExecutor: ArazzoStepExecutor,
     private val now: () -> Instant = { Clock.System.now() },
     private val plugins: OrchestrationPluginRegistry = OrchestrationPluginRegistry.Empty,
+    private val authorize: suspend (ConstituentIdentity) -> ExecutionFailure? = { null },
 ) {
     suspend fun execute(
         workflow: ArazzoWorkflow,
@@ -80,7 +81,7 @@ class ArazzoRunExecutor(
             location?.selfUri?.let { put("arazzo.document.selfUri", it) }
         }
         val runMetadata = ExecutionMetadata(runId, identity, values = metadata + locationMetadata)
-        val runScope = EnforcedInvocationScope(runMetadata, budget, now = now,
+        val runScope = EnforcedInvocationScope(runMetadata, budget, authorizeCall = authorize, now = now,
             policyPlugins = plugins.invocationPolicyPlugins())
         val pluginState = runScope.pluginState("orchestration")
         val safeEvents = PluginMetadataEventSink(events.redacting(), plugins, runScope, pluginState)

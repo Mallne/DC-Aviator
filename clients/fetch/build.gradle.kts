@@ -27,8 +27,6 @@ kotlin {
         jsTest.dependencies {
             implementation(kotlin("test"))
             implementation(project(":plugins:adapter-json"))
-            implementation(project(":orchestration:core"))
-            implementation(project(":orchestration:arazzo"))
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
         }
     }

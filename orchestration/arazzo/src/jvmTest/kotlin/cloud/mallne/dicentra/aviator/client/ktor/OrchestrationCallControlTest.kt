@@ -7,6 +7,7 @@ import cloud.mallne.dicentra.aviator.orchestration.execution.ResolvedOperation
 import cloud.mallne.dicentra.aviator.orchestration.arazzo.execution.ArazzoBindingStepExecutor
 import cloud.mallne.dicentra.aviator.orchestration.arazzo.execution.ArazzoRunExecutor
 import cloud.mallne.dicentra.aviator.orchestration.arazzo.model.ArazzoStep
+import cloud.mallne.dicentra.aviator.orchestration.arazzo.model.ArazzoCriterion
 import cloud.mallne.dicentra.aviator.orchestration.arazzo.model.ArazzoWorkflow
 import cloud.mallne.dicentra.aviator.orchestration.execution.InvocationCallControl
 import cloud.mallne.dicentra.aviator.orchestration.execution.InvocationRejectedException
@@ -151,7 +152,8 @@ class OrchestrationCallControlTest {
             }
             val runner = ArazzoRunExecutor(ArazzoBindingStepExecutor(binding, listOf(identity), policy()),
                 plugins = testBudgetPluginRegistry())
-            val workflow = ArazzoWorkflow("flow", listOf(ArazzoStep("fetch", operationId = "getForecast")))
+            val workflow = ArazzoWorkflow("flow", listOf(ArazzoStep("fetch", operationId = "getForecast",
+                successCriteria = listOf(ArazzoCriterion("true == true")))))
             val success = runner.execute(workflow, workflowIdentity(), RunId("arazzo-ktor-ok"), budget = ExecutionBudget(maxCalls = 1))
             assertEquals(1, calls)
             assertIs<ExecutionOutcome.Succeeded>(success.outcome)

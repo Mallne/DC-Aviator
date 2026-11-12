@@ -79,8 +79,6 @@ kotlin {
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.ktor.client.mock)
             implementation(project(":plugins:adapter-json"))
-            implementation(project(":orchestration:core"))
-            implementation(project(":orchestration:arazzo"))
         }
         val commonMain = getByName("commonMain") {
             dependencies {

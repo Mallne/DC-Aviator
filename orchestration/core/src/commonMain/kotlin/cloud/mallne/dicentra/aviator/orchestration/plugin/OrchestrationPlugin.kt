@@ -3,6 +3,7 @@ package cloud.mallne.dicentra.aviator.orchestration.plugin
 import cloud.mallne.dicentra.aviator.model.ServiceLocator
 import cloud.mallne.dicentra.aviator.orchestration.execution.InvocationScope
 import cloud.mallne.dicentra.aviator.orchestration.execution.InvocationPolicyPlugin
+import cloud.mallne.dicentra.aviator.orchestration.execution.OrchestrationDsl
 import cloud.mallne.dicentra.aviator.orchestration.model.BodyValue
 import cloud.mallne.dicentra.aviator.orchestration.model.CapabilityInvocation
 import cloud.mallne.dicentra.aviator.orchestration.model.CapabilityResult
@@ -133,6 +134,7 @@ interface OrchestrationPlugin {
     fun install(config: OrchestrationPluginConfig.() -> Unit = {}): OrchestrationPluginInstance
 }
 
+@OrchestrationDsl
 class OrchestrationPluginConfig {
     val serviceFilter: MutableSet<ServiceLocator> = linkedSetOf()
     val stages: MutableSet<OrchestrationStage> = linkedSetOf()
@@ -397,6 +399,7 @@ fun installOrchestrationPlugins(
 ): OrchestrationPluginRegistry =
     OrchestrationPluginRegistry(OrchestrationPluginInstallationScope().apply(block).instances, logger)
 
+@OrchestrationDsl
 class OrchestrationPluginInstallationScope internal constructor() {
     internal val instances = mutableListOf<OrchestrationPluginInstance>()
     fun install(plugin: OrchestrationPluginInstance) { instances += plugin }

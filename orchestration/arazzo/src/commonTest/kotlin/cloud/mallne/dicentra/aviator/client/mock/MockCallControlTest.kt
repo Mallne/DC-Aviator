@@ -9,6 +9,8 @@ import cloud.mallne.dicentra.aviator.orchestration.model.ExecutionMetadata
 import cloud.mallne.dicentra.aviator.orchestration.model.RunId
 import cloud.mallne.dicentra.aviator.orchestration.model.WorkflowIdentity
 import cloud.mallne.dicentra.aviator.orchestration.policy.ExecutionBudget
+import cloud.mallne.dicentra.aviator.orchestration.plugin.installOrchestrationPlugins
+import cloud.mallne.dicentra.aviator.plugin.orchestration.budget.executionBudgetPolicyPlugin
 import io.ktor.openapi.GenericElement
 import io.ktor.openapi.OpenApiDoc
 import io.ktor.openapi.OpenApiInfo
@@ -31,7 +33,8 @@ class MockCallControlTest {
         val identity = ConstituentIdentity(
             ServiceLocator("mock-weather"), "mock-provider", "mock-source", "1", "getWeather", "/weather",
         )
-        val callLimited = EnforcedInvocationScope(metadata("call"), ExecutionBudget(maxCalls = 1))
+        val callLimited = EnforcedInvocationScope(metadata("call"), ExecutionBudget(maxCalls = 1),
+            policyPlugins = installOrchestrationPlugins { install(executionBudgetPolicyPlugin()) }.invocationPolicyPlugins())
         withContext(InvocationCallControl(callLimited, identity)) {
             val first = service.requestContextful()
             assertTrue(first.networkChain.any { it.response != null })
