@@ -24,12 +24,16 @@ internal class ContractScope(
     private val denied: Set<ConstituentIdentity> = emptySet(),
     private val now: () -> Instant = { Instant.fromEpochMilliseconds(0L) },
 ) : InvocationScope {
+    private val states = mutableMapOf<String, cloud.mallne.dicentra.aviator.orchestration.plugin.OrchestrationPluginState>()
     val authorized = mutableListOf<ConstituentIdentity>()
     val admitted = mutableListOf<ConstituentIdentity>()
     private val active = mutableMapOf<ConstituentIdentity, Int>()
     var retries = 0
         private set
     private var transitions = 0
+
+    override suspend fun pluginState(owner: String) =
+        states.getOrPut(owner) { cloud.mallne.dicentra.aviator.orchestration.plugin.OrchestrationPluginState() }
 
     override suspend fun authorize(identity: ConstituentIdentity): ExecutionFailure? {
         authorized += identity

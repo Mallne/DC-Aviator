@@ -4,9 +4,17 @@ import cloud.mallne.dicentra.aviator.core.execution.AviatorSourceResponse
 import cloud.mallne.dicentra.aviator.core.execution.AviatorSourceResponseObserver
 import cloud.mallne.dicentra.aviator.orchestration.model.*
 import cloud.mallne.dicentra.aviator.orchestration.policy.*
+import cloud.mallne.dicentra.aviator.orchestration.plugin.OrchestrationPluginRegistry
+import cloud.mallne.dicentra.aviator.orchestration.plugin.OrchestrationStageContext
+import cloud.mallne.dicentra.aviator.orchestration.plugin.OrchestrationPluginState
+import cloud.mallne.dicentra.aviator.orchestration.plugin.OrchestrationStage
+import cloud.mallne.dicentra.aviator.orchestration.plugin.OrchestrationHookPhase
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonElement
+import kotlin.time.Duration.Companion.milliseconds
 
 /** An application-owned invocation of one already-materialized Aviator operation. */
 class MaterializedConstituent<I>(
@@ -59,6 +67,7 @@ class MaterializedOperationBinding<I>(
     constituents: List<MaterializedConstituent<I>>,
     private val isUsable: (BodyValue) -> Boolean,
     private val aggregate: (List<BodyValue>) -> BodyValue,
+    private val plugins: OrchestrationPluginRegistry = OrchestrationPluginRegistry.Empty,
 ) : OperationBinding<I> {
     private val candidates = constituents.toList()
     private val owner = Any()
@@ -75,6 +84,68 @@ class MaterializedOperationBinding<I>(
     }
 
     override suspend fun invoke(operation: ResolvedOperation, input: I, scope: InvocationScope): CapabilityResult {
+        val state = scope.pluginState("orchestration")
+        var failure: Throwable? = null
+        try {
+            val result = invokeStages(operation, input, scope, state)
+            val mapped = OrchestrationStageContext(OrchestrationStage.MAP_OUTPUT,
+                invocation = (operation as Prepared<*>).invocation, scope = scope, state = state, result = result,
+                input = (result.outcome as? CapabilityOutcome.Succeeded)?.aggregate)
+            plugins.execute(mapped, OrchestrationHookPhase.BEFORE)
+            val mappedResult = applyOutputMapping(result, mapped)
+            val afterMapping = OrchestrationStageContext(OrchestrationStage.MAP_OUTPUT,
+                invocation = (operation as Prepared<*>).invocation, scope = scope, state = state,
+                result = mappedResult, input = (mappedResult.outcome as? CapabilityOutcome.Succeeded)?.aggregate,
+                phase = OrchestrationHookPhase.AFTER)
+            plugins.execute(afterMapping)
+            val completed = applyOutputMapping(mappedResult, afterMapping)
+            val terminal = OrchestrationStageContext(OrchestrationStage.COMPLETE,
+                invocation = preparedInvocation(operation), scope = scope, state = state, result = completed)
+            plugins.execute(terminal)
+            val terminalResult = terminal.rejection?.let { completed.copy(outcome = CapabilityOutcome.Failed(it)) }
+                ?: terminal.result ?: terminal.shortCircuit ?: completed
+            return trustedPluginResult(result, terminalResult)
+        } catch (cause: Throwable) {
+            failure = cause
+            try {
+                val invocation = (operation as? Prepared<*>)?.invocation
+                if (invocation != null) {
+                    val failureHook = suspend {
+                        plugins.execute(OrchestrationStageContext(OrchestrationStage.FAILURE,
+                            invocation = invocation, scope = scope, state = state, payload = cause))
+                    }
+                    if (cause is CancellationException) {
+                        withContext(NonCancellable) { withTimeoutOrNull(CLEANUP_TIMEOUT) { failureHook() } }
+                    } else {
+                        failureHook()
+                    }
+                }
+            } catch (pluginFailure: Throwable) {
+                cause.addSuppressed(pluginFailure)
+            }
+            throw cause
+        } finally {
+            try {
+                val invocation = (operation as? Prepared<*>)?.invocation
+                if (invocation != null) withContext(NonCancellable) {
+                    withTimeoutOrNull(CLEANUP_TIMEOUT) {
+                        plugins.execute(OrchestrationStageContext(OrchestrationStage.CLEANUP,
+                            invocation = invocation, scope = scope, state = state, payload = failure))
+                    }
+                }
+            } catch (cleanupFailure: Throwable) {
+                if (failure == null) throw cleanupFailure
+                failure.addSuppressed(cleanupFailure)
+            }
+        }
+    }
+
+    private suspend fun invokeStages(
+        operation: ResolvedOperation,
+        input: I,
+        scope: InvocationScope,
+        pluginState: OrchestrationPluginState,
+    ): CapabilityResult {
         val prepared = operation as? Prepared<*> ?: error("Invalid resolved operation")
         require(prepared.owner === owner) { "Resolved operation belongs to another binding" }
         @Suppress("UNCHECKED_CAST")
@@ -90,9 +161,53 @@ class MaterializedOperationBinding<I>(
         val results = mutableListOf<ConstituentResult>()
         val usable = mutableListOf<BodyValue>()
         for (constituent in selected) {
+            val inputStage = OrchestrationStageContext(OrchestrationStage.MAP_INPUT, invocation, scope,
+                pluginState, constituent.identity, input = input)
+            plugins.execute(inputStage)
+            if (inputStage.shortCircuit != null) {
+                results += ConstituentResult(constituent.identity, ConstituentOutcome.Failed(
+                    ExecutionFailure("invalid_plugin_short_circuit", "Input mapping cannot short-circuit execution")))
+                continue
+            }
+            inputStage.rejection?.let { rejection ->
+                val denied = scope.authorize(constituent.identity)
+                results += ConstituentResult(constituent.identity,
+                    ConstituentOutcome.Failed(denied ?: rejection))
+                continue
+            }
+            @Suppress("UNCHECKED_CAST")
+            val mappedInput = inputStage.input as I
+            val cachedStage = OrchestrationStageContext(OrchestrationStage.SCHEDULE, invocation, scope,
+                pluginState, constituent.identity, input = mappedInput)
+            plugins.execute(cachedStage)
+            cachedStage.rejection?.let { rejection ->
+                val denied = scope.authorize(constituent.identity)
+                results += ConstituentResult(constituent.identity,
+                    ConstituentOutcome.Failed(denied ?: rejection))
+                continue
+            }
+            val cached = cachedStage.shortCircuit
+            if (cached != null) {
+                val denied = scope.authorize(constituent.identity)
+                val safeCached = if (denied == null) cached else CapabilityResult(invocation.locator,
+                    CapabilityOutcome.Failed(denied), emptyList())
+                val cachedOutcome = safeCached.outcome
+                if (cachedOutcome is CapabilityOutcome.Succeeded && isUsable(cachedOutcome.aggregate)) {
+                    usable += cachedOutcome.aggregate
+                    // A plugin-supplied/cached value is not a constituent response. Keep its
+                    // aggregate value but never invent operation provenance or HTTP metadata.
+                } else if (cachedOutcome is CapabilityOutcome.Failed) {
+                    results += ConstituentResult(constituent.identity,
+                        ConstituentOutcome.Failed(cachedOutcome.failure))
+                }
+                if (invocation.policy.strategy == ExecutionStrategy.FIRST_USABLE && usable.isNotEmpty()) break
+                continue
+            }
             val sourceObserver = SourceObserver()
             val execution = try {
-                withContext(InvocationCallControl(scope, constituent.identity) + sourceObserver) { constituent.invoke(input) }
+                withContext(InvocationCallControl(scope, constituent.identity, invocation, plugins, pluginState) + sourceObserver) {
+                    constituent.invoke(mappedInput)
+                }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (rejected: InvocationRejectedException) {
@@ -102,8 +217,31 @@ class MaterializedOperationBinding<I>(
             }
             val source = sourceObserver.response ?: execution.response
             val outcome = execution.classifiedOutcome(source)
-            results += ConstituentResult(constituent.identity, outcome, source)
-            if (outcome is ConstituentOutcome.Succeeded && isUsable(outcome.value)) usable += outcome.value
+            val initialResult = CapabilityResult(invocation.locator,
+                if (outcome is ConstituentOutcome.Succeeded) CapabilityOutcome.Succeeded(outcome.value)
+                else CapabilityOutcome.Failed((outcome as ConstituentOutcome.Failed).failure),
+                listOf(ConstituentResult(constituent.identity, outcome, source)))
+            val afterAttempt = OrchestrationStageContext(OrchestrationStage.HANDLE_RESULT, invocation, scope,
+                pluginState, constituent.identity, input = mappedInput, result = initialResult)
+            plugins.execute(afterAttempt)
+            val handled = afterAttempt.rejection?.let {
+                initialResult.copy(outcome = CapabilityOutcome.Failed(it))
+            } ?: afterAttempt.result ?: afterAttempt.shortCircuit ?: initialResult
+            val originalConstituent = initialResult.constituents.single()
+            val handledConstituent = when {
+                originalConstituent.outcome is ConstituentOutcome.Failed -> originalConstituent
+                handled.outcome is CapabilityOutcome.Failed -> originalConstituent.copy(
+                    outcome = ConstituentOutcome.Failed(handled.outcome.failure),
+                )
+                handled.outcome is CapabilityOutcome.Succeeded &&
+                    handled.outcome.aggregate != (originalConstituent.outcome as ConstituentOutcome.Succeeded).value ->
+                    originalConstituent.copy(outcome = ConstituentOutcome.Succeeded(
+                        handled.outcome.aggregate, ResultRepresentation.TRANSFORMED,
+                    ))
+                else -> originalConstituent
+            }
+            results += handledConstituent
+            if (handled.outcome is CapabilityOutcome.Succeeded && isUsable(handled.outcome.aggregate)) usable += handled.outcome.aggregate
             if (invocation.policy.strategy == ExecutionStrategy.FIRST_USABLE && usable.isNotEmpty()) break
         }
         val failed = results.any { it.outcome is ConstituentOutcome.Failed }
@@ -112,8 +250,57 @@ class MaterializedOperationBinding<I>(
             return CapabilityResult(invocation.locator,
                 CapabilityOutcome.Failed(ExecutionFailure("constituents_failed", "No acceptable aggregate result")), results.toList())
         }
-        return CapabilityResult(invocation.locator, CapabilityOutcome.Succeeded(aggregate(usable.toList())), results.toList())
+        val aggregate = aggregate(usable.toList())
+        val aggregateStage = OrchestrationStageContext(OrchestrationStage.AGGREGATE, invocation, scope,
+            pluginState, input = aggregate)
+        plugins.execute(aggregateStage)
+        aggregateStage.rejection?.let { rejection ->
+            return CapabilityResult(invocation.locator, CapabilityOutcome.Failed(rejection), results.toList())
+        }
+        if (aggregateStage.shortCircuit != null) {
+            return CapabilityResult(invocation.locator,
+                CapabilityOutcome.Failed(ExecutionFailure("invalid_plugin_short_circuit", "Aggregation cannot short-circuit execution")),
+                results.toList())
+        }
+        if (aggregateStage.input != aggregate && aggregateStage.input !is BodyValue) {
+            return CapabilityResult(invocation.locator,
+                CapabilityOutcome.Failed(ExecutionFailure("invalid_plugin_stage_data", "Aggregation plugin returned an incompatible value")),
+                results.toList())
+        }
+        val transformedAggregate = (aggregateStage.input as? BodyValue) ?: aggregate
+        return CapabilityResult(invocation.locator, CapabilityOutcome.Succeeded(transformedAggregate), results.toList())
     }
+
+    /** Plugins may derive values, but cannot rewrite the execution target or source evidence. */
+    private fun trustedPluginResult(original: CapabilityResult, proposed: CapabilityResult): CapabilityResult {
+        if (original.outcome is CapabilityOutcome.Failed) return original
+        val outcome = when (val changed = proposed.outcome) {
+            is CapabilityOutcome.Failed -> changed
+            is CapabilityOutcome.Succeeded -> CapabilityOutcome.Succeeded(changed.aggregate)
+        }
+        return CapabilityResult(original.locator, outcome, original.constituents)
+    }
+
+    private fun applyOutputMapping(original: CapabilityResult, context: OrchestrationStageContext): CapabilityResult {
+        val originalOutput = (original.outcome as? CapabilityOutcome.Succeeded)?.aggregate
+        val invalidOutput = context.input != originalOutput && context.input !is BodyValue
+        val failure = context.rejection ?: when {
+            invalidOutput -> ExecutionFailure("invalid_plugin_stage_data", "Output mapping plugin returned an incompatible value")
+            context.result == null -> ExecutionFailure("invalid_plugin_stage_data", "Output mapping plugin removed the capability result")
+            context.shortCircuit != null -> ExecutionFailure("invalid_plugin_short_circuit", "Output mapping cannot short-circuit execution")
+            else -> null
+        }
+        if (failure != null) return original.copy(outcome = CapabilityOutcome.Failed(failure))
+        return when {
+            context.result != original -> context.result!!
+            context.input != originalOutput -> original.copy(outcome = CapabilityOutcome.Succeeded(context.input as BodyValue))
+            else -> original
+        }
+    }
+
+    private fun preparedInvocation(operation: ResolvedOperation) = (operation as Prepared<*>).invocation
+
+    private companion object { val CLEANUP_TIMEOUT = 250.milliseconds }
 
     private class Prepared<I>(
         val owner: Any,

@@ -12,6 +12,7 @@ import cloud.mallne.dicentra.aviator.orchestration.execution.InvocationCallContr
 import cloud.mallne.dicentra.aviator.orchestration.execution.InvocationRejectedException
 import cloud.mallne.dicentra.aviator.orchestration.model.ConstituentIdentity
 import cloud.mallne.dicentra.aviator.orchestration.model.ExecutionMetadata
+import cloud.mallne.dicentra.aviator.orchestration.model.ExecutionFailure
 import cloud.mallne.dicentra.aviator.orchestration.model.CapabilityInvocation
 import cloud.mallne.dicentra.aviator.orchestration.model.CapabilityResult
 import cloud.mallne.dicentra.aviator.orchestration.model.CapabilityOutcome
@@ -28,6 +29,10 @@ import cloud.mallne.dicentra.aviator.orchestration.policy.ExecutionStrategy
 import cloud.mallne.dicentra.aviator.orchestration.policy.PartialFailurePolicy
 import cloud.mallne.dicentra.aviator.orchestration.policy.ExecutionBudget
 import cloud.mallne.dicentra.aviator.plugin.adapter.json.JsonAdapter
+import cloud.mallne.dicentra.aviator.orchestration.execution.InvocationPolicy
+import cloud.mallne.dicentra.aviator.orchestration.execution.InvocationPolicyPlugin
+import cloud.mallne.dicentra.aviator.orchestration.plugin.OrchestrationPluginRegistry
+import cloud.mallne.dicentra.aviator.orchestration.plugin.orchestrationPlugin
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -96,7 +101,7 @@ class OrchestrationCallControlTest {
             val runner = ArazzoRunExecutor(ArazzoBindingStepExecutor(binding, listOf(identity), policy()))
             val workflow = ArazzoWorkflow("flow", listOf(ArazzoStep("fetch", operationId = "getForecast")))
             val job = launch(start = CoroutineStart.UNDISPATCHED) {
-                runner.execute(workflow, workflowIdentity(), RunId("arazzo-ktor-cancel"), budget = ExecutionBudget(maxConcurrency = 1))
+                runner.execute(workflow, workflowIdentity(), RunId("arazzo-ktor-cancel"))
             }
             started.await()
             job.cancelAndJoin()
@@ -144,7 +149,8 @@ class OrchestrationCallControlTest {
                         listOf(ConstituentResult(selected, ConstituentOutcome.Succeeded(BodyValue.JsonValue(value)))))
                 }
             }
-            val runner = ArazzoRunExecutor(ArazzoBindingStepExecutor(binding, listOf(identity), policy()))
+            val runner = ArazzoRunExecutor(ArazzoBindingStepExecutor(binding, listOf(identity), policy()),
+                plugins = testBudgetPluginRegistry())
             val workflow = ArazzoWorkflow("flow", listOf(ArazzoStep("fetch", operationId = "getForecast")))
             val success = runner.execute(workflow, workflowIdentity(), RunId("arazzo-ktor-ok"), budget = ExecutionBudget(maxCalls = 1))
             assertEquals(1, calls)
@@ -183,6 +189,7 @@ class OrchestrationCallControlTest {
             val scope = EnforcedInvocationScope(
                 ExecutionMetadata(RunId("run"), WorkflowIdentity("test", "1", "doc", "1")),
                 ExecutionBudget(maxCalls = 1),
+                policyPlugins = testBudgetPolicyPlugins(),
             )
             val identity = ConstituentIdentity(ServiceLocator("weather-provider"), "provider", "source", "1")
             withContext(InvocationCallControl(scope, identity)) {
@@ -257,6 +264,7 @@ class OrchestrationCallControlTest {
             val scope = EnforcedInvocationScope(
                 ExecutionMetadata(RunId("retry"), WorkflowIdentity("test", "1", "doc", "1")),
                 ExecutionBudget(maxRetries = 0),
+                policyPlugins = testBudgetPolicyPlugins(),
             )
             val identity = ConstituentIdentity(ServiceLocator("weather-provider"), "provider", "source", "1")
             val failure = withContext(InvocationCallControl(scope, identity)) {
@@ -304,6 +312,37 @@ class OrchestrationCallControlTest {
         ExecutionStrategy.AGGREGATE, ConstituentOrdering.RESOLUTION,
         PartialFailurePolicy.REQUIRE_ALL, EmptySelectionPolicy.FAIL,
     )
+
+    /** Test double for Ktor's policy-integration boundary; budget plugin behavior is tested separately. */
+    private fun testBudgetPluginRegistry() = OrchestrationPluginRegistry(listOf(orchestrationPlugin("test-call-budget") {
+        invocationPolicy = testBudgetPolicyPlugins().single()
+    }))
+
+    private fun testBudgetPolicyPlugins() = listOf(InvocationPolicyPlugin { _, budget, _ ->
+        object : InvocationPolicy {
+            private var calls = 0
+            private var retries = 0
+
+            override suspend fun acquireCall(
+                metadata: ExecutionMetadata,
+                identity: ConstituentIdentity,
+                retry: Boolean,
+            ): ExecutionFailure? {
+                if (budget.maxCalls?.let { calls >= it } == true) return ExecutionFailure("calls", "test call limit")
+                if (retry && budget.maxRetries?.let { retries >= it } == true) return ExecutionFailure("retries", "test retry limit")
+                calls++
+                if (retry) retries++
+                return null
+            }
+
+            override suspend fun releaseCall(identity: ConstituentIdentity) = Unit
+            override suspend fun checkpoint(
+                metadata: ExecutionMetadata,
+                transitions: Int,
+                nestingDepth: Int,
+            ): ExecutionFailure? = null
+        }
+    })
 
     private fun workflowIdentity() = WorkflowIdentity("arazzo", "1.1.0", "workflow:test", "revision-1")
 }

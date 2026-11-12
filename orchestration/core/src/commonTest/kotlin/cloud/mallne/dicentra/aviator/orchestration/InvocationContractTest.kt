@@ -213,101 +213,16 @@ class InvocationContractTest {
     }
 
     @Test
-    fun productionScopeAtomicallyEnforcesSharedBudgetsAndReleasesReservations() = runImmediate {
-        val runScope = EnforcedInvocationScope(
-            scope().metadata,
-            ExecutionBudget(maxCalls = 3, maxConcurrency = 1, maxTransitions = 1, maxRetries = 0),
-            now = { Instant.fromEpochMilliseconds(1L) },
-        )
-        assertNull(runScope.acquireCall(a))
-        assertEquals("concurrency", runScope.acquireCall(b)?.code)
-        runScope.releaseCall(a)
-        assertNull(runScope.acquireCall(b))
-        runScope.releaseCall(b)
-        assertEquals("retries", runScope.acquireCall(a, retry = true)?.code)
-        assertNull(runScope.acquireCall(a))
-        runScope.releaseCall(a)
-        assertEquals("calls", runScope.acquireCall(a)?.code)
-        assertNull(runScope.checkpoint(transitions = 1))
-        assertEquals("transitions", runScope.checkpoint(transitions = 1)?.code)
-    }
-
-    @Test
-    fun productionScopeHonorsDeadlineAndMetadataRedaction() = runImmediate {
+    fun metadataRedactionProtectsEventAndRunMetadata() = runImmediate {
         val metadata = scope().metadata.copy(values = mapOf(
             "trace.id" to "trace-1", "Authorization" to "Bearer secret", "db.password" to "pw", "custom" to "ok",
         ))
         assertEquals(mapOf("trace.id" to "trace-1", "Authorization" to "[REDACTED]", "db.password" to "[REDACTED]", "custom" to "ok"), metadata.redacted().values)
-        val expired = EnforcedInvocationScope(metadata, ExecutionBudget(deadline = Instant.fromEpochMilliseconds(10)), now = { Instant.fromEpochMilliseconds(10L) })
-        assertEquals("deadline", expired.checkpoint()?.code)
-        assertEquals("deadline", expired.acquireCall(a)?.code)
-
         var observed: ExecutionEvent? = null
         val safeSink = ExecutionEventSink { observed = it }.redacting()
         safeSink.emit(ExecutionEvent(metadata, ExecutionEventKind.RUN_STARTED))
         assertEquals("[REDACTED]", checkNotNull(observed).metadata.values.getValue("Authorization"))
         assertEquals("trace-1", checkNotNull(observed).metadata.values.getValue("trace.id"))
-    }
-
-    @Test
-    fun productionScopeReleasesConcurrencyReservationAfterCallerCancellation() {
-        val runScope = EnforcedInvocationScope(scope().metadata, ExecutionBudget(maxConcurrency = 1))
-        val job = Job()
-        var completion: Result<Unit>? = null
-        val block: suspend () -> Unit = {
-            assertNull(runScope.acquireCall(a))
-            job.cancel()
-            runScope.releaseCall(a)
-        }
-        block.startCoroutine(object : Continuation<Unit> {
-            override val context = job
-            override fun resumeWith(result: Result<Unit>) { completion = result }
-        })
-        assertNull(checkNotNull(completion).exceptionOrNull())
-        runImmediate {
-            assertNull(runScope.acquireCall(b))
-            runScope.releaseCall(b)
-        }
-    }
-
-    @Test
-    fun stepScopedViewsEnforceLocalAndRunWideLimitsTogether() = runImmediate {
-        val run = EnforcedInvocationScope(
-            scope().metadata,
-            ExecutionBudget(maxCalls = 3, maxCallsPerStep = 1),
-        )
-        val first = run.forStep("step-1")
-        assertNull(first.acquireCall(a))
-        first.releaseCall(a)
-        assertEquals("step_calls", first.acquireCall(a)?.code)
-        val second = run.forStep("step-2")
-        assertNull(second.acquireCall(b))
-        second.releaseCall(b)
-        val third = run.forStep("step-3")
-        assertNull(third.acquireCall(a))
-        third.releaseCall(a)
-        assertEquals("calls", run.forStep("step-4").acquireCall(b)?.code)
-
-        val retryScope = EnforcedInvocationScope(scope().metadata, ExecutionBudget(maxCallsPerStep = 2, maxRetriesPerStep = 0)).forStep("retry-step")
-        assertEquals("step_retries", retryScope.acquireCall(a, retry = true)?.code)
-    }
-
-    @Test
-    fun concurrentInvocationsShareOneAtomicConcurrencyReservation() = runTest {
-        val runScope = EnforcedInvocationScope(scope().metadata, ExecutionBudget(maxConcurrency = 1))
-        val releaseFirst = CompletableDeferred<Unit>()
-        val first = async(start = CoroutineStart.UNDISPATCHED) {
-            assertNull(runScope.acquireCall(a))
-            releaseFirst.await()
-            runScope.releaseCall(a)
-        }
-
-        val rejected = async { runScope.acquireCall(b) }.await()
-        assertEquals("concurrency", rejected?.code)
-        releaseFirst.complete(Unit)
-        first.await()
-        assertNull(runScope.acquireCall(b))
-        runScope.releaseCall(b)
     }
 
     private fun identity(provider: String, operation: String, target: ServiceLocator = locator) =

@@ -193,6 +193,50 @@ class SourceResponseObserverTest {
     }
 
     @Test
+    fun orchestrationComposesWithInstalledAviatorPlugin() = runTest {
+        val sourceBody = "{\"source\":true}"
+        val client = HttpClient(MockEngine {
+            respond(ByteReadChannel(sourceBody), HttpStatusCode.OK, headersOf(
+                HttpHeaders.ContentType to listOf("application/json"),
+                "X-Provider" to listOf("real-source"),
+            ))
+        })
+        try {
+            val baseService = KtorAviatorServiceConverter(httpClient = client, serializers = listOf(kotlinx.serialization.json.Json))
+                .build(spec()) { install(JsonAdapter) }.single()
+            val service = baseService.copy(plugins = baseService.plugins + ResponseTransformPlugin())
+            val identity = ConstituentIdentity(service.serviceLocator, "provider", "source", "revision", "getSource")
+            val binding = MaterializedOperationBinding(
+                listOf(MaterializedConstituent<Unit>(identity) {
+                    val context = service.requestContextful<JsonElement, JsonElement>()
+                    ConstituentExecution.decodedJson(context.result, ResultRepresentation.TRANSFORMED)
+                }),
+                isUsable = { it is BodyValue.JsonValue }, aggregate = { it.single() },
+            )
+            val policy = CapabilityPolicy(ExecutionStrategy.AGGREGATE, ConstituentOrdering.RESOLUTION,
+                PartialFailurePolicy.REQUIRE_ALL, EmptySelectionPolicy.FAIL)
+            val scope = EnforcedInvocationScope(
+                ExecutionMetadata(RunId("real-plugin-composition"), WorkflowIdentity("test", "1", "source", "revision")),
+                ExecutionBudget(),
+            )
+
+            val result = binding.invoke(binding.resolve(CapabilityInvocation(identity.locator, policy)), Unit, scope)
+
+            assertEquals(BodyValue.JsonValue(JsonPrimitive("operation-plugin-result")),
+                assertIs<CapabilityOutcome.Succeeded>(result.outcome).aggregate)
+            val constituent = result.constituents.single()
+            assertEquals(identity, constituent.identity)
+            assertEquals(ResultRepresentation.TRANSFORMED,
+                assertIs<ConstituentOutcome.Succeeded>(constituent.outcome).representation)
+            assertEquals(BodyValue.BytesValue(sourceBody.encodeToByteArray().toList()), constituent.response?.body)
+            assertEquals(200, constituent.response?.http?.status)
+            assertEquals(listOf("real-source"), constituent.response?.http?.headers?.get("X-Provider"))
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
     fun observerCopiesSourceBeforeResponsePluginTransformsResultAndBody() = runTest {
         val client = HttpClient(MockEngine {
             respond(ByteReadChannel("{\"source\":true}"), HttpStatusCode.OK, headersOf(
@@ -234,6 +278,18 @@ class SourceResponseObserverTest {
             }
             override suspend fun afterPaintingResponse(context: AviatorExecutionContext<@Serializable Any, @Serializable Any>) {
                 context.result = JsonPrimitive("transformed")
+            }
+        }
+    }
+
+    private class ResponseTransformPlugin : AviatorPluginInstance {
+        override val identity = "test:response-transform"
+        override val configurationBundle = object : AviatorPluginConfigScope {
+            override var serviceFilter = mutableListOf<ServiceLocator>()
+        }
+        override val x = object : PluginStagedExecutor<AviatorExecutionContext<@Serializable Any, @Serializable Any>, @Serializable Any, @Serializable Any> {
+            override suspend fun afterPaintingResponse(context: AviatorExecutionContext<@Serializable Any, @Serializable Any>) {
+                context.result = JsonPrimitive("operation-plugin-result")
             }
         }
     }

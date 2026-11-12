@@ -8,6 +8,9 @@ import cloud.mallne.dicentra.aviator.orchestration.arazzo.model.ArazzoStep
 import cloud.mallne.dicentra.aviator.orchestration.arazzo.model.ArazzoWorkflow
 import cloud.mallne.dicentra.aviator.orchestration.model.*
 import cloud.mallne.dicentra.aviator.orchestration.policy.ExecutionBudget
+import cloud.mallne.dicentra.aviator.orchestration.execution.InvocationPolicy
+import cloud.mallne.dicentra.aviator.orchestration.execution.InvocationPolicyPlugin
+import cloud.mallne.dicentra.aviator.orchestration.plugin.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
@@ -26,6 +29,209 @@ class ArazzoRunExecutorTest {
     private val constituent = ConstituentIdentity(ServiceLocator("weather>get"), "provider", "source", "rev")
 
     @Test
+    fun runStartedSinkFailureStillNotifiesFailureAndCleansUpPartialRun() = runTest {
+        val lifecycle = mutableListOf<OrchestrationStage>()
+        var deliveredEvents = 0
+        var dispatched = 0
+        val plugins = installOrchestrationPlugins {
+            install("partial-run-cleanup") {
+                stages += OrchestrationStage.FAILURE
+                stages += OrchestrationStage.CLEANUP
+                lifecycleScopes += OrchestrationLifecycleScope.RUN
+                executor = OrchestrationPluginExecutor { context -> lifecycle += context.stage }
+            }
+        }
+        val executor = ArazzoRunExecutor(
+            ArazzoStepExecutor { _, _, _ -> dispatched++; succeeded() }, plugins = plugins,
+        )
+
+        val failure = kotlin.test.assertFailsWith<IllegalStateException> {
+            executor.execute(
+                workflow.copy(steps = workflow.steps.take(1)), workflowIdentity, RunId("partial-run"),
+                events = ExecutionEventSink {
+                    deliveredEvents++
+                    error("sink failed before run preparation")
+                },
+            )
+        }
+
+        assertEquals("sink failed before run preparation", failure.message)
+        assertEquals(1, deliveredEvents)
+        assertEquals(0, dispatched)
+        assertEquals(listOf(OrchestrationStage.FAILURE, OrchestrationStage.CLEANUP), lifecycle)
+    }
+
+    @Test
+    fun runCleanupOccursOnceOnSuccessAndPluginRejection() = runTest {
+        for (rejectPreparation in listOf(false, true)) {
+            val observed = mutableListOf<OrchestrationStage>()
+            val plugins = installOrchestrationPlugins {
+                install("terminal-hooks") {
+                    stages += OrchestrationStage.PREPARE
+                    stages += OrchestrationStage.FAILURE
+                    stages += OrchestrationStage.CLEANUP
+                    lifecycleScopes += OrchestrationLifecycleScope.RUN
+                    executor = OrchestrationPluginExecutor { context ->
+                        observed += context.stage
+                        if (rejectPreparation && context.stage == OrchestrationStage.PREPARE) {
+                            context.reject(ExecutionFailure("preparation_rejected", "Rejected"))
+                        }
+                    }
+                }
+            }
+            val executor = ArazzoRunExecutor(ArazzoStepExecutor { _, _, _ -> succeeded() }, plugins = plugins)
+
+            val result = executor.execute(workflow.copy(steps = emptyList()), workflowIdentity,
+                RunId("terminal-$rejectPreparation"))
+
+            if (rejectPreparation) {
+                assertIs<ExecutionOutcome.Failed>(result.outcome)
+                assertEquals(listOf(OrchestrationStage.PREPARE, OrchestrationStage.FAILURE,
+                    OrchestrationStage.CLEANUP), observed)
+            } else {
+                assertIs<ExecutionOutcome.Succeeded>(result.outcome)
+                assertEquals(listOf(OrchestrationStage.PREPARE, OrchestrationStage.CLEANUP), observed)
+            }
+        }
+    }
+
+    @Test
+    fun runAdapterDispatchesPairedInputPhasesAroundTransformation() = runTest {
+        val observedPhases = mutableListOf<OrchestrationHookPhase>()
+        var received: String? = null
+        val plugins = installOrchestrationPlugins {
+            install("paired-input") {
+                stages += OrchestrationStage.MAP_INPUT
+                this.phases += OrchestrationHookPhase.BEFORE
+                this.phases += OrchestrationHookPhase.AFTER
+                executor = OrchestrationPluginExecutor { context ->
+                    observedPhases.add(context.phase)
+                    if (context.phase == OrchestrationHookPhase.BEFORE) context.input = "before-mapped"
+                    else {
+                        check(context.input == "before-mapped")
+                        context.input = "after-mapped"
+                    }
+                }
+            }
+        }
+        val executor = ArazzoRunExecutor(
+            ArazzoStepExecutor { _, inputs, _ -> received = inputs; succeeded() }, plugins = plugins,
+        )
+
+        executor.execute(workflow.copy(steps = workflow.steps.take(1)), workflowIdentity, RunId("paired-input"))
+
+        assertEquals(listOf(OrchestrationHookPhase.BEFORE, OrchestrationHookPhase.AFTER), observedPhases)
+        assertEquals("after-mapped", received)
+    }
+
+    @Test
+    fun stagedPluginTransformsInputsAcrossRunScopedStateAndCanRejectScheduling() = runTest {
+        val receivedInputs = mutableListOf<String>()
+        val plugins = installOrchestrationPlugins {
+            install("run-plugin") {
+                executor = OrchestrationPluginExecutor { context ->
+                    if (context.stage == OrchestrationStage.PREPARE) context.state.put("prepared", true)
+                    if (context.stage == OrchestrationStage.MAP_INPUT) {
+                        check(context.state.get("prepared") == true)
+                        context.input = "{\"mapped\":true}"
+                    }
+                    if (context.stage == OrchestrationStage.SCHEDULE && (context.payload as ArazzoStep).stepId == "second") {
+                        context.reject(ExecutionFailure("plugin_rejected", "Step rejected"))
+                    }
+                }
+            }
+        }
+        val executor = ArazzoRunExecutor(
+            ArazzoStepExecutor { _, inputs, _ -> receivedInputs += inputs; succeeded() },
+            plugins = plugins,
+        )
+
+        val result = executor.execute(workflow, workflowIdentity, RunId("plugin-run"), inputs = "{}")
+
+        assertEquals(listOf("{\"mapped\":true}"), receivedInputs)
+        assertEquals("plugin_rejected", assertIs<ExecutionOutcome.Failed>(result.outcome).failure.code)
+        assertEquals(listOf("first"), assertIs<ExecutionOutcome.Failed>(result.outcome).completedSteps)
+    }
+
+    @Test
+    fun preparationValidationSchedulingAndInputMappingCanRejectBeforeStepDispatch() = runTest {
+        for (stage in listOf(OrchestrationStage.PREPARE, OrchestrationStage.VALIDATE,
+            OrchestrationStage.SCHEDULE, OrchestrationStage.MAP_INPUT)) {
+            var dispatched = 0
+            val plugins = installOrchestrationPlugins {
+                install("reject-$stage") {
+                    stages += stage
+                    executor = OrchestrationPluginExecutor { it.reject(ExecutionFailure("rejected_$stage", "$stage rejected")) }
+                }
+            }
+            val executor = ArazzoRunExecutor(
+                ArazzoStepExecutor { _, _, _ -> dispatched++; succeeded() }, plugins = plugins,
+            )
+
+            val result = executor.execute(workflow.copy(steps = workflow.steps.take(1)), workflowIdentity,
+                RunId("reject-$stage"))
+
+            assertEquals(0, dispatched, "$stage rejection must happen before dispatch")
+            assertEquals("rejected_$stage", assertIs<ExecutionOutcome.Failed>(result.outcome).failure.code)
+        }
+    }
+
+    @Test
+    fun thrownAdapterStageFailuresRunFailureAndCleanupWithoutDispatch() = runTest {
+        for (stage in listOf(OrchestrationStage.PREPARE, OrchestrationStage.VALIDATE,
+            OrchestrationStage.SCHEDULE, OrchestrationStage.MAP_INPUT)) {
+            var dispatched = 0
+            val unwound = mutableListOf<OrchestrationStage>()
+            val plugins = installOrchestrationPlugins {
+                install("throw-at-$stage") {
+                    stages += stage
+                    executor = OrchestrationPluginExecutor { error("sensitive detail at $stage") }
+                }
+                install("unwind-$stage") {
+                    stages += OrchestrationStage.FAILURE
+                    stages += OrchestrationStage.CLEANUP
+                    executor = OrchestrationPluginExecutor { context ->
+                        unwound += context.stage
+                        if (context.stage == OrchestrationStage.FAILURE) {
+                            check((context.payload as ExecutionFailure).message == "Orchestration execution failed")
+                        }
+                    }
+                }
+            }
+            val executor = ArazzoRunExecutor(
+                ArazzoStepExecutor { _, _, _ -> dispatched++; succeeded() }, plugins = plugins,
+            )
+
+            val thrown = kotlin.test.assertFailsWith<IllegalStateException> {
+                executor.execute(workflow.copy(steps = workflow.steps.take(1)), workflowIdentity, RunId("throw-$stage"))
+            }
+
+            assertEquals("sensitive detail at $stage", thrown.message)
+            assertEquals(0, dispatched, "$stage failure must happen before step dispatch")
+            assertEquals(listOf(OrchestrationStage.FAILURE, OrchestrationStage.CLEANUP), unwound)
+        }
+    }
+
+    @Test
+    fun pluginMetadataIsNamespacedRedactedAndMergedIntoEvents() = runTest {
+        val plugins = installOrchestrationPlugins {
+            install("audit") {
+                metadataProvider = OrchestrationMetadataProvider {
+                    mapOf("trace" to "plugin", "clientSecret" to "do-not-leak")
+                }
+            }
+        }
+        val sink = RecordingSink()
+        val executor = ArazzoRunExecutor(ArazzoStepExecutor { _, _, _ -> succeeded() }, plugins = plugins)
+
+        executor.execute(workflow.copy(steps = emptyList()), workflowIdentity, RunId("metadata"),
+            metadata = mapOf("audit.trace" to "caller"), events = sink)
+
+        assertEquals("plugin", sink.events.first().metadata.values["audit.trace"])
+        assertEquals("[REDACTED]", sink.events.first().metadata.values["audit.clientSecret"])
+    }
+
+    @Test
     fun sharedRunBudgetStopsSchedulingAndEmitsOrderedTerminalEvents() = runTest {
         val calls = mutableListOf<String>()
         val sink = RecordingSink()
@@ -37,7 +243,7 @@ class ArazzoRunExecutorTest {
             } finally {
                 scope.releaseCall(constituent)
             }
-        })
+        }, plugins = budgetPolicyRegistry())
 
         val result = executor.execute(
             workflow, workflowIdentity, RunId("run-budget"),
@@ -70,6 +276,14 @@ class ArazzoRunExecutorTest {
     @Test
     fun cancellationStopsLaterStepsAndEmitsCancelledTerminalEvent() = runTest {
         val calls = mutableListOf<String>()
+        val pluginStages = mutableListOf<OrchestrationStage>()
+        val plugins = installOrchestrationPlugins {
+            install("terminal-observer") {
+                stages += OrchestrationStage.FAILURE
+                stages += OrchestrationStage.CLEANUP
+                executor = OrchestrationPluginExecutor { pluginStages += it.stage }
+            }
+        }
         val sink = RecordingSink(blockOnCancelledTerminal = true)
         val executor = ArazzoRunExecutor(ArazzoStepExecutor { step, _, scope ->
             scope.acquireCall(constituent)?.let { return@ArazzoStepExecutor failed(it) }
@@ -79,7 +293,7 @@ class ArazzoRunExecutorTest {
             } finally {
                 scope.releaseCall(constituent)
             }
-        })
+        }, plugins = plugins)
 
         val run = launch(start = CoroutineStart.UNDISPATCHED) { executor.execute(workflow, workflowIdentity, RunId("run-cancel"), events = sink) }
         run.cancelAndJoin()
@@ -88,6 +302,7 @@ class ArazzoRunExecutorTest {
         assertEquals(ExecutionEventOutcome.CANCELLED, sink.events.last().terminal)
         assertEquals(ExecutionEventKind.RUN_FINISHED, sink.events.last().kind)
         assertEquals(1, sink.events.count { it.kind == ExecutionEventKind.STEP_STARTED })
+        assertEquals(listOf(OrchestrationStage.FAILURE, OrchestrationStage.CLEANUP), pluginStages)
     }
 
     @Test
@@ -165,6 +380,7 @@ class ArazzoRunExecutorTest {
                 succeeded()
             },
             now = { Instant.fromEpochMilliseconds(42L) },
+            plugins = budgetPolicyRegistry(),
         )
 
         val result = executor.execute(
@@ -175,6 +391,23 @@ class ArazzoRunExecutorTest {
         assertEquals(0, calls)
         assertEquals("deadline", assertIs<ExecutionOutcome.Failed>(result.outcome).failure.code)
         assertEquals(listOf(ExecutionEventKind.RUN_STARTED, ExecutionEventKind.RUN_FINISHED), sink.events.map { it.kind })
+    }
+
+    @Test
+    fun budgetValuesDoNotEnableDeadlinePolicyWithoutInstallingItsPlugin() = runTest {
+        var calls = 0
+        val executor = ArazzoRunExecutor(
+            ArazzoStepExecutor { _, _, _ -> calls++; succeeded() },
+            now = { Instant.fromEpochMilliseconds(42L) },
+        )
+
+        val result = executor.execute(
+            workflow.copy(steps = workflow.steps.take(1)), workflowIdentity, RunId("no-budget-plugin"),
+            budget = ExecutionBudget(deadline = Instant.fromEpochMilliseconds(42L)),
+        )
+
+        assertEquals(1, calls)
+        assertIs<ExecutionOutcome.Succeeded>(result.outcome)
     }
 
     @Test
@@ -194,6 +427,7 @@ class ArazzoRunExecutorTest {
                 }
             },
             now = { Instant.fromEpochMilliseconds(42L) },
+            plugins = budgetPolicyRegistry(),
         )
 
         val result = executor.execute(
@@ -254,6 +488,42 @@ class ArazzoRunExecutorTest {
     private fun failed(failure: ExecutionFailure) = ArazzoStepExecution.Completed(
         CapabilityResult(constituent.locator, CapabilityOutcome.Failed(failure), emptyList()),
     )
+
+    /** Narrow test policy for Arazzo's policy integration; the optional budget artifact is tested separately. */
+    private fun budgetPolicyRegistry() = OrchestrationPluginRegistry(listOf(orchestrationPlugin("test-budget-policy") {
+        invocationPolicy = InvocationPolicyPlugin { _, budget, now ->
+            object : InvocationPolicy {
+                override val enforcedDeadline get() = budget.deadline
+                private var calls = 0
+
+                private fun deadlineFailure() = if (budget.deadline?.let { now() >= it } == true) {
+                    ExecutionFailure("deadline", "Execution budget exhausted: deadline")
+                } else null
+
+                override suspend fun authorize(identity: ConstituentIdentity): ExecutionFailure? = deadlineFailure()
+
+                override suspend fun acquireCall(
+                    metadata: ExecutionMetadata,
+                    identity: ConstituentIdentity,
+                    retry: Boolean,
+                ): ExecutionFailure? {
+                    deadlineFailure()?.let { return it }
+                    if (budget.maxCalls?.let { calls >= it } == true) {
+                        return ExecutionFailure("calls", "Execution budget exhausted: calls")
+                    }
+                    calls++
+                    return null
+                }
+
+                override suspend fun releaseCall(identity: ConstituentIdentity) = Unit
+                override suspend fun checkpoint(
+                    metadata: ExecutionMetadata,
+                    transitions: Int,
+                    nestingDepth: Int,
+                ): ExecutionFailure? = deadlineFailure()
+            }
+        }
+    }))
 
     private class RecordingSink(
         private val blockOnCancelledTerminal: Boolean = false,
