@@ -69,7 +69,7 @@ class ReadmeEngineExampleTest {
                 else "Unexpected weather destination"
             },
             plugins = aviatorPluginRegistry {
-                clientPlugin(JsonAdapter.install(), activation = PluginActivation.PASSIVE)
+                clientPlugin(JsonAdapter.install {}, activation = PluginActivation.PASSIVE)
             },
         )
     }

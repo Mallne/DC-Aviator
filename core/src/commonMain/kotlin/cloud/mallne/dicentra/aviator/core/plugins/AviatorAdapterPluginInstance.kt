@@ -4,7 +4,7 @@ import cloud.mallne.dicentra.aviator.core.io.NetworkBody
 import cloud.mallne.dicentra.aviator.core.io.adapter.request.RequestBodyAdapter
 import cloud.mallne.dicentra.aviator.core.io.adapter.response.ResponseBodyAdapter
 
-interface AviatorAdapterPluginInstance : AviatorPluginInstance {
+interface AviatorAdapterPluginInstance {
     val adapters: List<RequestBodyAdapter<out NetworkBody>>
     val deserializers: List<ResponseBodyAdapter>
 }

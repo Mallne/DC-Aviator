@@ -7,7 +7,7 @@ import kotlinx.serialization.json.JsonElement
 /** Install-time plugin definition; installation bakes configuration into an immutable instance. */
 interface DelegationAviatorPlugin<ConfigScope : AviatorPluginConfigScope> {
     val identity: String
-    fun install(config: ConfigScope.() -> Unit = {}): DelegationAviatorPluginInstance
+    fun install(config: ConfigScope.() -> Unit): DelegationAviatorPluginInstance
 }
 
 /** Middleware that can change how one selected definition is delegated to its template. */

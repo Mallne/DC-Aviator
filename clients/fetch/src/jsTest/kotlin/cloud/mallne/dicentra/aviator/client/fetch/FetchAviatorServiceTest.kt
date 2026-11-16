@@ -43,7 +43,7 @@ class FetchAviatorServiceTest {
     @Test
     fun adapterPluginsCannotBeDefinitionActivated() {
         assertFailsWith<IllegalArgumentException> {
-            ClientPluginRegistration(JsonAdapter.install(), PluginActivation.DEFINITION)
+            ClientPluginRegistration(JsonAdapter.install {}, PluginActivation.DEFINITION)
         }
     }
 
@@ -146,7 +146,7 @@ class FetchAviatorServiceTest {
             EngineDefinitionAuthorization { EngineAuthorizationDecision.Allowed },
             OutboundTargetPolicy { _, _, _ -> null },
             DefaultAviatorPluginRegistry(
-                clients = listOf(ClientPluginRegistration(JsonAdapter.install(), PluginActivation.PASSIVE)),
+                clients = listOf(ClientPluginRegistration(JsonAdapter.install {}, PluginActivation.PASSIVE)),
             ),
         )
 
@@ -180,7 +180,7 @@ class FetchAviatorServiceTest {
             EngineDefinitionAuthorization { EngineAuthorizationDecision.Allowed },
             OutboundTargetPolicy { _, _, _ -> null },
             DefaultAviatorPluginRegistry(
-                clients = listOf(ClientPluginRegistration(JsonAdapter.install(), PluginActivation.PASSIVE)),
+                clients = listOf(ClientPluginRegistration(JsonAdapter.install {}, PluginActivation.PASSIVE)),
             ),
         )
 
@@ -211,8 +211,8 @@ class FetchAviatorServiceTest {
         val locator = ServiceLocator("shared")
         val engine = AviatorEngine(
             InMemoryDefinitionCoordinator(services),
-            EngineDefinitionAuthorization { EngineAuthorizationDecision.Allowed },
-            OutboundTargetPolicy { _, _, _ -> null },
+            { EngineAuthorizationDecision.Allowed },
+            { _, _, _ -> null },
         )
 
         val results = engine.invoke(

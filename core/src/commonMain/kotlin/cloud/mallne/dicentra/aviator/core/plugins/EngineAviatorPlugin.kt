@@ -6,7 +6,7 @@ import cloud.mallne.dicentra.aviator.model.ServiceLocator
 /** Install-time plugin definition; installation bakes configuration into an immutable instance. */
 interface EngineAviatorPlugin<ConfigScope : AviatorPluginConfigScope> {
     val identity: String
-    fun install(config: ConfigScope.() -> Unit = {}): EngineAviatorPluginInstance
+    fun install(config: ConfigScope.() -> Unit): EngineAviatorPluginInstance
 }
 
 /** Narrows coordinator matches without adding or replacing definitions. */

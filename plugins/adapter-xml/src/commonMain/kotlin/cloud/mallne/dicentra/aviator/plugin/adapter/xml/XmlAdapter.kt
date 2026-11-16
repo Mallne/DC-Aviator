@@ -3,8 +3,8 @@
 package cloud.mallne.dicentra.aviator.plugin.adapter.xml
 
 import cloud.mallne.dicentra.aviator.core.AviatorServiceDataHolder
-import cloud.mallne.dicentra.aviator.core.plugins.AviatorPlugin
-import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginInstance
+import cloud.mallne.dicentra.aviator.core.plugins.UniformAviatorPlugin
+import cloud.mallne.dicentra.aviator.core.plugins.UniformAviatorPluginInstance
 import kotlinx.serialization.*
 import nl.adaptivity.xmlutil.dom2.*
 import nl.adaptivity.xmlutil.serialization.XML
@@ -12,9 +12,10 @@ import kotlin.js.ExperimentalJsExport
 import kotlin.js.JsExport
 
 @JsExport
-object XmlAdapter : AviatorPlugin<XmlAdapterPluginConfig> {
+object XmlAdapter :
+    UniformAviatorPlugin<XmlAdapterPluginConfig> {
     override val identity: String = "adapter:XML"
-    override fun install(config: XmlAdapterPluginConfig.() -> Unit): AviatorPluginInstance {
+    override fun install(config: XmlAdapterPluginConfig.() -> Unit): UniformAviatorPluginInstance {
         val pluginConfig = XmlAdapterPluginConfig()
         config.invoke(pluginConfig)
         return XmlAdapterPluginInstance(pluginConfig)

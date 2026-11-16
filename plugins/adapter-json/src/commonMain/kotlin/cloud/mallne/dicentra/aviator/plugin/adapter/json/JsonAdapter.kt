@@ -3,16 +3,17 @@
 package cloud.mallne.dicentra.aviator.plugin.adapter.json
 
 import cloud.mallne.dicentra.aviator.core.AviatorServiceDataHolder
-import cloud.mallne.dicentra.aviator.core.plugins.AviatorPlugin
-import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginInstance
+import cloud.mallne.dicentra.aviator.core.plugins.UniformAviatorPlugin
+import cloud.mallne.dicentra.aviator.core.plugins.UniformAviatorPluginInstance
 import kotlinx.serialization.json.Json
 import kotlin.js.ExperimentalJsExport
 import kotlin.js.JsExport
 
 @JsExport
-object JsonAdapter : AviatorPlugin<JsonAdapterPluginConfig> {
+object JsonAdapter :
+    UniformAviatorPlugin<JsonAdapterPluginConfig> {
     override val identity: String = "adapter:JSON"
-    override fun install(config: JsonAdapterPluginConfig.() -> Unit): AviatorPluginInstance {
+    override fun install(config: JsonAdapterPluginConfig.() -> Unit): UniformAviatorPluginInstance {
         val pluginConfig = JsonAdapterPluginConfig()
         config.invoke(pluginConfig)
         return JsonAdapterPluginInstance(pluginConfig)

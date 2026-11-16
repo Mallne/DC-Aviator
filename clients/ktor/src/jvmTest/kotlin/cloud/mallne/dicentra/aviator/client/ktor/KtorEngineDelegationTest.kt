@@ -67,8 +67,8 @@ class KtorEngineDelegationTest {
             )
             val engine = AviatorEngine(
                 InMemoryDefinitionCoordinator(listOf(definition)),
-                EngineDefinitionAuthorization { EngineAuthorizationDecision.Allowed },
-                OutboundTargetPolicy { _, _, _ -> null },
+                { EngineAuthorizationDecision.Allowed },
+                { _, _, _ -> null },
             )
             val context = engine.invoke(
                 locator, ktorEngineTemplate<TestResponse>(), OpenApiClientInput(), InvocationMode.FIRST,
