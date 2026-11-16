@@ -2,6 +2,19 @@ package cloud.mallne.dicentra.aviator.client.fetch
 
 import cloud.mallne.dicentra.aviator.plugin.adapter.json.JsonAdapter
 import cloud.mallne.dicentra.aviator.core.execution.AviatorCallControl
+import cloud.mallne.dicentra.aviator.core.engine.AviatorEngine
+import cloud.mallne.dicentra.aviator.core.engine.InMemoryDefinitionCoordinator
+import cloud.mallne.dicentra.aviator.core.engine.EngineDefinitionAuthorization
+import cloud.mallne.dicentra.aviator.core.engine.EngineAuthorizationDecision
+import cloud.mallne.dicentra.aviator.core.engine.OutboundTargetPolicy
+import cloud.mallne.dicentra.aviator.core.engine.InvocationMode
+import cloud.mallne.dicentra.aviator.core.engine.OpenApiOperationDefinitionRequest
+import cloud.mallne.dicentra.aviator.core.engine.OpenApiClientInput
+import cloud.mallne.dicentra.aviator.core.plugins.DefaultAviatorPluginRegistry
+import cloud.mallne.dicentra.aviator.core.plugins.ClientPluginRegistration
+import cloud.mallne.dicentra.aviator.core.plugins.PluginActivation
+import cloud.mallne.dicentra.aviator.model.ServiceLocator
+import cloud.mallne.dicentra.aviator.koas.typed.routes
 import io.ktor.openapi.GenericElement
 import io.ktor.openapi.OpenApiDoc
 import io.ktor.openapi.OpenApiInfo
@@ -18,6 +31,8 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -25,6 +40,13 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class FetchAviatorServiceTest {
+    @Test
+    fun adapterPluginsCannotBeDefinitionActivated() {
+        assertFailsWith<IllegalArgumentException> {
+            ClientPluginRegistration(JsonAdapter.install(), PluginActivation.DEFINITION)
+        }
+    }
+
     @Test
     fun cancellingResponseBodyReadAbortsSignal() = runTest {
         var signal: dynamic = null
@@ -98,6 +120,112 @@ class FetchAviatorServiceTest {
     }
 
     @Test
+    fun definitionConverterPreservesOperationPluginConfiguration() {
+        val configuration = mapOf("configured" to kotlinx.serialization.json.JsonPrimitive(true))
+        val spec = plainSpecification("https://engine.test", configuration)
+        val definition = FetchEngineDefinitionConverter(FetchAviatorServiceConverter()).convert(
+            OpenApiOperationDefinitionRequest(spec, spec.routes().single(), ServiceLocator("configured")),
+        )
+        assertEquals(configuration, definition.pluginConfiguration)
+    }
+
+    @Test
+    fun engineDispatchesToFetchClientForPlainOpenApiOperation() = runTest {
+        var requestedUrl: String? = null
+        val fetcher: dynamic = { url: String, _: dynamic ->
+            requestedUrl = url
+            responsePromise("""{"temperature":18.5}""")
+        }
+        val spec = plainSpecification("https://engine.test")
+        val locator = ServiceLocator("workflow-action")
+        val definition = FetchEngineDefinitionConverter(FetchAviatorServiceConverter(fetcher = fetcher)).convert(
+            OpenApiOperationDefinitionRequest(spec, spec.routes().single(), locator),
+        )
+        val engine = AviatorEngine(
+            InMemoryDefinitionCoordinator(listOf(definition)),
+            EngineDefinitionAuthorization { EngineAuthorizationDecision.Allowed },
+            OutboundTargetPolicy { _, _, _ -> null },
+            DefaultAviatorPluginRegistry(
+                clients = listOf(ClientPluginRegistration(JsonAdapter.install(), PluginActivation.PASSIVE)),
+            ),
+        )
+
+        val outcome = engine.invoke(
+            locator, fetchEngineTemplate<WeatherResponse>(), OpenApiClientInput(), InvocationMode.FIRST,
+        ).single().result.getOrThrow()
+
+        val context = outcome
+        assertEquals(WeatherResponse(18.5), context.result)
+        assertEquals("https://engine.test/forecast", requestedUrl)
+    }
+
+    @Test
+    fun adapterRemainsPassivelyInstalledWhenDefinitionRequestsIt() = runTest {
+        var requestedUrl: String? = null
+        val fetcher: dynamic = { url: String, _: dynamic ->
+            requestedUrl = url
+            responsePromise("""{"temperature":18.5}""")
+        }
+        val spec = plainSpecification("https://activated.test")
+        val locator = ServiceLocator("workflow-action")
+        val service = FetchAviatorServiceConverter(fetcher = fetcher).buildOperation(
+            spec, spec.routes().single(), locator,
+        )
+        val definition = FetchClientDefinition(
+            service,
+            pluginConfiguration = mapOf(JsonAdapter.identity to kotlinx.serialization.json.JsonObject(emptyMap())),
+        )
+        val engine = AviatorEngine(
+            InMemoryDefinitionCoordinator(listOf(definition)),
+            EngineDefinitionAuthorization { EngineAuthorizationDecision.Allowed },
+            OutboundTargetPolicy { _, _, _ -> null },
+            DefaultAviatorPluginRegistry(
+                clients = listOf(ClientPluginRegistration(JsonAdapter.install(), PluginActivation.PASSIVE)),
+            ),
+        )
+
+        val result = engine.invoke(
+            locator, fetchEngineTemplate<WeatherResponse>(), OpenApiClientInput(), InvocationMode.FIRST,
+        ).single().result.getOrThrow()
+
+        assertTrue(result.networkChain.isNotEmpty())
+        assertEquals("https://activated.test/forecast", requestedUrl)
+    }
+
+    @Test
+    fun engineFirstNotFailingFallsBackAfterFetchHttpFailure() = runTest {
+        val requestedUrls = mutableListOf<String>()
+        val services = listOf("https://first.test", "https://second.test").mapIndexed { index, server ->
+            val fetcher: dynamic = { url: String, _: dynamic ->
+                requestedUrls += url
+                responsePromise("""{"temperature":18.5}""", status = if (index == 0) 503 else 200)
+            }
+            val spec = plainSpecification(server)
+            val locator = ServiceLocator("shared")
+            FetchClientDefinition(
+                FetchAviatorServiceConverter(fetcher = fetcher).buildOperation(spec, spec.routes().single(), locator) {
+                    install(JsonAdapter)
+                },
+            )
+        }
+        val locator = ServiceLocator("shared")
+        val engine = AviatorEngine(
+            InMemoryDefinitionCoordinator(services),
+            EngineDefinitionAuthorization { EngineAuthorizationDecision.Allowed },
+            OutboundTargetPolicy { _, _, _ -> null },
+        )
+
+        val results = engine.invoke(
+            locator, fetchEngineTemplate<WeatherResponse>(), OpenApiClientInput(), InvocationMode.FIRST_NOT_FAILING,
+        )
+
+        assertEquals(2, results.size)
+        assertTrue(results.first().result.isFailure)
+        assertTrue(results.last().result.isSuccess)
+        assertEquals(listOf("https://first.test/forecast", "https://second.test/forecast"), requestedUrls)
+    }
+
+    @Test
     fun responseLargerThanConfiguredLimitFails() = runTest {
         val fetcher: dynamic = { _: String, _: dynamic -> responsePromise("123456") }
 
@@ -134,6 +262,24 @@ class FetchAviatorServiceTest {
             install(JsonAdapter)
         }.single() as FetchAviatorService
     }
+
+    private fun plainSpecification(
+        server: String,
+        pluginConfiguration: Map<String, JsonElement> = emptyMap(),
+    ) = OpenApiDoc(
+        info = OpenApiInfo(title = "Plain Fetch operation", version = "1"),
+        servers = listOf(Server(server)),
+        paths = mapOf("/forecast" to ReferenceOr.Value(PathItem(get = Operation(
+            operationId = "getForecast",
+            extensions = mapOf(
+                cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.PluginMaterialization.O.key to
+                    GenericElement(pluginConfiguration),
+            ),
+            responses = Responses(
+                responses = mapOf(200 to ReferenceOr.Value(Response(description = "Weather response")))
+            ),
+        )))),
+    )
 
     private fun responsePromise(body: String, status: Int = 200): dynamic {
         val response: dynamic = js(

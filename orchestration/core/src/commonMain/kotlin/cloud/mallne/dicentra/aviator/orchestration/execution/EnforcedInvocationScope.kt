@@ -5,6 +5,7 @@ import cloud.mallne.dicentra.aviator.orchestration.model.ExecutionFailure
 import cloud.mallne.dicentra.aviator.orchestration.model.ExecutionMetadata
 import cloud.mallne.dicentra.aviator.orchestration.policy.ExecutionBudget
 import cloud.mallne.dicentra.aviator.orchestration.plugin.OrchestrationPluginState
+import cloud.mallne.dicentra.aviator.orchestration.plugin.OrchestrationPluginRegistry
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.NonCancellable
@@ -26,6 +27,7 @@ class EnforcedInvocationScope private constructor(
     private val policyPlugins: List<InvocationPolicyPlugin>,
     private val policies: List<InvocationPolicy>,
     private val state: State,
+    override val plugins: OrchestrationPluginRegistry?,
 ) : InvocationScope {
     override val enforcedDeadline: Instant? get() = policies.firstNotNullOfOrNull { it.enforcedDeadline }
 
@@ -35,8 +37,9 @@ class EnforcedInvocationScope private constructor(
         authorizeCall: suspend (ConstituentIdentity) -> ExecutionFailure? = { null },
         now: () -> Instant = { Clock.System.now() },
         policyPlugins: List<InvocationPolicyPlugin> = emptyList(),
+        plugins: OrchestrationPluginRegistry? = null,
     ) : this(metadata, budget, authorizeCall, now, policyPlugins,
-        policyPlugins.map { it.create(metadata, budget, now) }, State()) {
+        policyPlugins.map { it.create(metadata, budget, now) }, State(), plugins) {
         require(policyPlugins.size <= 1) { "At most one atomic invocation policy plugin may be installed per run" }
     }
 
@@ -44,7 +47,7 @@ class EnforcedInvocationScope private constructor(
     fun forStep(stepId: String): EnforcedInvocationScope {
         require(stepId.isNotBlank()) { "stepId must not be blank" }
         return EnforcedInvocationScope(metadata.copy(stepId = stepId), budget, authorizeCall, now,
-            policyPlugins, policies, state)
+            policyPlugins, policies, state, plugins)
     }
 
     override suspend fun authorize(identity: ConstituentIdentity): ExecutionFailure? {

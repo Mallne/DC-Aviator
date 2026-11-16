@@ -16,6 +16,7 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialFormat
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.serializer
 import kotlin.reflect.typeOf
 
@@ -51,6 +52,45 @@ data class FetchAviatorService(
 
     inline fun <reified T : InflatedServiceOptions> optionBundle(): T =
         AviatorServiceUtils.optionBundle(options, json)
+
+    suspend fun <O : @Serializable Any> requestContextful(
+        outputClazz: Triple<kotlin.reflect.KClass<O>, kotlin.reflect.KType, KSerializer<O>>,
+        requestBody: JsonElement? = null,
+        options: RequestOptions = emptyMap(),
+        requestParams: RequestParameters = RequestParameters(),
+    ): FetchExecutionContext<O, JsonElement> {
+        val context = FetchExecutionContext(
+            dataHolder = this,
+            outputClazz = outputClazz,
+            body = requestBody,
+            bodyClazz = if (requestBody != null) {
+                Triple(JsonElement::class, typeOf<JsonElement>(), serializer<JsonElement>())
+            } else {
+                null
+            },
+            options = options.toMutableMap(),
+            requestParams = requestParams,
+        )
+        return AviatorExecutionPipeline(context, plugins, FetchStagedExecutor<O, JsonElement>()).run()
+    }
+
+    suspend fun <O : @Serializable Any, B : @Serializable Any> requestContextful(
+        outputClazz: Triple<kotlin.reflect.KClass<O>, kotlin.reflect.KType, KSerializer<O>>,
+        bodyClazz: Triple<kotlin.reflect.KClass<B>, kotlin.reflect.KType, KSerializer<B>>,
+        requestBody: B?,
+        options: RequestOptions = emptyMap(),
+        requestParams: RequestParameters = RequestParameters(),
+    ): FetchExecutionContext<O, B> {
+        val context = FetchExecutionContext(
+            dataHolder = this,
+            outputClazz = outputClazz,
+            body = requestBody,
+            bodyClazz = bodyClazz.takeIf { requestBody != null },
+            options = options.toMutableMap(),
+            requestParams = requestParams,
+        )
+        return AviatorExecutionPipeline(context, plugins, FetchStagedExecutor<O, B>()).run()
+    }
 
     /**
      * Executes the operation and returns its full execution context.

@@ -84,6 +84,7 @@ class MaterializedOperationBinding<I>(
     }
 
     override suspend fun invoke(operation: ResolvedOperation, input: I, scope: InvocationScope): CapabilityResult {
+        val plugins = scope.plugins ?: this.plugins
         val state = scope.pluginState("orchestration")
         var failure: Throwable? = null
         try {
@@ -146,6 +147,7 @@ class MaterializedOperationBinding<I>(
         scope: InvocationScope,
         pluginState: OrchestrationPluginState,
     ): CapabilityResult {
+        val plugins = scope.plugins ?: this.plugins
         val prepared = operation as? Prepared<*> ?: error("Invalid resolved operation")
         require(prepared.owner === owner) { "Resolved operation belongs to another binding" }
         @Suppress("UNCHECKED_CAST")

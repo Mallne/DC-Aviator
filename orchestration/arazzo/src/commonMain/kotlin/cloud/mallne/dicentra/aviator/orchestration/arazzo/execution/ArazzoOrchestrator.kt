@@ -7,6 +7,7 @@ import cloud.mallne.dicentra.aviator.orchestration.execution.Orchestrator
 import cloud.mallne.dicentra.aviator.orchestration.execution.OrchestratorBuilder
 import cloud.mallne.dicentra.aviator.orchestration.execution.OrchestratorEnvironment
 import cloud.mallne.dicentra.aviator.orchestration.execution.OrchestrationDsl
+import cloud.mallne.dicentra.aviator.orchestration.plugin.OrchestrationPluginRegistry
 import cloud.mallne.dicentra.aviator.orchestration.model.*
 import cloud.mallne.dicentra.aviator.orchestration.policy.*
 import kotlinx.serialization.json.Json
@@ -23,6 +24,8 @@ fun OrchestratorBuilder.arazzo(configure: ArazzoOrchestratorBuilder.() -> Unit) 
 class ArazzoOrchestratorBuilder internal constructor() {
     /** Resolve an exact workflow identity; return null if it is not available. */
     var workflow: (suspend (WorkflowIdentity) -> ArazzoWorkflow?)? = null
+    /** Optional direct step executor; when set, legacy operation bindings are not constructed. */
+    var stepExecutor: ((OrchestratorEnvironment) -> ArazzoStepExecutor)? = null
     var binding: ((OrchestratorEnvironment) -> OperationBinding<JsonElement>)? = null
     var operationIndex: List<ConstituentIdentity> = emptyList()
     var policy: CapabilityPolicy? = null
@@ -34,11 +37,13 @@ class ArazzoOrchestratorBuilder internal constructor() {
 
     internal fun build(environment: OrchestratorEnvironment): Orchestrator {
         val lookup = checkNotNull(workflow) { "Arazzo workflow lookup must be configured" }
-        val bindingFactory = checkNotNull(binding) { "Arazzo operation binding must be configured" }
-        val executionPolicy = checkNotNull(policy) { "Arazzo capability policy must be configured" }
         val authorization = checkNotNull(authorize) { "Arazzo host authorization must be configured" }
-        val steps = ArazzoBindingStepExecutor(bindingFactory(environment), operationIndex.toList(), executionPolicy,
-            sourceIdsByName.toMap(), json, environment.plugins)
+        val steps = stepExecutor?.invoke(environment) ?: run {
+            val bindingFactory = checkNotNull(binding) { "Arazzo operation binding or step executor must be configured" }
+            val executionPolicy = checkNotNull(policy) { "Arazzo operation binding requires a capability policy" }
+            ArazzoBindingStepExecutor(bindingFactory(environment), operationIndex.toList(), executionPolicy,
+                sourceIdsByName.toMap(), json, environment.plugins)
+        }
         val runner = ArazzoRunExecutor(steps, plugins = environment.plugins, authorize = authorization)
         return ArazzoOrchestrator(runner, lookup, newRunId)
     }
@@ -57,6 +62,15 @@ private class ArazzoOrchestrator(
     override fun checkCapabilities(requirements: CapabilityRequirements): CapabilityCheck = capabilities.check(requirements)
 
     override suspend fun execute(request: ExecutionRequest, budget: ExecutionBudget, events: ExecutionEventSink): ExecutionResult {
+        return execute(request, budget, events, null)
+    }
+
+    override suspend fun execute(
+        request: ExecutionRequest,
+        budget: ExecutionBudget,
+        events: ExecutionEventSink,
+        plugins: OrchestrationPluginRegistry?,
+    ): ExecutionResult {
         val runId = newRunId()
         val check = checkCapabilities(CapabilityRequirements(request.workflow.format, request.workflow.formatVersion))
         if (check is CapabilityCheck.Unsupported) {
@@ -65,6 +79,8 @@ private class ArazzoOrchestrator(
         }
         val workflow = lookup(request.workflow) ?: return ExecutionResult(runId, request.workflow,
             ExecutionOutcome.Failed(ExecutionFailure("workflow_not_found", "Workflow not found")))
-        return runner.execute(workflow, request.workflow, runId, request.inputs, request.metadata, budget, events)
+        return runner.execute(
+            workflow, request.workflow, runId, request.inputs, request.metadata, budget, events, plugins,
+        )
     }
 }

@@ -1,11 +1,6 @@
-@file:OptIn(ExperimentalJsExport::class)
-
 package cloud.mallne.dicentra.aviator.core.plugins
 
-import kotlin.js.ExperimentalJsExport
-import kotlin.js.JsExport
-
-@JsExport
+@AviatorJsExport
 interface AviatorPluginActivationScope {
     fun <ConfigScope : AviatorPluginConfigScope> install(
         plugin: AviatorPlugin<out ConfigScope>,

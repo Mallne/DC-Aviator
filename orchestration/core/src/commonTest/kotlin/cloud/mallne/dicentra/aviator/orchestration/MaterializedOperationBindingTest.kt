@@ -25,6 +25,46 @@ import kotlin.test.assertFailsWith
 
 class MaterializedOperationBindingTest {
     @Test
+    fun invocationRegistryControlsMaterializedHooksAndTransportAttempts() = runTest {
+        var calls = 0
+        val observed = mutableListOf<OrchestrationStage>()
+        val invocationPlugins = installOrchestrationPlugins {
+            install("invocation-veto") {
+                stages += setOf(OrchestrationStage.MAP_INPUT, OrchestrationStage.BEFORE_ATTEMPT)
+                executor = OrchestrationPluginExecutor { context ->
+                    observed += context.stage
+                    if (context.stage == OrchestrationStage.BEFORE_ATTEMPT) {
+                        context.reject(ExecutionFailure("invocation_denied", "Denied"))
+                    }
+                }
+            }
+        }
+        val capturedPlugins = installOrchestrationPlugins {
+            install("captured") {
+                stages += OrchestrationStage.MAP_INPUT
+                executor = OrchestrationPluginExecutor { error("Captured registry must not run") }
+            }
+        }
+        val binding = MaterializedOperationBinding(
+            listOf(MaterializedConstituent<Unit>(first) {
+                controlledAviatorCall(call = { calls++ })
+                ConstituentExecution(ConstituentOutcome.Succeeded(BodyValue.Empty))
+            }),
+            isUsable = { true }, aggregate = { it.single() }, plugins = capturedPlugins,
+        )
+        val scope = EnforcedInvocationScope(
+            ExecutionMetadata(RunId("invocation"), WorkflowIdentity("test", "1", "source", "revision")),
+            ExecutionBudget(), plugins = invocationPlugins,
+        )
+        val result = binding.invoke(binding.resolve(CapabilityInvocation(locator, policy)), Unit, scope)
+        assertEquals("invocation_denied", assertIs<ConstituentOutcome.Failed>(
+            result.constituents.single().outcome,
+        ).failure.code)
+        assertEquals(listOf(OrchestrationStage.MAP_INPUT, OrchestrationStage.BEFORE_ATTEMPT), observed)
+        assertEquals(0, calls)
+    }
+
+    @Test
     fun resultRepresentationSurvivesSerializationWithoutClaimingUnknownOrigin() {
         val transformed: ConstituentOutcome = ConstituentOutcome.Succeeded(
             BodyValue.JsonValue(JsonPrimitive("transformed")), ResultRepresentation.TRANSFORMED,

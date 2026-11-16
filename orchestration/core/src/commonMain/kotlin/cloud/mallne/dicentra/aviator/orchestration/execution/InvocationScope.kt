@@ -5,12 +5,15 @@ import cloud.mallne.dicentra.aviator.orchestration.model.ExecutionFailure
 import cloud.mallne.dicentra.aviator.orchestration.model.ExecutionMetadata
 import cloud.mallne.dicentra.aviator.orchestration.policy.ExecutionBudget
 import cloud.mallne.dicentra.aviator.orchestration.plugin.OrchestrationPluginState
+import cloud.mallne.dicentra.aviator.orchestration.plugin.OrchestrationPluginRegistry
 import kotlin.time.Instant
 
 /** Shared run services, not credentials or state stored in a globally reusable prepared handle. */
 interface InvocationScope {
     val metadata: ExecutionMetadata
     val budget: ExecutionBudget
+    /** Invocation-local registry; null allows a directly invoked adapter's configured fallback. */
+    val plugins: OrchestrationPluginRegistry? get() = null
     /** An active timeout only when an installed policy explicitly enforces the budget deadline. */
     val enforcedDeadline: Instant? get() = null
 

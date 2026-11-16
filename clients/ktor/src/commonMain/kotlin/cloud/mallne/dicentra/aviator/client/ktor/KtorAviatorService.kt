@@ -21,8 +21,11 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialFormat
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.serializer
+import kotlinx.serialization.json.JsonElement
+import kotlin.reflect.KClass
+import kotlin.reflect.KType
 import kotlin.reflect.typeOf
+import kotlinx.serialization.serializer
 
 data class KtorAviatorService(
     override val serviceLocator: ServiceLocator,
@@ -42,6 +45,45 @@ data class KtorAviatorService(
     }
 
     inline fun <reified T : InflatedServiceOptions> optionBundle(): T = AviatorServiceUtils.optionBundle(options, json)
+
+    suspend fun <O : @Serializable Any> requestContextful(
+        outputClazz: Triple<KClass<O>, KType, KSerializer<O>>,
+        requestBody: JsonElement? = null,
+        options: RequestOptions = emptyMap(),
+        requestParams: RequestParameters = RequestParameters(),
+    ): KtorExecutionContext<O, JsonElement> {
+        val context = KtorExecutionContext(
+            dataHolder = this,
+            outputClazz = outputClazz,
+            body = requestBody,
+            bodyClazz = if (requestBody != null) {
+                Triple(JsonElement::class, typeOf<JsonElement>(), serializer<JsonElement>())
+            } else {
+                null
+            },
+            options = options.toMutableMap(),
+            requestParams = requestParams,
+        )
+        return AviatorExecutionPipeline(context, plugins, KtorStagedExecutor<O, JsonElement>()).run()
+    }
+
+    suspend fun <O : @Serializable Any, B : @Serializable Any> requestContextful(
+        outputClazz: Triple<KClass<O>, KType, KSerializer<O>>,
+        bodyClazz: Triple<KClass<B>, KType, KSerializer<B>>,
+        requestBody: B?,
+        options: RequestOptions = emptyMap(),
+        requestParams: RequestParameters = RequestParameters(),
+    ): KtorExecutionContext<O, B> {
+        val context = KtorExecutionContext(
+            dataHolder = this,
+            outputClazz = outputClazz,
+            body = requestBody,
+            bodyClazz = bodyClazz.takeIf { requestBody != null },
+            options = options.toMutableMap(),
+            requestParams = requestParams,
+        )
+        return AviatorExecutionPipeline(context, plugins, KtorStagedExecutor<O, B>()).run()
+    }
 
     suspend inline fun <reified O : @Serializable Any, reified B : @Serializable Any> requestContextful(
         requestBody: B? = null,

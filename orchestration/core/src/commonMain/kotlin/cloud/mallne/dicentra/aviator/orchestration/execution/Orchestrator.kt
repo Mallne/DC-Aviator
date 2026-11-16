@@ -10,6 +10,7 @@ import cloud.mallne.dicentra.aviator.orchestration.policy.CapabilityCheck
 import cloud.mallne.dicentra.aviator.orchestration.policy.CapabilityRequirements
 import cloud.mallne.dicentra.aviator.orchestration.policy.ExecutionBudget
 import cloud.mallne.dicentra.aviator.orchestration.policy.OrchestratorCapabilities
+import cloud.mallne.dicentra.aviator.orchestration.plugin.OrchestrationPluginRegistry
 
 /** Format-specific orchestration boundary. Execution is caller-owned and cancellation propagates
  * through the caller's coroutine; implementations do not create detached work.
@@ -24,6 +25,14 @@ interface Orchestrator {
         budget: ExecutionBudget = ExecutionBudget(),
         events: ExecutionEventSink = ExecutionEventSink.Ignore,
     ): ExecutionResult
+
+    /** Engine-provided invocation snapshot; direct callers retain the orchestrator's configured registry. */
+    suspend fun execute(
+        request: ExecutionRequest,
+        budget: ExecutionBudget,
+        events: ExecutionEventSink,
+        plugins: OrchestrationPluginRegistry?,
+    ): ExecutionResult = execute(request, budget, events)
 }
 
 /** Application-owned resolution and invocation boundaries. Implementations enforce policy at

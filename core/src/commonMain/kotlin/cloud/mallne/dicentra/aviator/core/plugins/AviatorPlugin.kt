@@ -1,12 +1,8 @@
-@file:OptIn(ExperimentalJsExport::class)
-
 package cloud.mallne.dicentra.aviator.core.plugins
 
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionContext
-import kotlin.js.ExperimentalJsExport
-import kotlin.js.JsExport
 
-@JsExport
+@AviatorJsExport
 interface AviatorPlugin<ConfigScope : AviatorPluginConfigScope> {
     val identity: String
     fun install(config: ConfigScope.() -> Unit = {}): AviatorPluginInstance

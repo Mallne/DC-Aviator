@@ -18,6 +18,98 @@ import kotlin.test.assertIs
 
 class ArazzoPluginBindingTest {
     @Test
+    fun runnerWithoutRegistryRetainsDirectAdapterConfiguration() = runTest {
+        val locator = ServiceLocator("weather")
+        val identity = ConstituentIdentity(locator, "provider", "source", "rev", "forecast")
+        val plugins = installOrchestrationPlugins {
+            install("adapter-veto") {
+                stages += OrchestrationStage.SELECT
+                executor = OrchestrationPluginExecutor { it.reject(ExecutionFailure("adapter_denied", "Denied")) }
+            }
+        }
+        val binding = object : OperationBinding<kotlinx.serialization.json.JsonElement> {
+            override suspend fun resolve(invocation: CapabilityInvocation): ResolvedOperation = error("Must not resolve")
+            override suspend fun invoke(
+                operation: ResolvedOperation, input: kotlinx.serialization.json.JsonElement, scope: InvocationScope,
+            ): CapabilityResult = error("Must not invoke")
+        }
+        val runner = ArazzoRunExecutor(ArazzoBindingStepExecutor(binding, listOf(identity), policy, plugins = plugins))
+        val result = runner.execute(
+            ArazzoWorkflow("workflow", listOf(ArazzoStep("step", operationId = "forecast"))),
+            WorkflowIdentity("arazzo", "1.1.0", "doc", "rev"), RunId("adapter-fallback"),
+        )
+        assertEquals("adapter_denied", assertIs<ExecutionOutcome.Failed>(result.outcome).failure.code)
+    }
+
+    @Test
+    fun explicitlyEmptyInvocationRegistryDisablesCapturedPlugins() = runTest {
+        val locator = ServiceLocator("weather")
+        val identity = ConstituentIdentity(locator, "provider", "source", "rev", "forecast")
+        val capturedPlugins = installOrchestrationPlugins {
+            install("captured") {
+                stages += OrchestrationStage.SELECT
+                executor = OrchestrationPluginExecutor { error("Captured registry must not run") }
+            }
+        }
+        val binding = object : OperationBinding<kotlinx.serialization.json.JsonElement> {
+            override suspend fun resolve(invocation: CapabilityInvocation) = object : ResolvedOperation {
+                override val invocation = invocation
+            }
+            override suspend fun invoke(
+                operation: ResolvedOperation, input: kotlinx.serialization.json.JsonElement, scope: InvocationScope,
+            ) = CapabilityResult(locator, CapabilityOutcome.Succeeded(BodyValue.Empty), emptyList())
+        }
+        val executor = ArazzoBindingStepExecutor(binding, listOf(identity), policy, plugins = capturedPlugins)
+        val scope = EnforcedInvocationScope(
+            ExecutionMetadata(RunId("empty-registry"), WorkflowIdentity("arazzo", "1.1.0", "doc", "rev")),
+            ExecutionBudget(), plugins = OrchestrationPluginRegistry.Empty,
+        )
+        assertIs<ArazzoStepExecution.Completed>(executor.execute(ArazzoStep("step", operationId = "forecast"), "{}", scope))
+    }
+
+    @Test
+    fun invocationRegistryOverridesCapturedRegistryForSelectionAndAttempts() = runTest {
+        for (stage in listOf(OrchestrationStage.RESOLVE, OrchestrationStage.SELECT, OrchestrationStage.BEFORE_ATTEMPT)) {
+            val locator = ServiceLocator("weather")
+            val identity = ConstituentIdentity(locator, "provider", "source", "rev", "forecast")
+            var transportCalls = 0
+            val invocationPlugins = installOrchestrationPlugins {
+                install("invocation-veto") {
+                    stages += stage
+                    executor = OrchestrationPluginExecutor { it.reject(ExecutionFailure("invocation_denied", "Denied")) }
+                }
+            }
+            val capturedPlugins = installOrchestrationPlugins {
+                install("must-not-run") {
+                    stages += stage
+                    executor = OrchestrationPluginExecutor { error("Captured registry must not run") }
+                }
+            }
+            val binding = object : OperationBinding<kotlinx.serialization.json.JsonElement> {
+                override suspend fun resolve(invocation: CapabilityInvocation) = object : ResolvedOperation {
+                    override val invocation = invocation
+                }
+                override suspend fun invoke(
+                    operation: ResolvedOperation, input: kotlinx.serialization.json.JsonElement, scope: InvocationScope,
+                ): CapabilityResult {
+                    controlledAviatorCall(call = { transportCalls++ })
+                    return CapabilityResult(locator, CapabilityOutcome.Succeeded(BodyValue.Empty), emptyList())
+                }
+            }
+            val runner = ArazzoRunExecutor(
+                ArazzoBindingStepExecutor(binding, listOf(identity), policy, plugins = capturedPlugins),
+            )
+            val result = runner.execute(
+                ArazzoWorkflow("workflow", listOf(ArazzoStep("step", operationId = "forecast"))),
+                WorkflowIdentity("arazzo", "1.1.0", "doc", "rev"), RunId("override-$stage"),
+                pluginRegistry = invocationPlugins,
+            )
+            assertEquals("invocation_denied", assertIs<ExecutionOutcome.Failed>(result.outcome).failure.code)
+            assertEquals(0, transportCalls)
+        }
+    }
+
+    @Test
     fun laterInvalidReferenceIsPreflightedBeforeEarlierStepCanDispatch() = runTest {
         val locator = ServiceLocator("weather>get")
         val identity = ConstituentIdentity(locator, "provider", "source", "rev", operationId = "forecast")

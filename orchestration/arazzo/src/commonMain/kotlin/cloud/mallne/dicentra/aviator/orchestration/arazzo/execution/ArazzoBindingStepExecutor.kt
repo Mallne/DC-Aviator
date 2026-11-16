@@ -8,12 +8,7 @@ import cloud.mallne.dicentra.aviator.orchestration.execution.OperationBinding
 import cloud.mallne.dicentra.aviator.orchestration.model.ConstituentIdentity
 import cloud.mallne.dicentra.aviator.orchestration.model.ExecutionFailure
 import cloud.mallne.dicentra.aviator.orchestration.policy.CapabilityPolicy
-import cloud.mallne.dicentra.aviator.orchestration.model.CapabilityInvocation
 import cloud.mallne.dicentra.aviator.orchestration.plugin.OrchestrationPluginRegistry
-import cloud.mallne.dicentra.aviator.orchestration.plugin.OrchestrationStage
-import cloud.mallne.dicentra.aviator.orchestration.plugin.OrchestrationStageContext
-import cloud.mallne.dicentra.aviator.orchestration.plugin.OrchestrationLifecycleScope
-import cloud.mallne.dicentra.aviator.orchestration.plugin.OrchestrationHookPhase
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -56,39 +51,13 @@ class ArazzoBindingStepExecutor(
             return ArazzoStepExecution.Failed(ExecutionFailure(resolution.code, resolution.message))
         }
         resolution as ArazzoOperationResolution.Resolved
-        var invocation = resolution.invocation
+        val plugins = scope.plugins ?: this.plugins
+        val invocation = try {
+            selectArazzoInvocation(resolution.invocation, scope, plugins)
+        } catch (rejected: InvocationRejectedException) {
+            return ArazzoStepExecution.Failed(rejected.failure)
+        }
         val pluginState = scope.pluginState("orchestration")
-        val resolvedStage = OrchestrationStageContext(OrchestrationStage.RESOLVE, invocation, scope,
-            pluginState, payload = invocation, lifecycleScope = OrchestrationLifecycleScope.STEP)
-        plugins.execute(resolvedStage)
-        if (resolvedStage.shortCircuit != null) {
-            return ArazzoStepExecution.Failed(ExecutionFailure("invalid_plugin_short_circuit", "Resolution cannot short-circuit with a capability result"))
-        }
-        resolvedStage.rejection?.let { return ArazzoStepExecution.Failed(it) }
-        plugins.execute(resolvedStage, OrchestrationHookPhase.AFTER)
-        if (resolvedStage.shortCircuit != null) {
-            return ArazzoStepExecution.Failed(ExecutionFailure("invalid_plugin_short_circuit", "Resolution cannot short-circuit with a capability result"))
-        }
-        resolvedStage.rejection?.let { return ArazzoStepExecution.Failed(it) }
-        invocation = narrowedInvocation(invocation, resolvedStage.payload)
-            ?: return ArazzoStepExecution.Failed(ExecutionFailure("invalid_plugin_target", "Plugin may not widen or replace an Arazzo target"))
-        val selectionStage = OrchestrationStageContext(OrchestrationStage.SELECT, invocation, scope,
-            pluginState, payload = invocation, lifecycleScope = OrchestrationLifecycleScope.STEP)
-        plugins.execute(selectionStage)
-        if (selectionStage.shortCircuit != null) {
-            return ArazzoStepExecution.Failed(ExecutionFailure("invalid_plugin_short_circuit", "Selection cannot short-circuit with a capability result"))
-        }
-        selectionStage.rejection?.let { return ArazzoStepExecution.Failed(it) }
-        plugins.execute(selectionStage, OrchestrationHookPhase.AFTER)
-        if (selectionStage.shortCircuit != null) {
-            return ArazzoStepExecution.Failed(ExecutionFailure("invalid_plugin_short_circuit", "Selection cannot short-circuit with a capability result"))
-        }
-        selectionStage.rejection?.let { return ArazzoStepExecution.Failed(it) }
-        invocation = narrowedInvocation(invocation, selectionStage.payload)
-            ?: return ArazzoStepExecution.Failed(ExecutionFailure("invalid_plugin_target", "Plugin may not widen or replace an Arazzo target"))
-        if (invocation.constituents.isNullOrEmpty()) {
-            return ArazzoStepExecution.Failed(ExecutionFailure("plugin_target_rejected", "Plugin excluded the resolved operation"))
-        }
         val identity = checkNotNull(invocation.constituents).single()
         val input = try {
             json.parseToJsonElement(inputs)
@@ -105,14 +74,5 @@ class ArazzoBindingStepExecutor(
         } catch (rejected: InvocationRejectedException) {
             ArazzoStepExecution.Failed(rejected.failure)
         }
-    }
-
-    private fun narrowedInvocation(original: CapabilityInvocation, candidate: Any?): CapabilityInvocation? {
-        val changed = candidate as? CapabilityInvocation ?: return null
-        if (changed.locator != original.locator || changed.policy != original.policy) return null
-        val originalTargets = original.constituents
-        val changedTargets = changed.constituents ?: return null
-        if (originalTargets != null && !originalTargets.containsAll(changedTargets)) return null
-        return changed.copy(constituents = changedTargets.toSet())
     }
 }

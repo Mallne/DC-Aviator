@@ -11,7 +11,9 @@ import cloud.mallne.dicentra.aviator.core.ServiceOptions
 import cloud.mallne.dicentra.aviator.core.io.adapter.CommonAdapter
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorAdapterPluginInstance
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginActivationScope
+import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginInstance
 import cloud.mallne.dicentra.aviator.exceptions.AviatorValidationException
+import cloud.mallne.dicentra.aviator.koas.typed.Route
 import cloud.mallne.dicentra.aviator.koas.typed.routes
 import cloud.mallne.dicentra.aviator.model.ServiceLocator
 import cloud.mallne.dicentra.polyfill.ensure
@@ -21,6 +23,7 @@ import io.ktor.client.plugins.HttpSend
 import io.ktor.openapi.*
 import kotlinx.serialization.SerialFormat
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 
 @OptIn(InternalAviatorAPI::class)
 class KtorAviatorServiceConverter(
@@ -80,24 +83,47 @@ class KtorAviatorServiceConverter(
             val pluginsRequested = route.`x-dicentra-aviator-pluginMaterialization`
             if (l != null) {
                 val locator = ServiceLocator(l)
-                val pluginsForRoute = pluginsForRoute(registry, locator, pluginsRequested ?: mapOf())
-                val adapters = pluginsForRoute.mapNotNull { (it as? AviatorAdapterPluginInstance)?.adapters }.flatten()
-                val deserializers =
-                    pluginsForRoute.mapNotNull { (it as? AviatorAdapterPluginInstance)?.deserializers }.flatten()
-                KtorAviatorService(
-                    serviceLocator = locator,
-                    options = options,
-                    client = httpClient,
-                    plugins = pluginsForRoute,
-                    route = route,
-                    oas = api,
-                    adapters = adapters + CommonAdapter.adapters,
-                    deserializers = deserializers + CommonAdapter.deserializers,
-                    serializers = serializers,
-                    maxResponseBytes = maxResponseBytes,
-                )
+                materialize(api, route, locator, registry, options, pluginsRequested ?: emptyMap())
             } else null
         }
         return services
+    }
+
+    /** Materialize an operation selected by a workflow using the action's locator. */
+    fun buildOperation(
+        api: OpenApiDoc,
+        route: Route,
+        locator: ServiceLocator,
+        plugins: AviatorPluginActivationScope.() -> Unit = {},
+    ): KtorAviatorService {
+        require(api.routes().any { it == route }) { "Route does not belong to the supplied OpenAPI document" }
+        return materialize(
+            api, route, locator, crystallizePlugins(plugins),
+            route.`x-dicentra-aviator-serviceOptions` ?: ServiceOptions.EmptyObject,
+            route.`x-dicentra-aviator-pluginMaterialization` ?: emptyMap(),
+        )
+    }
+
+    private fun materialize(
+        api: OpenApiDoc,
+        route: Route,
+        locator: ServiceLocator,
+        registry: List<AviatorPluginInstance>,
+        options: ServiceOptions,
+        requested: Map<String, JsonElement>,
+    ): KtorAviatorService {
+        val selected = pluginsForRoute(registry, locator, requested)
+        return KtorAviatorService(
+            serviceLocator = locator,
+            options = options,
+            client = httpClient,
+            plugins = selected,
+            route = route,
+            oas = api,
+            adapters = selected.mapNotNull { (it as? AviatorAdapterPluginInstance)?.adapters }.flatten() + CommonAdapter.adapters,
+            deserializers = selected.mapNotNull { (it as? AviatorAdapterPluginInstance)?.deserializers }.flatten() + CommonAdapter.deserializers,
+            serializers = serializers,
+            maxResponseBytes = maxResponseBytes,
+        )
     }
 }

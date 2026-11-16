@@ -62,7 +62,7 @@ sealed interface ArazzoStepExecution {
 class ArazzoRunExecutor(
     private val stepExecutor: ArazzoStepExecutor,
     private val now: () -> Instant = { Clock.System.now() },
-    private val plugins: OrchestrationPluginRegistry = OrchestrationPluginRegistry.Empty,
+    private val plugins: OrchestrationPluginRegistry? = null,
     private val authorize: suspend (ConstituentIdentity) -> ExecutionFailure? = { null },
 ) {
     suspend fun execute(
@@ -73,7 +73,10 @@ class ArazzoRunExecutor(
         metadata: Map<String, String> = emptyMap(),
         budget: ExecutionBudget = ExecutionBudget(),
         events: ExecutionEventSink = ExecutionEventSink.Ignore,
+        pluginRegistry: OrchestrationPluginRegistry? = null,
     ): ExecutionResult {
+        val invocationPlugins = pluginRegistry ?: this.plugins
+        val plugins = invocationPlugins ?: OrchestrationPluginRegistry.Empty
         val location = workflow.documentLocation
         val locationMetadata = buildMap {
             location?.retrievalUri?.let { put("arazzo.document.retrievalUri", it) }
@@ -82,7 +85,7 @@ class ArazzoRunExecutor(
         }
         val runMetadata = ExecutionMetadata(runId, identity, values = metadata + locationMetadata)
         val runScope = EnforcedInvocationScope(runMetadata, budget, authorizeCall = authorize, now = now,
-            policyPlugins = plugins.invocationPolicyPlugins())
+            policyPlugins = plugins.invocationPolicyPlugins(), plugins = invocationPlugins)
         val pluginState = runScope.pluginState("orchestration")
         val safeEvents = PluginMetadataEventSink(events.redacting(), plugins, runScope, pluginState)
         val completed = mutableListOf<String>()

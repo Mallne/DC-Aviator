@@ -10,16 +10,18 @@ import cloud.mallne.dicentra.aviator.core.io.NetworkBody
 import cloud.mallne.dicentra.aviator.core.io.adapter.CommonAdapter
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorAdapterPluginInstance
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginActivationScope
+import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginInstance
 import cloud.mallne.dicentra.aviator.exceptions.AviatorValidationException
 import cloud.mallne.dicentra.aviator.koas.typed.routes
+import cloud.mallne.dicentra.aviator.koas.typed.Route
 import cloud.mallne.dicentra.aviator.model.ServiceLocator
 import cloud.mallne.dicentra.polyfill.ensure
 import cloud.mallne.dicentra.polyfill.ensureNotNull
 import io.ktor.openapi.OpenApiDoc
 import kotlinx.serialization.SerialFormat
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 
-@OptIn(InternalAviatorAPI::class)
 /**
  * Builds Aviator services whose HTTP transport uses the JavaScript Fetch API.
  *
@@ -40,6 +42,7 @@ import kotlinx.serialization.json.Json
  *   by default.
  * @param maxResponseBytes maximum response body size, in bytes, accepted from the transport.
  */
+@OptIn(InternalAviatorAPI::class)
 class FetchAviatorServiceConverter(
     private val fetcher: dynamic = defaultFetch(),
     private val serializers: List<SerialFormat> = listOf(Json),
@@ -65,21 +68,45 @@ class FetchAviatorServiceConverter(
             val locatorValue = route.`x-dicentra-aviator-serviceDelegateCall` ?: return@mapNotNull null
             val locator = ServiceLocator(locatorValue)
             val requested = route.`x-dicentra-aviator-pluginMaterialization` ?: emptyMap()
-            val installed = pluginsForRoute(registry, locator, requested)
-            val adapters = installed.filterIsInstance<AviatorAdapterPluginInstance>().flatMap { it.adapters }
-            val deserializers = installed.filterIsInstance<AviatorAdapterPluginInstance>().flatMap { it.deserializers }
-            FetchAviatorService(
-                serviceLocator = locator,
-                options = route.`x-dicentra-aviator-serviceOptions` ?: ServiceOptions.EmptyObject,
-                plugins = installed,
-                route = route,
-                oas = api,
-                adapters = adapters + CommonAdapter.adapters,
-                deserializers = deserializers + CommonAdapter.deserializers,
-                fetcher = fetcher,
-                serializers = serializers,
-                maxResponseBytes = maxResponseBytes,
-            )
+            materialize(api, route, locator, registry, requested)
         }
+    }
+
+    /** Materialize an operation selected by a workflow using the action's locator. */
+    fun buildOperation(
+        api: OpenApiDoc,
+        route: Route,
+        locator: ServiceLocator,
+        plugins: AviatorPluginActivationScope.() -> Unit = {},
+    ): FetchAviatorService {
+        require(api.routes().any { it == route }) { "Route does not belong to the supplied OpenAPI document" }
+        return materialize(
+            api, route, locator, crystallizePlugins(plugins),
+            route.`x-dicentra-aviator-pluginMaterialization` ?: emptyMap(),
+        )
+    }
+
+    private fun materialize(
+        api: OpenApiDoc,
+        route: Route,
+        locator: ServiceLocator,
+        registry: List<AviatorPluginInstance>,
+        requested: Map<String, JsonElement>,
+    ): FetchAviatorService {
+        val installed = pluginsForRoute(registry, locator, requested)
+        val adapters = installed.filterIsInstance<AviatorAdapterPluginInstance>().flatMap { it.adapters }
+        val deserializers = installed.filterIsInstance<AviatorAdapterPluginInstance>().flatMap { it.deserializers }
+        return FetchAviatorService(
+            serviceLocator = locator,
+            options = route.`x-dicentra-aviator-serviceOptions` ?: ServiceOptions.EmptyObject,
+            plugins = installed,
+            route = route,
+            oas = api,
+            adapters = adapters + CommonAdapter.adapters,
+            deserializers = deserializers + CommonAdapter.deserializers,
+            fetcher = fetcher,
+            serializers = serializers,
+            maxResponseBytes = maxResponseBytes,
+        )
     }
 }

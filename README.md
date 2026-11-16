@@ -1,210 +1,282 @@
-# Aviator ✈️
+# Aviator
 
-[![DiCentra](https://img.shields.io/badge/DiCentra-grey.svg)](https://code.mallne.cloud)
-[![Kotlin](https://img.shields.io/badge/kotlin-grey.svg?logo=kotlin)](https://kotlinlang.org/)
-[![OpenAPI](https://img.shields.io/badge/OpenAPI-3.x-green.svg?logo=openapiinitiative)](https://www.openapis.org/)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-blue.svg?logo=kotlin)](https://kotlinlang.org/docs/multiplatform.html)
+**OpenAPI clients and workflow execution for Kotlin Multiplatform.**
 
-**Aviator** is a modern, API-first application framework built with **Kotlin Multiplatform**. It empowers developers to
-build robust services and clients by treating the **OpenAPI (OAS)** specification as the single source of truth.
+Aviator turns OpenAPI operations into executable client definitions and composes them into workflows.
+Use the included `AviatorEngine` to resolve service targets, apply host policies, select plugins, and
+dispatch work through Ktor, Fetch, Mock, or orchestration templates.
 
----
+Normally, an application owns **one engine** and reuses its transports. You configure the engine;
+you do not implement it. The engine interface is an escape hatch for highly specialized integrations.
 
-## 🚀 Overview
+## Contents
 
-Aviator bridges the gap between API design and implementation. By extending the OpenAPI specification with custom
-`x-dicentra-aviator-*` attributes, the framework can automatically "materialize" declarative API operations into
-executable Kotlin service logic.
+- [Modules and dependencies](#modules-and-dependencies)
+- [Call an OpenAPI operation](#call-an-openapi-operation)
+- [Invocation modes and authorization](#invocation-modes-and-authorization)
+- [Plugins](#plugins)
+- [Workflows](#workflows)
+- [JavaScript and TypeScript](#javascript-and-typescript)
+- [Security and platform boundaries](#security-and-platform-boundaries)
+- [Build and test](#build-and-test)
 
-### Why Aviator?
+## Modules and dependencies
 
-- **API-First:** Design your API in OpenAPI and let Aviator handle the plumbing.
-- **Multiplatform:** Share service definitions and client logic across JVM, Android, and other KMP targets.
-- **Type-Safe:** Leverage Kotlin's powerful type system for your API models.
-- **Extensible:** A rich plugin system for authentication, interception, and content negotiation.
+| Module | Purpose |
+| --- | --- |
+| `core` | Included engine, definition coordinator, typed templates, client pipeline, plugin contracts |
+| `koas` | OpenAPI models and operation utilities |
+| `clients:ktor` | HTTP execution using Ktor |
+| `clients:fetch` | Fetch transport and JavaScript façade |
+| `clients:mock` | Deterministic client execution without network calls |
+| `orchestration:core` | Workflow delegation, execution policies, lifecycle hooks |
+| `orchestration:arazzo` | Supported sequential Arazzo workflow execution |
+| `plugins:*` | Optional adapters, authentication, interception, telemetry, Synapse, and Weaver |
 
----
+For a Kotlin client, add the Ktor client and the adapters you need to `commonMain`. The serialization
+compiler plugin must be enabled in your application. Use one matching Aviator version for all modules;
+the engine API described here is the current source API, not a promise about older published packages.
 
-## 📦 Project Structure
+```kotlin
+repositories {
+    maven("https://registry.mallne.cloud/repository/DiCentraArtefacts/")
+    mavenCentral()
+}
 
-The project is highly modular, allowing you to include only what you need:
-
-| Module          | Description                                                             |
-|:----------------|:------------------------------------------------------------------------|
-| **`:core`**     | The heart of Aviator. Handles service conversion and plugin management. |
-| **`:koas`**     | Kotlin-native models and utilities for OpenAPI 3.x specifications.      |
-| **`:clients`**  | Implementations for consuming Aviator services.                         |
-| **`:plugins`**  | Extensions for various cross-cutting concerns.                          |
-
----
-
-## 🔌 Plugins
-
-Aviator uses a powerful plugin system to handle cross-cutting concerns. Plugins are activated during the service
-crystallization process.
-
-### Content Adapters
-
-Enable support for different content types (JSON, XML) using Kotlin Serialization.
-
-- **`JsonAdapter`**: Provides JSON serialization support.
-  ```kotlin
-  plugins {
-      install(JsonAdapter) {
-          // Standard configuration
-      }
-  }
-  ```
-- **`XmlAdapter`**: Provides XML serialization support.
-  ```kotlin
-  plugins {
-      install(XmlAdapter) {
-          // Standard configuration
-      }
-  }
-  ```
-
-### Security & Middleware
-
-- **`HttpAuth`**: Adds support for HTTP authentication (e.g., Basic, Bearer).
-  ```kotlin
-  plugins {
-      install(HttpAuth) {
-          doBase64Encode = true
-          serviceFilter = mutableListOf(ServiceLocator("my-secure-service"))
-      }
-  }
-  ```
-- **`Interception`**: Allows for custom request/response interception via a staged pipeline.
-  ```kotlin
-  plugins {
-      install(Interception) {
-          steps {
-              before { context -> 
-                  println("Executing: ${context.serviceLocator}")
-              }
-          }
-      }
-  }
-  ```
-
-### Advanced Integrations
-
-- **`Synapse`**: Facilitates communication between disparate service layers or external systems.
-  ```kotlin
-  plugins {
-      install(Synapse) {
-          active = true
-      }
-  }
-  ```
-- **`Weaver`**: Integrates with the DiCentra Weaver engine for advanced data transformation and schema validation.
-  ```kotlin
-  plugins {
-      install(Weaver) {
-          weaver = myCustomWeaver
-          schema = myWeaverSchema
-      }
-  }
-  ```
-
----
-
-## 🛰️ Clients
-
-Aviator provides multiple client implementations to suit different environments and testing needs.
-
-- **`Ktor Client` (`:clients:ktor`)**:
-  The primary production-ready client. It uses the Ktor HTTP engine to perform real network requests based on the
-  Aviator service definitions derived from OpenAPI. It supports full content negotiation and plugin execution.
-
-- **`Mock Client` (`:clients:mock`)**:
-  A specialized client for testing and local development. Instead of making network calls, it captures the execution
-  context (headers, body, parameters) and allows you to simulate service responses, making it ideal for unit and
-  integration tests.
-
-### JavaScript / TypeScript packages
-
-Aviator publishes JavaScript packages to the DiCentra Node registry at
-`https://registry.mallne.cloud/repository/NodeRegistry/`. Configure your npm-compatible client for the
-`@dicentra` scope and authenticate with a registry token (`NPM_TOKEN`); do not commit credentials.
-
-The packages are released together at the same version. The current release is **1.0.6**:
-
-| npm package | Module |
-|:--|:--|
-| `@dicentra/aviator-core` | Core Aviator service and plugin APIs |
-| `@dicentra/aviator-koas` | OpenAPI models and transformation utilities |
-| `@dicentra/aviator-client-fetch` | Fetch-based client, including its JavaScript façade |
-| `@dicentra/aviator-plugin-adapter-json` | Optional JSON serialization adapter |
-| `@dicentra/aviator-plugin-adapter-xml` | Optional XML serialization adapter |
-| `@dicentra/aviator-plugin-http-auth` | HTTP authentication plugin |
-| `@dicentra/aviator-plugin-interception` | Request/response interception plugin |
-| `@dicentra/aviator-plugin-otel` | OpenTelemetry plugin |
-| `@dicentra/aviator-plugin-synapse` | Synapse integration plugin |
-| `@dicentra/aviator-plugin-weaver` | Weaver transformation plugin |
-
-Install the Fetch client with your package manager, for example:
-
-```bash
-npm install @dicentra/aviator-client-fetch@1.0.6
+kotlin {
+    sourceSets.commonMain.dependencies {
+        implementation("cloud.mallne.dicentra.aviator:core:$aviatorVersion")
+        implementation("cloud.mallne.dicentra.aviator.client:ktor:$aviatorVersion")
+        implementation("cloud.mallne.dicentra.aviator.plugin.adapter:adapter-json:$aviatorVersion")
+    }
+}
 ```
 
-The package exposes Kotlin/JS exports under `cloud.mallne.dicentra.aviator.client.fetch`. Its
-`createFetchAviatorJsClient(openApiJson, fetcher)` factory accepts an OpenAPI JSON string and a
-Fetch-compatible function. The façade indexes operations by `operationId`; call `request` with the
-operation ID and an optional JSON object of string-valued path/query/header parameters. It resolves
-to a JSON string containing the raw HTTP `status`, `contentType`, and response `body` text. It does
-not deserialize response bodies or install serialization adapters:
+Supply a Ktor `HttpClient` with an engine appropriate to your platform. Keep registry credentials
+outside source control.
+
+## Call an OpenAPI operation
+
+There are three setup steps: select an operation, convert it into a definition, and give that
+definition to the included engine. You do **not** need a custom definition or template for normal
+HTTP calls.
+
+Examples below use application-supplied definitions, policies, and models. Configure the engine
+once at application startup:
+
+```kotlin
+val engine = AviatorEngine(
+    coordinator = InMemoryDefinitionCoordinator(definitions),
+    authorization = authorization,
+    outboundTargetPolicy = outboundPolicy,
+    plugins = plugins,
+)
+```
+
+Convert a selected OpenAPI operation:
+
+```kotlin
+val definition = KtorEngineDefinitionConverter(converter).convert(
+    OpenApiOperationDefinitionRequest(api, route, locator),
+)
+```
+
+Invoke it using an included client template:
+
+```kotlin
+val outcomes = engine.invoke(
+    locator = locator,
+    template = ktorEngineTemplate<Response>(),
+    input = OpenApiClientInput(),
+    mode = InvocationMode.FIRST,
+)
+```
+
+`Response` is your serializable response model. For a request body, use
+`ktorEngineTemplateWithBody<Response, Body>()` with `OpenApiClientInput(body)`;
+the bodyless template uses `NoBody`.
+Pass path, query, and header values through `OpenApiClientInput.parameters`, and service options
+through `OpenApiClientInput.options`. The OpenAPI operation still defines how parameters reach the wire.
+
+Reuse converters and transports. Close the converter's configured `httpClient` and the original
+client at application shutdown; the Aviator engine does not own or close them.
+
+The explicit operation converter does not require an Aviator locator extension in the source
+operation. When materializing an entire document through the converter's `build` API instead, its
+`x-dicentra-aviator` version and operation `x-dicentra-aviator-serviceDelegateCall` extensions are used.
+Read extension values through `AviatorExtensionSpec`.
+
+## Invocation modes and authorization
+
+A `ServiceLocator` identifies an operation or workflow target, including its flavour. Multiple
+definitions may share that locator. The coordinator supplies candidates in stable order; the
+selected template's identity determines which delegation can execute them.
+
+| Mode | Behavior |
+| --- | --- |
+| `ALL` | Execute every matching candidate and retain each outcome |
+| `FIRST` | Execute only the first matching candidate, even if it fails |
+| `FIRST_NOT_FAILING` | Try candidates in order until one succeeds |
+
+Each outcome retains its definition and typed `Result<O>`. No match is an error; cancellation
+propagates rather than becoming a fallback failure. Ktor templates classify unsuccessful HTTP
+responses and failed decoding as failures.
+
+Host authorization defaults to **deny all**. Supply `EngineDefinitionAuthorization` for shared
+definition-level policy. For request-specific checks, attach `EngineAuthorization<I>` using
+`template.withAuthorization(...)`; it receives the actual typed input. Additional typed authorization
+plugins can veto through `withAuthorizationPlugin(...)`. Decisions are sealed `Allowed` / `Denied`
+values. Coordinator selection and plugin filtering never grant authorization.
+
+## Plugins
+
+Install plugin code in the host. Definitions may activate and reconfigure installed plugins; they
+cannot install arbitrary code.
+
+| Role | Responsibility |
+| --- | --- |
+| Engine | Narrow coordinator candidates, without altering workflow steps |
+| Delegation | Middleware around an authorized typed template invocation |
+| Client | Request/response pipeline stages |
+| Orchestration | Workflow, step, and attempt lifecycle hooks |
+| Uniform | One configured instance providing engine, delegation, client, and scope-provider roles |
+
+Engine, delegation, and uniform definitions use `install { ... }` to produce configured instances.
+The registry DSL installs those definitions through `enginePlugin`, `delegationPlugin`, and
+`uniformPlugin`. `clientPlugin` accepts an already installed client instance:
+
+```kotlin
+val plugins = aviatorPluginRegistry {
+    clientPlugin(JsonAdapter.install(), activation = PluginActivation.PASSIVE)
+    enginePlugin(filterPlugin) { /* host configuration */ }
+    uniformPlugin(sharedPlugin) { /* host configuration */ }
+}
+```
+
+### Activation
+
+- **`DEFINITION` (default):** active only when `ExecutableDefinition.pluginConfiguration` contains
+  its identity. The associated `JsonElement` is passed to `requestReconfigure`.
+- **`PASSIVE`:** active without a definition entry whenever its locator scope matches.
+- **Body adapters:** must be passive in the engine registry. Request/response representation selects
+  the appropriate adapter; installing an adapter does not force every body into that format.
+
+An operation requests an installed plugin by identity:
+
+```json
+{
+  "x-dicentra-aviator-pluginMaterialization": {
+    "plugin-identity": {}
+  }
+}
+```
+
+This map is activation/reconfiguration data, not the plugin's install-time Kotlin configuration.
+JSON and XML adapters handle body serialization; HTTP authentication, interception, telemetry,
+Synapse forwarding, and Weaver transformations are separate optional modules.
+
+### Different configurations for different services
+
+`serviceFilter` is a list of matching `ServiceLocator`s. An empty list matches all locators.
+You may install the same plugin identity more than once if its locator scopes do not overlap.
+Each registration can cover several locators:
+
+```kotlin
+val plugins = aviatorPluginRegistry {
+    enginePlugin(plugin) { serviceFilter = firstGroup.toMutableList() }
+    enginePlugin(plugin) { serviceFilter = secondGroup.toMutableList() }
+}
+```
+
+The groups must be disjoint. Each installation receives its own configuration.
+
+Locator scopes choose configured instances. They are distinct from **invocation data scopes**:
+a `PluginScopeProvider` publishes a typed snapshot, read through `EngineInvocationContext.scope(key)`.
+Uniform plugins can publish these snapshots; orchestration uses this mechanism to receive its
+invocation-local plugin registry. Keep request state out of shared installed instances.
+
+## Workflows
+
+Workflows use the same engine through `WorkflowDefinition`, `OrchestrationEngineTemplate`, and
+`WorkflowInput`. Given an engine whose coordinator contains a configured workflow definition:
+
+```kotlin
+val outcomes = engine.invoke(
+    locator = workflowLocator,
+    template = OrchestrationEngineTemplate,
+    input = WorkflowInput(inputs = inputsJson),
+    mode = InvocationMode.FIRST,
+)
+```
+
+The workflow definition owns its orchestrator and workflow identity. Arazzo's
+`ArazzoEngineStepExecutor` resolves actions and invokes client operations through the same engine,
+including operations without locator extensions. `resolveArazzoEngineAction` resolves
+source-qualified operation identities; the host supplies typed input/result mapping and an exact
+association to each executable definition. An `operationId` is not implicitly a locator.
+
+Workflow execution retains its validation, authorization, budgets, lifecycle hooks, success criteria,
+and source-response metadata. Engine invocation modes select definitions; they do not replace
+workflow ordering or step failure semantics. Arazzo supports a limited sequential profile, not full
+specification conformance or BPMN execution.
+
+## JavaScript and TypeScript
+
+The Fetch façade provides a smaller operation-ID API, separate from Kotlin's typed engine API.
+Packages are available from `https://registry.mallne.cloud/repository/NodeRegistry/`; configure
+the `@dicentra` scope and authenticate without committing tokens.
+
+```sh
+npm install @dicentra/aviator-client-fetch
+```
 
 ```ts
-import { createRequire } from 'node:module';
-
-const require = createRequire(import.meta.url);
-const { cloud } = require('@dicentra/aviator-client-fetch');
-const { createFetchAviatorJsClient } = cloud.mallne.dicentra.aviator.client.fetch;
+import { createFetchAviatorJsClient } from '@dicentra/aviator-client-fetch';
 
 const client = createFetchAviatorJsClient(openApiJson, globalThis.fetch);
-const rawResponse = JSON.parse(await client.request('findParcels', JSON.stringify({ q: 'A 1' })));
-// { status: 200, contentType: 'application/json', body: '{...}' }
+const response = JSON.parse(await client.request(operationId, JSON.stringify(parameters)));
 ```
 
-Serialization adapters remain **optional**. Install and activate JSON, XML, or other adapters only
-when the application needs typed serialization; the Fetch JavaScript façade does not enable one by
-default.
+The façade returns raw response text, not a deserialized model. Optional plugins are separate
+`@dicentra/aviator-plugin-*` packages and are not pulled into Fetch automatically. Keep all Aviator
+packages on a matching version. See [npm packaging and verification](npm-distribution/README.md).
 
----
+## Security and platform boundaries
 
-## 🛠️ Getting Started
+- The host must authorize definitions and provide `OutboundTargetPolicy`. That policy sees declared
+  OpenAPI server URLs—not DNS answers or connected-peer addresses. Use resolver/transport or deployment
+  egress controls where address-level restrictions are required.
+- Ktor disables automatic redirects; Fetch rejects redirects. Do not weaken these controls or add
+  transport retries that bypass actual-attempt authorization and budgets.
+- Apply request deadlines, workflow budgets, response-size limits, and secret-safe logging.
+  Installed plugins are trusted code, not a security sandbox.
+- JVM, JS Node, and selected Native paths have test coverage; Android/iOS device execution,
+  live-provider behavior, and performance are not fully qualified. Orchestration has no Wasm target.
+- Adoption by the AreaAssist production host remains deferred. The examples describe library
+  capabilities, not completed application integration.
 
-### Prerequisites
+## Build and test
 
-- JDK 17 or higher
-- Gradle
+From the monorepo root, use the pinned Nix development shell (Java 25) and the Gradle wrapper:
 
-### Building the Project
-
-```bash
-./gradlew build
+```sh
+nix develop --command ./aviator/gradlew --no-daemon -p aviator build
 ```
 
----
+Focused engine/client/workflow verification:
 
-## 🧩 Custom OpenAPI Extensions
+```sh
+nix develop --command ./aviator/gradlew --no-daemon -p aviator \
+  :clients:mock:jvmTest :clients:ktor:jvmTest :clients:fetch:jsNodeTest \
+  :orchestration:arazzo:jvmTest --max-workers=1
+```
 
-Aviator uses custom extensions to map OpenAPI operations to Kotlin services:
+Android compilation additionally requires a locally configured Android SDK. npm package verification
+runs with `npm run verify:fetch` in `aviator/npm-distribution`.
 
-- `x-dicentra-aviator`: Specifies the version of the Aviator spec.
-- `x-dicentra-aviator-serviceDelegateCall`: Points to the Kotlin service implementation.
-- `x-dicentra-aviator-serviceOptions`: Provides configuration options for the service.
-- `x-dicentra-aviator-pluginMaterialization`: Configures plugins for specific routes.
+## License
 
----
-
-## 📜 License
-
-This project is licensed under the **Apache License 2.0**. See the [LICENSE](LICENSE) file for details.
+[Apache License 2.0](LICENSE).
 
 ---
 
