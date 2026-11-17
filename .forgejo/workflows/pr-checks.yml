@@ -27,10 +27,10 @@ jobs:
           :clients:mock:jvmTest
           :plugins:adapter-json:jvmTest
           :plugins:adapter-xml:jvmTest
-          :plugins:http-auth:jvmTest
-          :plugins:interception:jvmTest
-          :plugins:weaver:jvmTest
+          :plugins:client:http-auth:jvmTest
+          :plugins:client:interception:jvmTest
+          :plugins:client:weaver:jvmTest
           :plugins:otel:jvmTest
-          :plugins:synapse:jvmTest
+          :plugins:client:synapse:jvmTest
           :core:jvmTest
           :koas:jvmTest

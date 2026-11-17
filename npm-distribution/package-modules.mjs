@@ -17,7 +17,7 @@ const publicModules = {
     ['http-auth', 'AviatorHttpAuthPlugin'], ['interception', 'AviatorInterceptionPlugin'],
     ['otel', 'AviatorOpenTelemetryPlugin'], ['synapse', 'AviatorSynapsePlugin'],
     ['weaver', 'AviatorWeaverPlugin'],
-  ].map(([id, singleton]) => [`Aviator-plugins-${id}`, { name: `aviator-plugin-${id}`, singleton }])),
+  ].map(([id, singleton]) => [`Aviator-plugins-${id === 'otel' || id.startsWith('adapter-') ? '' : 'client-'}${id}`, { name: `aviator-plugin-${id}`, singleton }])),
 };
 const files = (await readdir(input)).filter(file => file.endsWith('.mjs') && file !== 'Aviator-npm-distribution.mjs');
 const packageName = file => `@dicentra/${publicModules[path.basename(file, '.mjs')]?.name ?? `aviator-js-${path.basename(file, '.mjs').toLowerCase().replaceAll('_', '-')}`}`;

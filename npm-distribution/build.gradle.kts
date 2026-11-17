@@ -21,11 +21,11 @@ kotlin {
         api(project(":clients:fetch"))
         api(project(":plugins:adapter-json"))
         api(project(":plugins:adapter-xml"))
-        api(project(":plugins:http-auth"))
-        api(project(":plugins:interception"))
+        api(project(":plugins:client:http-auth"))
+        api(project(":plugins:client:interception"))
         api(project(":plugins:otel"))
-        api(project(":plugins:synapse"))
-        api(project(":plugins:weaver"))
+        api(project(":plugins:client:synapse"))
+        api(project(":plugins:client:weaver"))
     }
 }
 
