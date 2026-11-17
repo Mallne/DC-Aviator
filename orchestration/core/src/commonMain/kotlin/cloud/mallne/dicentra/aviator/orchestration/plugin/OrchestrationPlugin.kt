@@ -111,7 +111,7 @@ fun interface OrchestrationLogMetadataProvider {
 
 interface OrchestrationPluginInstance {
     val identity: String
-    val configurationBundle: OrchestrationPluginConfigurationBundle
+    val orchestrationConfigurationBundle: OrchestrationPluginConfigurationBundle
     val serviceFilter: Set<ServiceLocator>
     val stages: Set<OrchestrationStage>
     /** Empty means the stage's conventional phase (before for forward stages, after for unwind/result stages). */
@@ -119,7 +119,7 @@ interface OrchestrationPluginInstance {
     val lifecycleScopes: Set<OrchestrationLifecycleScope>
     val executor: OrchestrationPluginExecutor
     val metadataProvider: OrchestrationMetadataProvider
-    val logMetadataProvider: OrchestrationLogMetadataProvider
+    val orchestrationLogMetadataProvider: OrchestrationLogMetadataProvider
         get() = OrchestrationLogMetadataProvider { _, _ -> emptyMap() }
     val silentLoggingTags: Set<String>
         get() = emptySet()
@@ -250,7 +250,7 @@ class OrchestrationPluginRegistry(
             constituent.operationId?.let { put("operation.id", it) }
         }
         for (plugin in installed) {
-            plugin.logMetadataProvider.provide(tag, context).forEach { (key, value) ->
+            plugin.orchestrationLogMetadataProvider.provide(tag, context).forEach { (key, value) ->
                 put(key, if (isSensitiveMetadataKey(key)) "[REDACTED]" else value)
             }
         }
@@ -313,11 +313,11 @@ private data class InstalledOrchestrationPlugin(
     override val lifecycleScopes: Set<OrchestrationLifecycleScope>,
     override val executor: OrchestrationPluginExecutor,
     override val metadataProvider: OrchestrationMetadataProvider,
-    override val logMetadataProvider: OrchestrationLogMetadataProvider,
+    override val orchestrationLogMetadataProvider: OrchestrationLogMetadataProvider,
     override val silentLoggingTags: Set<String>,
     override val invocationPolicy: InvocationPolicyPlugin?,
 ) : OrchestrationPluginInstance {
-    override val configurationBundle = OrchestrationPluginConfigurationBundle(
+    override val orchestrationConfigurationBundle = OrchestrationPluginConfigurationBundle(
         serviceFilter.toSet(), stages.toSet(), phases.toSet(), lifecycleScopes.toSet(), silentLoggingTags.toSet(),
     )
 
@@ -329,14 +329,14 @@ private data class InstalledOrchestrationPlugin(
             lifecycleScopes += this@InstalledOrchestrationPlugin.lifecycleScopes
             executor = this@InstalledOrchestrationPlugin.executor
             metadataProvider = this@InstalledOrchestrationPlugin.metadataProvider
-            logMetadataProvider = this@InstalledOrchestrationPlugin.logMetadataProvider
+            logMetadataProvider = this@InstalledOrchestrationPlugin.orchestrationLogMetadataProvider
             silentLoggingTags += this@InstalledOrchestrationPlugin.silentLoggingTags
             invocationPolicy = this@InstalledOrchestrationPlugin.invocationPolicy
         }.apply(config)
         return copy(serviceFilter = scope.serviceFilter.toSet(), stages = scope.stages.toSet(), phases = scope.phases.toSet(),
             lifecycleScopes = scope.lifecycleScopes.toSet(),
             executor = scope.executor, metadataProvider = scope.metadataProvider,
-            logMetadataProvider = scope.logMetadataProvider, silentLoggingTags = scope.silentLoggingTags.toSet(),
+            orchestrationLogMetadataProvider = scope.logMetadataProvider, silentLoggingTags = scope.silentLoggingTags.toSet(),
             invocationPolicy = scope.invocationPolicy)
     }
 }

@@ -1,6 +1,12 @@
-package cloud.mallne.dicentra.aviator.plugin.orchestration.otel
+package cloud.mallne.dicentra.aviator.plugin.otel
 
+import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginInstance
+import cloud.mallne.dicentra.aviator.core.plugins.DelegationAviatorPluginInstance
+import cloud.mallne.dicentra.aviator.core.plugins.EngineAviatorPluginInstance
+import cloud.mallne.dicentra.aviator.core.plugins.PluginScopeProvider
+import cloud.mallne.dicentra.aviator.core.plugins.UniformAviatorPlugin
 import cloud.mallne.dicentra.aviator.orchestration.plugin.OrchestrationLifecycleScope
+import cloud.mallne.dicentra.aviator.orchestration.plugin.OrchestrationPluginInstance
 import cloud.mallne.dicentra.aviator.orchestration.plugin.OrchestrationStage
 import io.opentelemetry.kotlin.ExperimentalApi
 import io.opentelemetry.kotlin.OpenTelemetry
@@ -13,11 +19,12 @@ import io.opentelemetry.kotlin.tracing.Tracer
 import io.opentelemetry.kotlin.tracing.TracerProvider
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 @OptIn(ExperimentalApi::class)
-class OrchestrationOpenTelemetryPluginTest {
+class OpenTelemetryUniformPluginTest {
     @Test
-    fun pluginIsOptionalAndDeclaresRunAndBindingLifecycleBoundaries() {
+    fun oneInstallationProvidesUniformClientEngineAndOrchestrationRoles() {
         var tracerName: String? = null
         val telemetry = object : OpenTelemetry {
             override val tracerProvider = object : TracerProvider {
@@ -47,11 +54,27 @@ class OrchestrationOpenTelemetryPluginTest {
             override val propagator: TextMapPropagator get() = error("unused")
         }
 
-        val plugin = orchestrationOpenTelemetryPlugin(telemetry)
+        assertIs<UniformAviatorPlugin<*>>(OpenTelemetryPlugin)
+        val plugin = OpenTelemetryPlugin.install { openTelemetry = telemetry }
 
+        assertIs<AviatorPluginInstance>(plugin)
+        assertIs<EngineAviatorPluginInstance>(plugin)
+        assertIs<DelegationAviatorPluginInstance>(plugin)
+        assertIs<PluginScopeProvider>(plugin)
+        assertIs<OrchestrationPluginInstance>(plugin)
         assertEquals("io.opentelemetry.aviator.orchestration", tracerName)
-        assertEquals(setOf(OrchestrationStage.PREPARE, OrchestrationStage.SCHEDULE,
-            OrchestrationStage.FAILURE, OrchestrationStage.CLEANUP), plugin.stages)
-        assertEquals(setOf(OrchestrationLifecycleScope.RUN, OrchestrationLifecycleScope.BINDING), plugin.lifecycleScopes)
+        assertEquals(
+            setOf(
+                OrchestrationStage.PREPARE,
+                OrchestrationStage.SCHEDULE,
+                OrchestrationStage.FAILURE,
+                OrchestrationStage.CLEANUP,
+            ),
+            (plugin as OrchestrationPluginInstance).stages,
+        )
+        assertEquals(
+            setOf(OrchestrationLifecycleScope.RUN, OrchestrationLifecycleScope.BINDING),
+            plugin.lifecycleScopes,
+        )
     }
 }

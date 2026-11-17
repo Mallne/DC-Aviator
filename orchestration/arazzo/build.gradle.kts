@@ -39,7 +39,7 @@ kotlin {
         jvmTest.dependencies {
             implementation(project(":clients:ktor"))
             implementation(project(":plugins:adapter-json"))
-            implementation(project(":plugins:orchestration:otel"))
+            implementation(project(":plugins:otel"))
             implementation(libs.opentelemetry.kotlin.api)
             implementation(libs.ktor.client.mock)
             implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:${libs.versions.kotlin.asProvider().get()}")

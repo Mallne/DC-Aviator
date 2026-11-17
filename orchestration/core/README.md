@@ -126,12 +126,12 @@ Non-byte budget limits are an optional policy plugin, rather than implicit behav
 
 ```kotlin
 import cloud.mallne.dicentra.aviator.plugin.orchestration.budget.executionBudgetPolicyPlugin
-import cloud.mallne.dicentra.aviator.plugin.orchestration.otel.orchestrationOpenTelemetryPlugin
+import cloud.mallne.dicentra.aviator.plugin.otel.OpenTelemetryPlugin
 
 val registry = installOrchestrationPlugins(logger = appLogger) {
     install(executionBudgetPolicyPlugin())
     install("example.transform") { /* staged extension */ }
-    install(orchestrationOpenTelemetryPlugin(openTelemetry))
+    install(OpenTelemetryPlugin.install { this.openTelemetry = openTelemetry })
 }
 val executor = ArazzoRunExecutor(stepExecutor, plugins = registry)
 ```
@@ -157,9 +157,9 @@ val registry = installOrchestrationPlugins(logger = appLogger) {
 
 The registry's `AviatorLogger` backend is optional; `context.log` and core lifecycle logging are safe when no backend is configured and become no-ops. Lifecycle events are logged by orchestration core itself: normal stages at info, failures at warn, and cleanup at debug. They use the stable `orchestration.lifecycle` tag, include stage/run and installed-plugin metadata, and never log payloads or raw failure details. Installed plugins can suppress this tag through `silentLoggingTags`.
 
-The optional implementations are packaged independently as `cloud.mallne.dicentra.aviator.plugin:orchestration-budget`, `orchestration-authorization`, and `orchestration-otel`; publication is still a separate release step. Core logging uses Aviator's host-supplied `AviatorLogger`; OTEL accepts the host's OpenTelemetry instance. Add only optional policy/tracing artifacts an application uses. Core tests cover logging directly; each optional plugin module owns its tests.
+The optional implementations are packaged independently as `cloud.mallne.dicentra.aviator.plugin:orchestration-budget`, `orchestration-authorization`, and `otel`; publication is still a separate release step. Core logging uses Aviator's host-supplied `AviatorLogger`; OTEL accepts the host's OpenTelemetry instance. Add only optional policy/tracing artifacts an application uses. Core tests cover logging directly; each optional plugin module owns its tests.
 
-`orchestrationOpenTelemetryPlugin(openTelemetry)` creates internal spans for Arazzo runs and materialized binding executions, tags workflow/run identifiers and failure codes, and ends spans during cleanup. It does not install an SDK/exporter, record payloads or propagate trace context through HTTP; the application supplies its OpenTelemetry SDK and exporters.
+`OpenTelemetryPlugin.install { openTelemetry = ... }` produces one uniform plugin instance for Aviator client calls, engine invocations and orchestration. It creates internal spans for Arazzo runs and materialized binding executions, tags workflow/run identifiers and failure codes, and ends spans during cleanup. It does not install an SDK/exporter or record payloads; HTTP trace-context propagation remains controlled by `enableContextPropagation`.
 
 At most one atomic invocation-policy plugin may be installed in a registry. It creates fresh shared accounting for each run; `forStep` views share that run's reservations. Required host authorization is checked independently and before behavior-changing attempt hooks.
 

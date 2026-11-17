@@ -133,7 +133,7 @@ Optional observability plugin verification (2026-11-12), under pinned Temurin 25
 ```sh
 nix develop --command ./aviator/gradlew --no-daemon --project-dir aviator \
   :plugins:orchestration:logging:jvmTest :plugins:orchestration:logging:jsNodeTest \
-  :plugins:orchestration:otel:jvmTest :plugins:orchestration:otel:jsNodeTest \
+  :plugins:otel:jvmTest :plugins:otel:jsNodeTest \
   -x :kotlinStorePackageLock --max-workers=1 --rerun-tasks --console=plain
 ```
 
@@ -195,11 +195,11 @@ nix develop --command ./aviator/gradlew --no-daemon --project-dir aviator \
   :plugins:orchestration:budget:compileKotlinIosArm64 \
   :plugins:orchestration:authorization:compileKotlinIosArm64 \
   :plugins:orchestration:logging:compileKotlinIosArm64 \
-  :plugins:orchestration:otel:compileKotlinIosArm64 \
+  :plugins:otel:compileKotlinIosArm64 \
   :plugins:orchestration:budget:compileAndroidMain \
   :plugins:orchestration:authorization:compileAndroidMain \
   :plugins:orchestration:logging:compileAndroidMain \
-  :plugins:orchestration:otel:compileAndroidMain \
+  :plugins:otel:compileAndroidMain \
   -x :kotlinStorePackageLock --max-workers=1 --console=plain
 ```
 
@@ -230,11 +230,11 @@ nix develop --command ./aviator/gradlew --no-daemon --project-dir aviator \
   :plugins:orchestration:budget:compileTestKotlinIosArm64 \
   :plugins:orchestration:authorization:compileTestKotlinIosArm64 \
   :plugins:orchestration:logging:compileTestKotlinIosArm64 \
-  :plugins:orchestration:otel:compileTestKotlinIosArm64 \
+  :plugins:otel:compileTestKotlinIosArm64 \
   :plugins:orchestration:budget:compileAndroidMain \
   :plugins:orchestration:authorization:compileAndroidMain \
   :plugins:orchestration:logging:compileAndroidMain \
-  :plugins:orchestration:otel:compileAndroidMain \
+  :plugins:otel:compileAndroidMain \
   -x :kotlinStorePackageLock --max-workers=1 --console=plain
 ```
 

@@ -1,5 +1,6 @@
-package cloud.mallne.dicentra.aviator.plugin.orchestration.otel
+package cloud.mallne.dicentra.aviator.plugin.otel
 
+import cloud.mallne.dicentra.aviator.plugin.otel.OpenTelemetryPlugin
 import cloud.mallne.dicentra.aviator.model.ServiceLocator
 import cloud.mallne.dicentra.aviator.orchestration.arazzo.execution.arazzo
 import cloud.mallne.dicentra.aviator.orchestration.arazzo.model.ArazzoStep
@@ -50,7 +51,7 @@ class OrchestratorOtelDslTest {
         }
         val identity = ConstituentIdentity(ServiceLocator("weather>get"), "provider", "source", "revision", "forecast")
         val engine = orchestrator {
-            plugins { install(orchestrationOpenTelemetryPlugin(telemetry)) }
+            plugins { install(OpenTelemetryPlugin.install { openTelemetry = telemetry }) }
             arazzo {
                 workflow = { ArazzoWorkflow("flow", listOf(ArazzoStep("fetch", operationId = "forecast"))) }
                 authorize = { null }

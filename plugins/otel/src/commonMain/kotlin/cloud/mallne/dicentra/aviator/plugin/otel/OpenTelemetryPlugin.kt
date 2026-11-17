@@ -2,18 +2,17 @@
 
 package cloud.mallne.dicentra.aviator.plugin.otel
 
-import cloud.mallne.dicentra.aviator.core.plugins.AviatorPlugin
-import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginInstance
+import cloud.mallne.dicentra.aviator.core.plugins.UniformAviatorPlugin
 import io.opentelemetry.kotlin.ExperimentalApi
 import kotlin.js.ExperimentalJsExport
 import kotlin.js.JsExport
 
 @OptIn(ExperimentalApi::class)
 @JsExport
-object OpenTelemetryPlugin : AviatorPlugin<OpenTelemetryPluginConfig> {
+object OpenTelemetryPlugin : UniformAviatorPlugin<OpenTelemetryPluginConfig> {
     override val identity: String = "DC-AV-OpenTelemetry"
 
-    override fun install(config: OpenTelemetryPluginConfig.() -> Unit): AviatorPluginInstance {
+    override fun install(config: OpenTelemetryPluginConfig.() -> Unit): OpenTelemetryPluginInstance {
         val pluginConfig = OpenTelemetryPluginConfig()
         config.invoke(pluginConfig)
         requireNotNull(pluginConfig.openTelemetry) {
@@ -21,7 +20,7 @@ object OpenTelemetryPlugin : AviatorPlugin<OpenTelemetryPluginConfig> {
         }
         return OpenTelemetryPluginInstance(
             configurationBundle = pluginConfig,
-            x = OpenTelemetryPluginExecutor(pluginConfig)
+            x = OpenTelemetryPluginExecutor(pluginConfig),
         )
     }
 }

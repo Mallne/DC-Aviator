@@ -66,8 +66,9 @@ kotlin {
         getByName("commonMain") {
             dependencies {
                 implementation(libs.kotlinx.serialization.json)
-                implementation(project(":core"))
-                implementation(project(":clients:ktor"))
+            implementation(project(":core"))
+            implementation(project(":clients:ktor"))
+            api(project(":orchestration:core"))
                 implementation(libs.ktor.client.core)
                 implementation(libs.opentelemetry.kotlin.api)
             }

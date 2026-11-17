@@ -85,8 +85,8 @@ class OrchestrationPluginTest {
         updatedRegistry.execute(context(targetB))
 
         assertEquals(listOf("original", "reconfigured"), observed)
-        assertEquals(setOf(targetA), original.configurationBundle.serviceFilter)
-        assertEquals(setOf(targetB), reconfigured.configurationBundle.serviceFilter)
+        assertEquals(setOf(targetA), original.orchestrationConfigurationBundle.serviceFilter)
+        assertEquals(setOf(targetB), reconfigured.orchestrationConfigurationBundle.serviceFilter)
     }
 
     @Test
@@ -178,8 +178,8 @@ class OrchestrationPluginTest {
 
         assertEquals(listOf("second:second", "first:first"), order)
         val updated = first.reconfigure { stages += OrchestrationStage.FAILURE }
-        assertEquals(setOf(OrchestrationStage.COMPLETE, OrchestrationStage.FAILURE), updated.configurationBundle.stages)
-        assertEquals(emptySet(), updated.reconfigure { stages.clear() }.configurationBundle.stages)
+        assertEquals(setOf(OrchestrationStage.COMPLETE, OrchestrationStage.FAILURE), updated.orchestrationConfigurationBundle.stages)
+        assertEquals(emptySet(), updated.reconfigure { stages.clear() }.orchestrationConfigurationBundle.stages)
     }
 
     @Test
@@ -208,7 +208,7 @@ class OrchestrationPluginTest {
 
         assertEquals(listOf("first-BEFORE", "second-BEFORE", "second-AFTER", "first-AFTER"), order)
         assertEquals(setOf(OrchestrationHookPhase.BEFORE, OrchestrationHookPhase.AFTER),
-            registry.get("first")?.configurationBundle?.phases)
+            registry.get("first")?.orchestrationConfigurationBundle?.phases)
     }
 
     @Test
