@@ -18,8 +18,7 @@ import cloud.mallne.dicentra.aviator.model.ServiceLocator
 import cloud.mallne.dicentra.aviator.orchestration.arazzo.execution.arazzo
 import cloud.mallne.dicentra.aviator.orchestration.arazzo.execution.ArazzoEngineStepExecutor
 import cloud.mallne.dicentra.aviator.orchestration.arazzo.execution.resolveArazzoEngineAction
-import cloud.mallne.dicentra.aviator.orchestration.arazzo.model.ArazzoStep
-import cloud.mallne.dicentra.aviator.orchestration.arazzo.model.ArazzoWorkflow
+import cloud.mallne.dicentra.aviator.orchestration.arazzo.model.arazzoDocument
 import cloud.mallne.dicentra.aviator.orchestration.execution.*
 import cloud.mallne.dicentra.aviator.orchestration.execution.OrchestrationPluginScope
 import cloud.mallne.dicentra.aviator.orchestration.model.*
@@ -249,7 +248,10 @@ class EngineWorkflowIntegrationTest {
         val service = MockConverter().buildOperation(api, api.routes().single(), actionLocator)
         val clientDefinition = MockClientDefinition(service)
         val constituent = ConstituentIdentity(actionLocator, "provider", "source", "rev", "weather")
-        val workflow = ArazzoWorkflow("weather-workflow", listOf(ArazzoStep("first", operationId = "weather")))
+        val workflow = arazzoDocument("Weather", "1") {
+            source("weather", "urn:test:weather")
+            workflow("weather-workflow") { step("first", "weather") }
+        }.workflows.single()
         val engineOrchestrationPlugins =
             listOf(
                 OrchestrationPluginRegistration(ExecutionBudgetPlugin.install(), PluginActivation.PASSIVE),

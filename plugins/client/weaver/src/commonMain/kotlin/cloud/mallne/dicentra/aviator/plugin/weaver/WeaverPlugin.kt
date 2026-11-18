@@ -8,6 +8,7 @@ import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionStages
 import cloud.mallne.dicentra.aviator.core.execution.AviatorExecutionContext
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPlugin
 import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginInstance
+import cloud.mallne.dicentra.aviator.core.plugins.AviatorJsExport
 import cloud.mallne.dicentra.aviator.core.plugins.PluginStagedExecutorBuilder
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
@@ -15,9 +16,8 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlin.js.ExperimentalJsExport
-import kotlin.js.JsExport
 
-@JsExport
+@AviatorJsExport
 object WeaverPlugin : AviatorPlugin<WeaverPluginConfig> {
     const val RESULT = "WV-Result"
     override val identity: String = "DC-WVxAV"

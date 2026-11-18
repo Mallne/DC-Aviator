@@ -10,8 +10,9 @@ import nl.adaptivity.xmlutil.dom2.*
 import nl.adaptivity.xmlutil.serialization.XML
 import kotlin.js.ExperimentalJsExport
 import kotlin.js.JsExport
+import cloud.mallne.dicentra.aviator.core.plugins.AviatorJsExport
 
-@JsExport
+@AviatorJsExport
 object XmlAdapter :
     UniformAviatorPlugin<XmlAdapterPluginConfig> {
     override val identity: String = "adapter:XML"

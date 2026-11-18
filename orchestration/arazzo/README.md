@@ -4,6 +4,30 @@ Status: AV-10 provides serializable JSON document models and a fail-closed valid
 
 This module will implement the Arazzo workflow specification using [Aviator Orchestration Core](../core/README.md). It is an orchestrator, not an Aviator request-pipeline plugin.
 
+## Authoring executable documents
+
+`arazzoDocument` builds the same serializable `ArazzoDocument` models accepted by the runner. It
+validates its output against the supported execution profile; unsupported expressions and invalid
+references fail when the document is built. The host still supplies operation resolution, input
+mapping, authorization and execution policy.
+
+```kotlin
+val document = arazzoDocument("Weather", "1") {
+    source("weather", "urn:example:weather-openapi")
+    workflow("forecast") {
+        step("fetch", "\$sourceDescriptions.weather.getForecast") {
+            parameter("latitude", "query", "\$inputs.lat")
+            output("response", "\$response.body")
+        }
+        output("forecast", "\$steps.fetch.outputs.response")
+    }
+}
+// Pass document.workflows to the host's Arazzo workflow lookup.
+```
+
+The DSL uses `cloud.mallne.dicentra.aviator.orchestration.arazzo.model.arazzoDocument`; it does
+not fetch source URLs or make unsupported Arazzo features executable.
+
 Orchestration will use AV-21's first-class staged plugin architecture, with expressive parity to base Aviator: configurable installation, scoped context, before/after stage hooks, controlled input/result transformation and short-circuit behavior, not just policy observers. The Arazzo engine must expose its preparation, resolution, scheduling, mapping and completion stages through that architecture before AV-11 stabilizes; operation-level plugins remain independent and composable. Current authorization/non-byte execution budgets remain pending extraction. Core retained-byte accounting and aggregate/copy reservations are removed; Arazzo does not promise a heap-memory limit. Any future payload-size policy must explicitly define wire or serialized-size semantics.
 
 ## Responsibilities

@@ -1,3 +1,7 @@
+@file:OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+
+val omitWasmJsForRelease = providers.gradleProperty("omitWasmJsForRelease").orNull == "true"
+
 group = "cloud.mallne.dicentra.aviator.plugin"
 version = project.findProperty("VERSION_NAME") ?: "1.0.0-SNAPSHOT"
 description = "Optional constituent authorization plugin for Aviator orchestration."
@@ -22,6 +26,9 @@ kotlin {
     js {
         nodejs()
         browser()
+    }
+    if (!omitWasmJsForRelease) {
+        wasmJs { browser(); nodejs() }
     }
     iosX64()
     iosArm64()

@@ -5,11 +5,12 @@ package cloud.mallne.dicentra.aviator.plugin.adapter.json
 import cloud.mallne.dicentra.aviator.core.AviatorServiceDataHolder
 import cloud.mallne.dicentra.aviator.core.plugins.UniformAviatorPlugin
 import cloud.mallne.dicentra.aviator.core.plugins.UniformAviatorPluginInstance
+import cloud.mallne.dicentra.aviator.core.plugins.AviatorJsExport
 import kotlinx.serialization.json.Json
 import kotlin.js.ExperimentalJsExport
 import kotlin.js.JsExport
 
-@JsExport
+@AviatorJsExport
 object JsonAdapter :
     UniformAviatorPlugin<JsonAdapterPluginConfig> {
     override val identity: String = "adapter:JSON"
