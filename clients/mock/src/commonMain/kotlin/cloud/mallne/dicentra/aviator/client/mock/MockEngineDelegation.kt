@@ -9,7 +9,9 @@ import cloud.mallne.dicentra.aviator.core.engine.OpenApiClientInput
 import cloud.mallne.dicentra.aviator.core.engine.EngineDefinitionConverter
 import cloud.mallne.dicentra.aviator.core.engine.ExecutableDefinition
 import cloud.mallne.dicentra.aviator.core.engine.OpenApiOperationDefinitionRequest
+import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginActivationScope
 import cloud.mallne.dicentra.aviator.model.ServiceLocator
+import io.ktor.openapi.OpenApiDoc
 
 /** An already materialized OpenAPI operation, executed without an orchestration runtime. */
 class MockClientDefinition(val service: MockedAviatorService) : ExecutableDefinition {
@@ -22,8 +24,14 @@ class MockClientDefinition(val service: MockedAviatorService) : ExecutableDefini
 
 class MockEngineDefinitionConverter(
     private val converter: MockConverter,
-) : EngineDefinitionConverter<OpenApiOperationDefinitionRequest, MockClientDefinition> {
-    override fun convert(source: OpenApiOperationDefinitionRequest): MockClientDefinition =
+) : EngineDefinitionConverter<MockClientDefinition> {
+    /** Convert the operations that declare Aviator locators and mock service options. */
+    override fun convert(
+        api: OpenApiDoc,
+        plugins: AviatorPluginActivationScope.() -> Unit,
+    ): List<MockClientDefinition> = converter.build(api, plugins).map(::MockClientDefinition)
+
+    fun convert(source: OpenApiOperationDefinitionRequest): MockClientDefinition =
         MockClientDefinition(
             converter.buildOperation(source.api, source.route, source.locator, source.activatePlugins),
         )

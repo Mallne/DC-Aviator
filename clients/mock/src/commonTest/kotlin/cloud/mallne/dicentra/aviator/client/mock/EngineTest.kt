@@ -28,9 +28,10 @@ class EngineTest {
                     "x-dicentra-aviator-serviceOptions" to GenericElement("{}"),
                 ),
             )))), extensions = mapOf("x-dicentra-aviator" to GenericElement("1.0.0")))
-        val service = MockConverter().build(api).single()
+        val definitions = MockEngineDefinitionConverter(MockConverter()).convert(api)
+        assertEquals(locator, definitions.single().locator)
         val engine = AviatorEngine(
-            InMemoryDefinitionCoordinator(listOf(MockClientDefinition(service))),
+            InMemoryDefinitionCoordinator(definitions),
             EngineDefinitionAuthorization { EngineAuthorizationDecision.Allowed },
             OutboundTargetPolicy { _, _, _ -> null },
         )
@@ -195,7 +196,7 @@ class EngineTest {
             EngineDefinitionAuthorization { EngineAuthorizationDecision.Allowed }, OutboundTargetPolicy { _, _, _ -> null },
         )
         assertEquals(3, engine.invoke(locator, template, Unit, InvocationMode.ALL).size)
-        assertEquals(1, engine.invoke(locator, template, Unit, InvocationMode.FIRST).size)
+        assertEquals(1, engine.invoke(locator, template, Unit).size)
         val firstSuccess = engine.invoke(locator, template, Unit, InvocationMode.FIRST_NOT_FAILING)
         assertEquals(2, firstSuccess.size)
         assertTrue(firstSuccess.first().result.isFailure)

@@ -16,9 +16,12 @@ data class OpenApiClientInput<B : @Serializable Any>(
     val parameters: RequestParameters = RequestParameters(),
 )
 
-/** A client converts its source representation into an executable definition. */
-fun interface EngineDefinitionConverter<in Source : Any, out Definition : ExecutableDefinition> {
-    fun convert(source: Source): Definition
+/** Converts an Aviator OpenAPI document into client definitions keyed by declared locators. */
+interface EngineDefinitionConverter<out Definition : ExecutableDefinition> {
+    fun convert(
+        api: OpenApiDoc,
+        plugins: AviatorPluginActivationScope.() -> Unit = {},
+    ): List<Definition>
 }
 
 /** Shared OpenAPI operation source passed to client definition converters. */

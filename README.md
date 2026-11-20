@@ -11,6 +11,7 @@ you do not implement it. The engine interface is an escape hatch for highly spec
 
 ## Contents
 
+- [Migrating from Aviator 1.x](MIGRATION-1-TO-2.md)
 - [Modules and dependencies](#modules-and-dependencies)
 - [Call an OpenAPI operation](#call-an-openapi-operation)
 - [Invocation modes and authorization](#invocation-modes-and-authorization)
@@ -57,14 +58,15 @@ outside source control.
 
 ## Call an OpenAPI operation
 
-There are three setup steps: select an operation, convert it into a definition, and give that
-definition to the included engine. You do **not** need a custom definition or template for normal
-HTTP calls.
+Convert your OpenAPI document and give the resulting definitions to the included engine. You do
+**not** need to select a route or supply a locator during conversion, or write a custom template
+for normal HTTP calls.
 
 Examples below use application-supplied definitions, policies, and models. Configure the engine
 once at application startup:
 
 ```kotlin
+val definitions = KtorEngineDefinitionConverter(converter).convert(api)
 val engine = AviatorEngine(
     coordinator = InMemoryDefinitionCoordinator(definitions),
     authorization = authorization,
@@ -73,38 +75,31 @@ val engine = AviatorEngine(
 )
 ```
 
-Convert a selected OpenAPI operation:
+For a bodyless request, import the Ktor `invoke` extension. It supplies the standard template
+for your response type:
 
 ```kotlin
-val definition = KtorEngineDefinitionConverter(converter).convert(
-    OpenApiOperationDefinitionRequest(api, route, locator),
-)
+import cloud.mallne.dicentra.aviator.client.ktor.invoke
+
+// In a suspend caller:
+val outcomes = engine.invoke<Response>(locator)
 ```
 
-Invoke it using an included client template:
-
-```kotlin
-val outcomes = engine.invoke(
-    locator = locator,
-    template = ktorEngineTemplate<Response>(),
-    input = OpenApiClientInput(),
-    mode = InvocationMode.FIRST,
-)
-```
-
-`Response` is your serializable response model. For a request body, use
-`ktorEngineTemplateWithBody<Response, Body>()` with `OpenApiClientInput(body)`;
-the bodyless template uses `NoBody`.
+`Response` is your serializable response model. Fetch offers the same extension in the
+`cloud.mallne.dicentra.aviator.client.fetch` package. Use explicit templates when you need to
+choose the transport at the call site or attach template-specific policy. For a request body, use
+`ktorEngineTemplateWithBody<Response, Body>()` with `OpenApiClientInput(body)`.
+The bodyless overload uses empty input when you omit it.
 Pass path, query, and header values through `OpenApiClientInput.parameters`, and service options
 through `OpenApiClientInput.options`. The OpenAPI operation still defines how parameters reach the wire.
 
 Reuse converters and transports. Close the converter's configured `httpClient` and the original
 client at application shutdown; the Aviator engine does not own or close them.
 
-The explicit operation converter does not require an Aviator locator extension in the source
-operation. When materializing an entire document through the converter's `build` API instead, its
-`x-dicentra-aviator` version and operation `x-dicentra-aviator-serviceDelegateCall` extensions are used.
-Read extension values through `AviatorExtensionSpec`.
+Whole-document conversion uses the `x-dicentra-aviator` version and reads each operation's locator
+from `x-dicentra-aviator-serviceDelegateCall`. Operations without that locator are skipped. For a
+workflow that deliberately binds a plain OpenAPI operation, the separate explicit operation
+converter can use the workflow's locator instead.
 
 ## Invocation modes and authorization
 
@@ -115,7 +110,7 @@ selected template's identity determines which delegation can execute them.
 | Mode | Behavior |
 | --- | --- |
 | `ALL` | Execute every matching candidate and retain each outcome |
-| `FIRST` | Execute only the first matching candidate, even if it fails |
+| `FIRST` (default) | Execute only the first matching candidate, even if it fails |
 | `FIRST_NOT_FAILING` | Try candidates in order until one succeeds |
 
 Each outcome retains its definition and typed `Result<O>`. No match is an error; cancellation
@@ -141,25 +136,26 @@ cannot install arbitrary code.
 | Orchestration | Workflow, step, and attempt lifecycle hooks |
 | Uniform | One configured instance providing engine, delegation, client, and scope-provider roles |
 
-Engine, delegation, and uniform definitions use `install { ... }` to produce configured instances.
-The registry DSL installs those definitions through `enginePlugin`, `delegationPlugin`, and
-`uniformPlugin`. `clientPlugin` accepts an already installed client instance:
+Use `plugin` to register a uniform plugin in all its roles. Use `enginePlugin`,
+`delegationPlugin`, or `clientPlugin` for a specific role. Pass a trailing configuration block
+when needed:
 
 ```kotlin
 val plugins = aviatorPluginRegistry {
-    clientPlugin(JsonAdapter.install(), activation = PluginActivation.PASSIVE)
+    plugin(JsonAdapter)
     enginePlugin(filterPlugin) { /* host configuration */ }
-    uniformPlugin(sharedPlugin) { /* host configuration */ }
+    plugin(sharedPlugin) { /* host configuration */ }
 }
 ```
 
 ### Activation
 
-- **`DEFINITION` (default):** active only when `ExecutableDefinition.pluginConfiguration` contains
+- **`DEFINITION` (default for non-adapters):** active only when `ExecutableDefinition.pluginConfiguration` contains
   its identity. The associated `JsonElement` is passed to `requestReconfigure`.
 - **`PASSIVE`:** active without a definition entry whenever its locator scope matches.
-- **Body adapters:** must be passive in the engine registry. Request/response representation selects
-  the appropriate adapter; installing an adapter does not force every body into that format.
+- **Body adapters:** `JsonAdapter` and `XmlAdapter` are uniform plugins and are always passive.
+  Use `plugin(JsonAdapter)` to register all roles, or `clientPlugin(JsonAdapter)` for
+  only the client role. Request/response representation selects the appropriate adapter.
 
 An operation requests an installed plugin by identity:
 

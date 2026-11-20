@@ -1,6 +1,9 @@
 package cloud.mallne.dicentra.aviator.client.ktor
 
 import cloud.mallne.dicentra.aviator.core.engine.EngineTemplate
+import cloud.mallne.dicentra.aviator.core.engine.AviatorEngine
+import cloud.mallne.dicentra.aviator.core.engine.InvocationMode
+import cloud.mallne.dicentra.aviator.core.engine.InvocationOutcome
 import cloud.mallne.dicentra.aviator.core.plugins.EngineInvocationContext
 import cloud.mallne.dicentra.aviator.core.engine.OpenApiClientInput
 import cloud.mallne.dicentra.aviator.core.engine.EngineDefinitionConverter
@@ -8,8 +11,10 @@ import cloud.mallne.dicentra.aviator.core.engine.ExecutableDefinition
 import cloud.mallne.dicentra.aviator.core.engine.OpenApiOperationDefinitionRequest
 import cloud.mallne.dicentra.aviator.core.NoBody
 import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.`x-dicentra-aviator-pluginMaterialization`
+import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginActivationScope
 import cloud.mallne.dicentra.aviator.model.ServiceLocator
 import cloud.mallne.dicentra.aviator.model.AviatorServiceUtils
+import io.ktor.openapi.OpenApiDoc
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -27,8 +32,14 @@ class KtorClientDefinition(val service: KtorAviatorService) : ExecutableDefiniti
 
 class KtorEngineDefinitionConverter(
     private val converter: KtorAviatorServiceConverter,
-) : EngineDefinitionConverter<OpenApiOperationDefinitionRequest, KtorClientDefinition> {
-    override fun convert(source: OpenApiOperationDefinitionRequest): KtorClientDefinition =
+) : EngineDefinitionConverter<KtorClientDefinition> {
+    /** Convert the operations that declare Aviator locators in the document. */
+    override fun convert(
+        api: OpenApiDoc,
+        plugins: AviatorPluginActivationScope.() -> Unit,
+    ): List<KtorClientDefinition> = converter.build(api, plugins).map(::KtorClientDefinition)
+
+    fun convert(source: OpenApiOperationDefinitionRequest): KtorClientDefinition =
         KtorClientDefinition(
             converter.buildOperation(source.api, source.route, source.locator, source.activatePlugins),
         )
@@ -87,6 +98,14 @@ class KtorEngineTemplate<O : @Serializable Any, B : @Serializable Any>(
 
 inline fun <reified O : @Serializable Any> ktorEngineTemplate(): KtorEngineTemplate<O, NoBody> =
     ktorEngineTemplateWithBody<O, NoBody>()
+
+/** Invoke a bodyless OpenAPI operation using the standard Ktor template for [O]. */
+suspend inline fun <reified O : @Serializable Any> AviatorEngine.invoke(
+    locator: ServiceLocator,
+    input: OpenApiClientInput<NoBody> = OpenApiClientInput(),
+    mode: InvocationMode = InvocationMode.FIRST,
+): List<InvocationOutcome<KtorExecutionContext<O, NoBody>>> =
+    invoke(locator, ktorEngineTemplate<O>(), input, mode)
 
 inline fun <reified O : @Serializable Any, reified B : @Serializable Any> ktorEngineTemplateWithBody():
     KtorEngineTemplate<O, B> =

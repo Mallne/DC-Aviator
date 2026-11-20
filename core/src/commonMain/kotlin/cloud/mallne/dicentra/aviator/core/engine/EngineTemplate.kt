@@ -1,5 +1,6 @@
 package cloud.mallne.dicentra.aviator.core.engine
 
+import cloud.mallne.dicentra.aviator.core.NoBody
 import cloud.mallne.dicentra.aviator.model.ServiceLocator
 import cloud.mallne.dicentra.aviator.core.plugins.EngineInvocationContext
 import cloud.mallne.dicentra.aviator.core.plugins.EngineAuthorizationPlugin
@@ -54,7 +55,16 @@ interface AviatorEngine {
         locator: ServiceLocator,
         template: EngineTemplate<I, O>,
         input: I,
-        mode: InvocationMode,
+        mode: InvocationMode = InvocationMode.FIRST,
         selectDefinition: (ExecutableDefinition) -> Boolean = { true },
     ): List<InvocationOutcome<O>>
+
+    /** Invoke an OpenAPI client operation without a body, parameters, or options. */
+    suspend fun <O : Any> invoke(
+        locator: ServiceLocator,
+        template: EngineTemplate<OpenApiClientInput<NoBody>, O>,
+        mode: InvocationMode = InvocationMode.FIRST,
+        selectDefinition: (ExecutableDefinition) -> Boolean = { true },
+    ): List<InvocationOutcome<O>> =
+        invoke(locator, template, OpenApiClientInput(), mode, selectDefinition)
 }

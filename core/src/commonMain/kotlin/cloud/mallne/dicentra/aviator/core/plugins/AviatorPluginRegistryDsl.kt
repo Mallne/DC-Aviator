@@ -24,17 +24,27 @@ class AviatorPluginRegistryBuilder {
         delegationPlugins += DelegationPluginRegistration(plugin.install(config), activation)
     }
 
-    fun <ConfigScope : AviatorPluginConfigScope> uniformPlugin(
+    fun <ConfigScope : AviatorPluginConfigScope> plugin(
         plugin: UniformAviatorPlugin<ConfigScope>,
-        activation: PluginActivation = PluginActivation.DEFINITION,
+        activation: PluginActivation? = null,
         config: ConfigScope.() -> Unit = {},
     ) {
-        uniformPlugins += UniformPluginRegistration(plugin.install(config), activation)
+        val instance = plugin.install(config)
+        uniformPlugins += UniformPluginRegistration(instance, activation ?: defaultClientActivation(instance))
+    }
+
+    fun <ConfigScope : AviatorPluginConfigScope> clientPlugin(
+        plugin: AviatorPlugin<ConfigScope>,
+        activation: PluginActivation? = null,
+        config: ConfigScope.() -> Unit = {},
+    ) {
+        val instance = plugin.install(config)
+        clientPlugin(instance, activation ?: defaultClientActivation(instance))
     }
 
     fun clientPlugin(
         instance: AviatorPluginInstance,
-        activation: PluginActivation = PluginActivation.DEFINITION,
+        activation: PluginActivation = defaultClientActivation(instance),
     ) {
         clientPlugins += ClientPluginRegistration(instance, activation)
     }

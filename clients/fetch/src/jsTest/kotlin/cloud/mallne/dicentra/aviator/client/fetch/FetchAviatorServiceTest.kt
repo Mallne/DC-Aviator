@@ -13,6 +13,7 @@ import cloud.mallne.dicentra.aviator.core.engine.OpenApiClientInput
 import cloud.mallne.dicentra.aviator.core.plugins.DefaultAviatorPluginRegistry
 import cloud.mallne.dicentra.aviator.core.plugins.ClientPluginRegistration
 import cloud.mallne.dicentra.aviator.core.plugins.PluginActivation
+import cloud.mallne.dicentra.aviator.core.plugins.aviatorPluginRegistry
 import cloud.mallne.dicentra.aviator.model.ServiceLocator
 import cloud.mallne.dicentra.aviator.koas.typed.routes
 import io.ktor.openapi.GenericElement
@@ -43,7 +44,10 @@ class FetchAviatorServiceTest {
     @Test
     fun adapterPluginsCannotBeDefinitionActivated() {
         assertFailsWith<IllegalArgumentException> {
-            ClientPluginRegistration(JsonAdapter.install {}, PluginActivation.DEFINITION)
+            aviatorPluginRegistry { clientPlugin(JsonAdapter, PluginActivation.DEFINITION) }
+        }
+        assertFailsWith<IllegalArgumentException> {
+            aviatorPluginRegistry { plugin(JsonAdapter, PluginActivation.DEFINITION) }
         }
     }
 
@@ -120,12 +124,11 @@ class FetchAviatorServiceTest {
     }
 
     @Test
-    fun definitionConverterPreservesOperationPluginConfiguration() {
+    fun documentConverterReadsLocatorAndPluginConfiguration() {
         val configuration = mapOf("configured" to kotlinx.serialization.json.JsonPrimitive(true))
-        val spec = plainSpecification("https://engine.test", configuration)
-        val definition = FetchEngineDefinitionConverter(FetchAviatorServiceConverter()).convert(
-            OpenApiOperationDefinitionRequest(spec, spec.routes().single(), ServiceLocator("configured")),
-        )
+        val spec = specification("https://engine.test", configuration, locator = "weather>forecast")
+        val definition = FetchEngineDefinitionConverter(FetchAviatorServiceConverter()).convert(spec).single()
+        assertEquals(ServiceLocator("weather>forecast"), definition.locator)
         assertEquals(configuration, definition.pluginConfiguration)
     }
 
@@ -136,7 +139,7 @@ class FetchAviatorServiceTest {
             requestedUrl = url
             responsePromise("""{"temperature":18.5}""")
         }
-        val spec = plainSpecification("https://engine.test")
+        val spec = specification("https://engine.test")
         val locator = ServiceLocator("workflow-action")
         val definition = FetchEngineDefinitionConverter(FetchAviatorServiceConverter(fetcher = fetcher)).convert(
             OpenApiOperationDefinitionRequest(spec, spec.routes().single(), locator),
@@ -145,14 +148,10 @@ class FetchAviatorServiceTest {
             InMemoryDefinitionCoordinator(listOf(definition)),
             EngineDefinitionAuthorization { EngineAuthorizationDecision.Allowed },
             OutboundTargetPolicy { _, _, _ -> null },
-            DefaultAviatorPluginRegistry(
-                clients = listOf(ClientPluginRegistration(JsonAdapter.install {}, PluginActivation.PASSIVE)),
-            ),
+            aviatorPluginRegistry { clientPlugin(JsonAdapter) },
         )
 
-        val outcome = engine.invoke(
-            locator, fetchEngineTemplate<WeatherResponse>(), OpenApiClientInput(), InvocationMode.FIRST,
-        ).single().result.getOrThrow()
+        val outcome = engine.invoke<WeatherResponse>(locator).single().result.getOrThrow()
 
         val context = outcome
         assertEquals(WeatherResponse(18.5), context.result)
@@ -166,7 +165,7 @@ class FetchAviatorServiceTest {
             requestedUrl = url
             responsePromise("""{"temperature":18.5}""")
         }
-        val spec = plainSpecification("https://activated.test")
+        val spec = specification("https://activated.test")
         val locator = ServiceLocator("workflow-action")
         val service = FetchAviatorServiceConverter(fetcher = fetcher).buildOperation(
             spec, spec.routes().single(), locator,
@@ -200,7 +199,7 @@ class FetchAviatorServiceTest {
                 requestedUrls += url
                 responsePromise("""{"temperature":18.5}""", status = if (index == 0) 503 else 200)
             }
-            val spec = plainSpecification(server)
+            val spec = specification(server)
             val locator = ServiceLocator("shared")
             FetchClientDefinition(
                 FetchAviatorServiceConverter(fetcher = fetcher).buildOperation(spec, spec.routes().single(), locator) {
@@ -263,22 +262,24 @@ class FetchAviatorServiceTest {
         }.single() as FetchAviatorService
     }
 
-    private fun plainSpecification(
+    private fun specification(
         server: String,
         pluginConfiguration: Map<String, JsonElement> = emptyMap(),
+        locator: String? = null,
     ) = OpenApiDoc(
         info = OpenApiInfo(title = "Plain Fetch operation", version = "1"),
         servers = listOf(Server(server)),
         paths = mapOf("/forecast" to ReferenceOr.Value(PathItem(get = Operation(
             operationId = "getForecast",
-            extensions = mapOf(
-                cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.PluginMaterialization.O.key to
-                    GenericElement(pluginConfiguration),
-            ),
+            extensions = buildMap {
+                put("x-dicentra-aviator-pluginMaterialization", GenericElement(pluginConfiguration))
+                if (locator != null) put("x-dicentra-aviator-serviceDelegateCall", GenericElement(locator))
+            },
             responses = Responses(
                 responses = mapOf(200 to ReferenceOr.Value(Response(description = "Weather response")))
             ),
         )))),
+        extensions = if (locator == null) emptyMap() else mapOf("x-dicentra-aviator" to GenericElement("1.0.0")),
     )
 
     private fun responsePromise(body: String, status: Int = 200): dynamic {

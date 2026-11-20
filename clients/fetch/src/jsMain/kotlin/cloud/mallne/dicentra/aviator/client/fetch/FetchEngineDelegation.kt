@@ -1,6 +1,9 @@
 package cloud.mallne.dicentra.aviator.client.fetch
 
 import cloud.mallne.dicentra.aviator.core.engine.EngineTemplate
+import cloud.mallne.dicentra.aviator.core.engine.AviatorEngine
+import cloud.mallne.dicentra.aviator.core.engine.InvocationMode
+import cloud.mallne.dicentra.aviator.core.engine.InvocationOutcome
 import cloud.mallne.dicentra.aviator.core.plugins.EngineInvocationContext
 import cloud.mallne.dicentra.aviator.core.engine.OpenApiClientInput
 import cloud.mallne.dicentra.aviator.core.engine.EngineDefinitionConverter
@@ -8,8 +11,10 @@ import cloud.mallne.dicentra.aviator.core.engine.ExecutableDefinition
 import cloud.mallne.dicentra.aviator.core.engine.OpenApiOperationDefinitionRequest
 import cloud.mallne.dicentra.aviator.core.NoBody
 import cloud.mallne.dicentra.aviator.core.AviatorExtensionSpec.`x-dicentra-aviator-pluginMaterialization`
+import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginActivationScope
 import cloud.mallne.dicentra.aviator.model.ServiceLocator
 import cloud.mallne.dicentra.aviator.model.AviatorServiceUtils
+import io.ktor.openapi.OpenApiDoc
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -29,8 +34,15 @@ class FetchClientDefinition(
 
 class FetchEngineDefinitionConverter(
     private val converter: FetchAviatorServiceConverter,
-) : EngineDefinitionConverter<OpenApiOperationDefinitionRequest, FetchClientDefinition> {
-    override fun convert(source: OpenApiOperationDefinitionRequest): FetchClientDefinition =
+) : EngineDefinitionConverter<FetchClientDefinition> {
+    /** Convert the operations that declare Aviator locators in the document. */
+    override fun convert(
+        api: OpenApiDoc,
+        plugins: AviatorPluginActivationScope.() -> Unit,
+    ): List<FetchClientDefinition> =
+        converter.build(api, plugins).filterIsInstance<FetchAviatorService>().map { FetchClientDefinition(it) }
+
+    fun convert(source: OpenApiOperationDefinitionRequest): FetchClientDefinition =
         FetchClientDefinition(
             converter.buildOperation(source.api, source.route, source.locator, source.activatePlugins),
         )
@@ -88,6 +100,14 @@ class FetchEngineTemplate<O : @Serializable Any, B : @Serializable Any>(
 
 inline fun <reified O : @Serializable Any> fetchEngineTemplate(): FetchEngineTemplate<O, NoBody> =
     fetchEngineTemplateWithBody<O, NoBody>()
+
+/** Invoke a bodyless OpenAPI operation using the standard Fetch template for [O]. */
+suspend inline fun <reified O : @Serializable Any> AviatorEngine.invoke(
+    locator: ServiceLocator,
+    input: OpenApiClientInput<NoBody> = OpenApiClientInput(),
+    mode: InvocationMode = InvocationMode.FIRST,
+): List<InvocationOutcome<FetchExecutionContext<O, NoBody>>> =
+    invoke(locator, fetchEngineTemplate<O>(), input, mode)
 
 inline fun <reified O : @Serializable Any, reified B : @Serializable Any> fetchEngineTemplateWithBody():
     FetchEngineTemplate<O, B> =
