@@ -6,8 +6,10 @@ import cloud.mallne.dicentra.aviator.koas.exceptions.OpenAPIConstraintViolation
 import cloud.mallne.dicentra.polyfill.ensure
 import cloud.mallne.dicentra.polyfill.ensureNotNull
 import io.ktor.openapi.*
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonPrimitive
 
 object TemplateParser {
     val regex = Regex("\\{\\s*?([;.])?\\s*?(\\S*?)\\s*?([*]?)\\s*?\\}")
@@ -51,7 +53,7 @@ object TemplateParser {
         val queryParams = parameter.filter { it.`in` == ParameterType.query }
         queryParams.forEach { param ->
             val template: List<String>? = data[param.name] ?: param.schema?.valueOrNull()?.default?.let { default ->
-                listOf(default.deserialize(JsonElement.serializer()).jsonPrimitive.content)
+                defaultQueryValues(default.deserialize(JsonElement.serializer()))
             }
             if (param.required && template == null) {
                 ensure(data.containsKey(param.name)) {
@@ -69,6 +71,14 @@ object TemplateParser {
         } else {
             ppath
         }
+    }
+
+    internal fun defaultQueryValues(value: JsonElement): List<String>? = when (value) {
+        JsonNull -> null
+        is JsonPrimitive -> listOf(value.content)
+        is JsonArray -> value.mapNotNull { (it as? JsonPrimitive)?.takeUnless { item -> item is JsonNull }?.content }
+            .takeIf { it.size == value.size }
+        else -> null
     }
 
     private fun genReplacement(

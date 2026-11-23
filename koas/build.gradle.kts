@@ -54,6 +54,11 @@ kotlin {
                 implementation(libs.dc.polyfill)
             }
         }
+        val commonTest = getByName("commonTest") {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
     }
     jvmToolchain(25)
 }
