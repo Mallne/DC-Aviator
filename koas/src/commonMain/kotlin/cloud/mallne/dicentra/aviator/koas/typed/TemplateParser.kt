@@ -6,6 +6,8 @@ import cloud.mallne.dicentra.aviator.koas.exceptions.OpenAPIConstraintViolation
 import cloud.mallne.dicentra.polyfill.ensure
 import cloud.mallne.dicentra.polyfill.ensureNotNull
 import io.ktor.openapi.*
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.jsonPrimitive
 
 object TemplateParser {
     val regex = Regex("\\{\\s*?([;.])?\\s*?(\\S*?)\\s*?([*]?)\\s*?\\}")
@@ -48,12 +50,14 @@ object TemplateParser {
         val queryString = mutableListOf<String>()
         val queryParams = parameter.filter { it.`in` == ParameterType.query }
         queryParams.forEach { param ->
-            if (param.required) {
+            val template: List<String>? = data[param.name] ?: param.schema?.valueOrNull()?.default?.let { default ->
+                listOf(default.deserialize(JsonElement.serializer()).jsonPrimitive.content)
+            }
+            if (param.required && template == null) {
                 ensure(data.containsKey(param.name)) {
                     IngestArgumentViolation("Parameter ${param.name} passed as a data Parameter. This is required")
                 }
             }
-            val template = data[param.name]
             if (template != null) {
                 val style = param.style?.let { Style.valueOf(it) } ?: Style.form
                 val explode = param.explode == true
