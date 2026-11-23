@@ -15,7 +15,11 @@ interface EngineAviatorPluginInstance {
     val identity: String
     val configurationBundle: AviatorPluginConfigScope
     fun requestReconfigure(oasConfig: kotlinx.serialization.json.JsonElement): EngineAviatorPluginInstance = this
-    suspend fun accepts(locator: ServiceLocator, definition: ExecutableDefinition): Boolean
+    suspend fun accepts(locator: ServiceLocator, definition: ExecutableDefinition): Boolean = true
+
+    /** Selects a candidate using the invocation input before authorization or execution. */
+    suspend fun accepts(context: EnginePluginContext<*>): Boolean =
+        accepts(context.locator, context.definition)
 
     suspend fun <I : Any, O : Any> execute(
         context: EnginePluginContext<I>,

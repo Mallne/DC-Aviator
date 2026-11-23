@@ -7,6 +7,9 @@ import cloud.mallne.dicentra.aviator.core.plugins.AviatorPluginSnapshot
 import cloud.mallne.dicentra.aviator.model.ServiceLocator
 import kotlin.coroutines.cancellation.CancellationException
 
+/** No resolved candidate passed the engine's template and selection filters. */
+class NoMatchingDefinitionException(message: String) : IllegalArgumentException(message)
+
 /**
  * Dispatches matching definitions in coordinator order. Empty resolutions fail; failures from
  * individual delegations are retained, and cancellation always propagates.
@@ -43,8 +46,8 @@ internal class BuiltInAviatorEngine(
             outcomes += InvocationOutcome(definition, result)
             if (mode == InvocationMode.FIRST || mode == InvocationMode.FIRST_NOT_FAILING && result.isSuccess) break
         }
-        require(outcomes.isNotEmpty()) {
-            "No definition for locator $locator matched engine template ${template.identity}"
+        if (outcomes.isEmpty()) {
+            throw NoMatchingDefinitionException("No definition for locator $locator matched engine template ${template.identity}")
         }
         return outcomes
     }
@@ -56,9 +59,10 @@ internal class BuiltInAviatorEngine(
         definition: ExecutableDefinition,
     ): Result<O>? {
         val snapshot = plugins.invocationPlugins(locator, definition.pluginConfiguration)
-        if (snapshot.enginePlugins.any { !it.accepts(locator, definition) }) return null
-
         val pluginContext = EnginePluginContext(locator, definition, input)
+        for (plugin in snapshot.enginePlugins) {
+            if (!plugin.accepts(pluginContext)) return null
+        }
         var invoke: suspend () -> Result<O> = {
             executeAuthorized(locator, template, input, definition, snapshot)
         }

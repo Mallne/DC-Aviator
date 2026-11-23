@@ -19,6 +19,45 @@ class EngineTest {
     private data class AuthorizationBody(val account: String)
 
     @Test
+    fun enginePluginFiltersByInvocationInputBeforeAuthorization() = runTest {
+        val definitions = listOf(TestDefinition(locator, "north"), TestDefinition(locator, "south"))
+        val authorized = mutableListOf<String>()
+        val executed = mutableListOf<String>()
+        val plugin = object : EngineAviatorPluginInstance {
+            override val identity = "coverage"
+            override val configurationBundle = TestPluginConfig()
+
+            override suspend fun accepts(context: EnginePluginContext<*>): Boolean =
+                (context.definition as TestDefinition).id == context.input
+        }
+        val template = object : EngineTemplate<String, String> {
+            override val identity = "test"
+            override suspend fun execute(
+                definition: ExecutableDefinition, input: String, context: EngineInvocationContext,
+            ): Result<String> {
+                val id = (definition as TestDefinition).id
+                executed += id
+                return Result.success(id)
+            }
+        }
+        val engine = AviatorEngine(
+            InMemoryDefinitionCoordinator(definitions),
+            EngineDefinitionAuthorization { context ->
+                authorized += (context.definition as TestDefinition).id
+                EngineAuthorizationDecision.Allowed
+            },
+            OutboundTargetPolicy { _, _, _ -> null },
+            DefaultAviatorPluginRegistry(engine = listOf(EnginePluginRegistration(plugin, PluginActivation.PASSIVE))),
+        )
+
+        assertEquals("south", engine.invoke(locator, template, "south", InvocationMode.ALL).single().result.getOrThrow())
+        assertEquals(listOf("south"), authorized)
+        assertEquals(listOf("south"), executed)
+        assertFailsWith<IllegalArgumentException> { engine.invoke(locator, template, "missing", InvocationMode.ALL) }
+        assertEquals(listOf("south"), authorized)
+    }
+
+    @Test
     fun mockOperationRunsThroughEngine() = runTest {
         val api = OpenApiDoc(info = OpenApiInfo(title = "mock", version = "1"),
             servers = listOf(Server(url = "https://mock.test")),
