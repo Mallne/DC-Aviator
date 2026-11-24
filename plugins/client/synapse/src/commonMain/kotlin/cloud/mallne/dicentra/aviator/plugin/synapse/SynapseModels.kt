@@ -2,6 +2,7 @@ package cloud.mallne.dicentra.aviator.plugin.synapse
 
 import kotlinx.serialization.Serializable
 import io.ktor.openapi.OpenApiDoc
+import kotlinx.serialization.json.JsonElement
 
 @Serializable
 data class SynapseUser(
@@ -42,4 +43,13 @@ enum class SynapseScopeType {
 data class SynapseDiscoveryResponse(
     val principal: SynapseUser? = null,
     val services: List<OpenApiDoc>,
+)
+
+/** An original Arazzo document visible to the current Synapse principal. */
+@Serializable
+data class SynapseWorkflow(
+    val id: String,
+    val scope: String? = null,
+    val document: JsonElement,
+    val builtin: Boolean = false,
 )

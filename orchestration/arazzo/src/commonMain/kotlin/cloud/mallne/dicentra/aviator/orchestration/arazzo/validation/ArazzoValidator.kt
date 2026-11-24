@@ -63,6 +63,15 @@ object ArazzoValidator {
         if (document.arazzo != ArazzoSupport.SPECIFICATION_VERSION) {
             out += ArazzoDiagnostic("unsupported-version", "Only Arazzo ${ArazzoSupport.SPECIFICATION_VERSION} is supported", "/arazzo")
         }
+        document.components?.let { components ->
+            if (components.inputs.isNotEmpty() || components.parameters.isNotEmpty()) {
+                out += ArazzoDiagnostic(
+                    "unsupported-feature",
+                    "Reusable component inputs and parameters are not supported",
+                    "/components",
+                )
+            }
+        }
         if (document.sourceDescriptions.isEmpty()) out += ArazzoDiagnostic("required", "At least one source description is required", "/sourceDescriptions")
         if (document.workflows.isEmpty()) out += ArazzoDiagnostic("required", "At least one workflow is required", "/workflows")
         unique(document.sourceDescriptions.map { it.name }, "/sourceDescriptions", "source-name", out)
@@ -187,9 +196,14 @@ object ArazzoValidator {
                 "inputs" -> emptySet()
                 else -> emptySet()
             }
-            if (child is JsonObject && key !in setOf("inputs", "outputs")) inspectUnknown(child, "$path/${escape(key)}", childAllowed, out)
-            else if (child is kotlinx.serialization.json.JsonArray) child.forEachIndexed { index, item ->
-                if (item is JsonObject) inspectUnknown(item, "$path/${escape(key)}/$index", childAllowed, out)
+            if (key !in setOf("inputs", "outputs", "requestBody")) {
+                if (child is JsonObject) {
+                    inspectUnknown(child, "$path/${escape(key)}", childAllowed, out)
+                } else if (child is JsonArray) {
+                    child.forEachIndexed { index, item ->
+                        if (item is JsonObject) inspectUnknown(item, "$path/${escape(key)}/$index", childAllowed, out)
+                    }
+                }
             }
         }
     }

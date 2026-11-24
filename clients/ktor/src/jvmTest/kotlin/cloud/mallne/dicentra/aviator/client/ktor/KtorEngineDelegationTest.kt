@@ -2,11 +2,13 @@ package cloud.mallne.dicentra.aviator.client.ktor
 
 import cloud.mallne.dicentra.aviator.core.engine.AviatorEngine
 import cloud.mallne.dicentra.aviator.core.engine.EngineDefinitionAuthorization
+import cloud.mallne.dicentra.aviator.core.engine.EngineAuthorizationException
 import cloud.mallne.dicentra.aviator.core.engine.EngineAuthorizationDecision
 import cloud.mallne.dicentra.aviator.core.engine.OutboundTargetPolicy
 import cloud.mallne.dicentra.aviator.core.engine.OutboundTargetDeniedException
 import cloud.mallne.dicentra.aviator.core.engine.InMemoryDefinitionCoordinator
 import cloud.mallne.dicentra.aviator.core.engine.InvocationMode
+import cloud.mallne.dicentra.aviator.core.engine.NoMatchingDefinitionException
 import cloud.mallne.dicentra.aviator.core.engine.OpenApiOperationDefinitionRequest
 import cloud.mallne.dicentra.aviator.core.engine.OpenApiClientInput
 import cloud.mallne.dicentra.aviator.koas.typed.routes
@@ -20,8 +22,12 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.openapi.*
 import io.ktor.utils.io.ByteReadChannel
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -82,6 +88,41 @@ class KtorEngineDelegationTest {
     }
 
     @Test
+    fun locatorWithoutDefinitionFailsBeforeTransport() = runTest {
+        var requests = 0
+        val client = HttpClient(MockEngine {
+            requests++
+            error("No request should be sent without a matching definition")
+        })
+        try {
+            val api = api("https://example.test")
+            val converter = KtorAviatorServiceConverter(httpClient = client, json = kotlinx.serialization.json.Json)
+            val definition = KtorEngineDefinitionConverter(converter).convert(
+                OpenApiOperationDefinitionRequest(api, api.routes().single(), locator) {
+                    install(JsonAdapter)
+                },
+            )
+            val engine = AviatorEngine(
+                InMemoryDefinitionCoordinator(listOf(definition)),
+                EngineDefinitionAuthorization { EngineAuthorizationDecision.Allowed },
+                OutboundTargetPolicy { _, _, _ -> null },
+            )
+
+            assertFailsWith<NoMatchingDefinitionException> {
+                engine.invoke(
+                    ServiceLocator("unknown-service"),
+                    ktorEngineTemplate<TestResponse>(),
+                    OpenApiClientInput(),
+                    InvocationMode.FIRST,
+                )
+            }
+            assertEquals(0, requests)
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
     fun unsuccessfulHttpResponseAllowsFirstNotFailingFallback() = runTest {
         val urls = mutableListOf<String>()
         val client = HttpClient(MockEngine { request ->
@@ -119,6 +160,86 @@ class KtorEngineDelegationTest {
     }
 
     @Test
+    fun firstModeDoesNotFallbackAfterTheFirstMatchingDefinitionFails() = runTest {
+        val urls = mutableListOf<String>()
+        val client = HttpClient(MockEngine { request ->
+            urls += request.url.toString()
+            respond(
+                ByteReadChannel("""{"error":"failed"}"""),
+                HttpStatusCode.InternalServerError,
+                headersOf(HttpHeaders.ContentType, "application/json"),
+            )
+        })
+        try {
+            val converter = KtorAviatorServiceConverter(httpClient = client, json = kotlinx.serialization.json.Json)
+            val definitions = listOf("https://first.test", "https://second.test").map { base ->
+                val api = api(base)
+                KtorClientDefinition(
+                    converter.buildOperation(api, api.routes().single(), locator) { install(JsonAdapter) },
+                )
+            }
+            val engine = AviatorEngine(
+                InMemoryDefinitionCoordinator(definitions),
+                EngineDefinitionAuthorization { EngineAuthorizationDecision.Allowed },
+                OutboundTargetPolicy { _, _, _ -> null },
+            )
+
+            val outcomes = engine.invoke(
+                locator,
+                ktorEngineTemplate<TestResponse>(),
+                OpenApiClientInput(),
+                InvocationMode.FIRST,
+            )
+
+            assertEquals(1, outcomes.size)
+            val failure = assertIs<KtorClientInvocationException>(outcomes.single().result.exceptionOrNull())
+            assertEquals(HttpStatusCode.InternalServerError.value, failure.statusCode)
+            assertEquals(listOf("https://first.test/hello"), urls)
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
+    fun cancellationPropagatesWhileKtorRequestIsInFlight() = runTest {
+        val requestStarted = CompletableDeferred<Unit>()
+        val client = HttpClient(MockEngine {
+            requestStarted.complete(Unit)
+            awaitCancellation()
+        })
+        try {
+            val api = api("https://example.test")
+            val converter = KtorAviatorServiceConverter(httpClient = client, json = kotlinx.serialization.json.Json)
+            val definition = KtorEngineDefinitionConverter(converter).convert(
+                OpenApiOperationDefinitionRequest(api, api.routes().single(), locator) {
+                    install(JsonAdapter)
+                },
+            )
+            val engine = AviatorEngine(
+                InMemoryDefinitionCoordinator(listOf(definition)),
+                EngineDefinitionAuthorization { EngineAuthorizationDecision.Allowed },
+                OutboundTargetPolicy { _, _, _ -> null },
+            )
+            val invocation = async {
+                engine.invoke(
+                    locator,
+                    ktorEngineTemplate<TestResponse>(),
+                    OpenApiClientInput(),
+                    InvocationMode.FIRST,
+                )
+            }
+
+            requestStarted.await()
+            invocation.cancel()
+            assertFailsWith<CancellationException> {
+                invocation.await()
+            }
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
     fun missingAdapterIsAClientFailureRatherThanFalseSuccess() = runTest {
         val client = HttpClient(MockEngine {
             respond(ByteReadChannel("""{"value":42}"""), HttpStatusCode.OK,
@@ -137,6 +258,44 @@ class KtorEngineDelegationTest {
                 locator, ktorEngineTemplate<TestResponse>(), OpenApiClientInput(), InvocationMode.FIRST,
             ).single()
             assertIs<KtorClientInvocationException>(outcome.result.exceptionOrNull())
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
+    fun nonEmptySuccessfulResponseThatCannotDecodeIsAClientFailure() = runTest {
+        val client = HttpClient(MockEngine {
+            respond(
+                ByteReadChannel("""{"unexpected":42}"""),
+                HttpStatusCode.OK,
+                headersOf(HttpHeaders.ContentType, "application/json"),
+            )
+        })
+        try {
+            val api = api("https://example.test")
+            val converter = KtorAviatorServiceConverter(httpClient = client, json = kotlinx.serialization.json.Json)
+            val definition = KtorEngineDefinitionConverter(converter).convert(
+                OpenApiOperationDefinitionRequest(api, api.routes().single(), locator) {
+                    install(JsonAdapter)
+                },
+            )
+            val engine = AviatorEngine(
+                InMemoryDefinitionCoordinator(listOf(definition)),
+                EngineDefinitionAuthorization { EngineAuthorizationDecision.Allowed },
+                OutboundTargetPolicy { _, _, _ -> null },
+            )
+
+            val outcome = engine.invoke(
+                locator,
+                ktorEngineTemplate<TestResponse>(),
+                OpenApiClientInput(),
+                InvocationMode.FIRST,
+            ).single()
+
+            val failure = assertIs<KtorClientInvocationException>(outcome.result.exceptionOrNull())
+            assertEquals(HttpStatusCode.OK.value, failure.statusCode)
+            assertEquals("Could not decode client response", failure.message)
         } finally {
             client.close()
         }
@@ -198,6 +357,41 @@ class KtorEngineDelegationTest {
     }
 
     @Test
+    fun definitionAuthorizationDenialPreventsKtorTransport() = runTest {
+        var requests = 0
+        val client = HttpClient(MockEngine {
+            requests++
+            error("A denied definition must not reach the transport")
+        })
+        try {
+            val api = api("https://example.test")
+            val converter = KtorAviatorServiceConverter(httpClient = client, json = kotlinx.serialization.json.Json)
+            val definition = KtorEngineDefinitionConverter(converter).convert(
+                OpenApiOperationDefinitionRequest(api, api.routes().single(), locator) {
+                    install(JsonAdapter)
+                },
+            )
+            val engine = AviatorEngine(
+                InMemoryDefinitionCoordinator(listOf(definition)),
+                EngineDefinitionAuthorization { EngineAuthorizationDecision.Denied("not permitted") },
+                OutboundTargetPolicy { _, _, _ -> null },
+            )
+
+            val outcome = engine.invoke(
+                locator,
+                ktorEngineTemplate<TestResponse>(),
+                OpenApiClientInput(),
+                InvocationMode.FIRST,
+            ).single()
+
+            assertIs<EngineAuthorizationException>(outcome.result.exceptionOrNull())
+            assertEquals(0, requests)
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
     fun redirectResponseIsNotFollowedByEngineClient() = runTest {
         val requestedUrls = mutableListOf<String>()
         val client = HttpClient(MockEngine { request ->
@@ -227,6 +421,34 @@ class KtorEngineDelegationTest {
             val failure = assertIs<KtorClientInvocationException>(result.exceptionOrNull())
             assertEquals(302, failure.statusCode)
             assertEquals(listOf("https://allowed.example/hello"), requestedUrls)
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
+    fun successfulEmptyResponseRemainsASuccessWithNullResult() = runTest {
+        val client = HttpClient(MockEngine {
+            respond(ByteReadChannel(""), HttpStatusCode.NoContent)
+        })
+        try {
+            val api = api("https://empty.example")
+            val converter = KtorAviatorServiceConverter(httpClient = client, json = kotlinx.serialization.json.Json)
+            val definition = KtorClientDefinition(
+                converter.buildOperation(api, api.routes().single(), locator) { install(JsonAdapter) },
+            )
+            val engine = AviatorEngine(
+                InMemoryDefinitionCoordinator(listOf(definition)),
+                EngineDefinitionAuthorization { EngineAuthorizationDecision.Allowed },
+                OutboundTargetPolicy { _, _, _ -> null },
+            )
+
+            val context = engine.invoke(
+                locator, ktorEngineTemplate<TestResponse>(), OpenApiClientInput(), InvocationMode.FIRST,
+            ).single().result.getOrThrow()
+
+            assertEquals(HttpStatusCode.NoContent.value, context.networkChain.last().response?.status?.value)
+            assertEquals(null, context.result)
         } finally {
             client.close()
         }

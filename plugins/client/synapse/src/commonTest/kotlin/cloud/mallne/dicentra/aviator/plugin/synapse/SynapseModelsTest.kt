@@ -2,6 +2,7 @@ package cloud.mallne.dicentra.aviator.plugin.synapse
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -25,6 +26,16 @@ class SynapseModelsTest {
             """{"services":[],"principal":{"name":"Name","email":"email","username":"user","access":{}}}""",
         )
         assertEquals("user", authenticated.principal?.username)
+    }
+
+    @Test
+    fun workflowDiscoveryDecodesStoredArazzoDocuments() {
+        val workflows = Json.decodeFromString<List<SynapseWorkflow>>(
+            """[{"id":"builtin-weather","scope":null,"builtin":true,"document":{"arazzo":"1.1.0","workflows":[]}}]""",
+        )
+        assertEquals("builtin-weather", workflows.single().id)
+        assertTrue(workflows.single().builtin)
+        assertEquals("1.1.0", workflows.single().document.jsonObject["arazzo"]?.jsonPrimitive?.content)
     }
 
     @Test

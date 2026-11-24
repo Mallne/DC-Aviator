@@ -23,3 +23,9 @@ suspend fun AviatorEngine.discover(
 
 fun discoveryRequestParameters(transformationType: ServiceDefinitionTransformationType): RequestParameters =
     RequestParameters(mutableMapOf("transformationType" to RequestParameter.Single(transformationType.name)))
+
+/** Discover documents using the host's WorkflowDiscovery operation and engine policies. */
+suspend fun AviatorEngine.discoverWorkflows(locator: ServiceLocator): List<SynapseWorkflow> =
+    checkNotNull(invoke<List<SynapseWorkflow>>(locator).single().result.getOrThrow().result) {
+        "Synapse workflow discovery response was empty"
+    }

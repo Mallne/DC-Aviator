@@ -6,6 +6,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 class ArazzoValidatorTest {
     @Test
@@ -52,6 +53,56 @@ class ArazzoValidatorTest {
         val rejected = document.replace("\"steps\":[]", "\"steps\":[{$operation,\"successCriteria\":[]}]")
         val invalid = assertIs<ArazzoValidationResult.Invalid>(ArazzoValidator.parseAndValidate(rejected))
         assertEquals("invalid-success-criteria", invalid.diagnostics.single().code)
+    }
+
+    @Test
+    fun acceptsLiteralJsonRequestBodyAsDataRatherThanArazzoStructure() {
+        val withBody = document.replace(
+            "\"steps\":[]",
+            "\"steps\":[{\"stepId\":\"first\",\"operationId\":\"getPet\",\"requestBody\":{\"message\":\"hello\",\"nested\":{\"count\":2},\"items\":[{\"id\":1}]}}]",
+        )
+
+        assertIs<ArazzoValidationResult.Valid>(ArazzoValidator.parseAndValidate(withBody))
+    }
+
+    @Test
+    fun rejectsUnsupportedRuntimeExpressionsNestedInRequestBody() {
+        val withUnsupportedExpression = document.replace(
+            "\"steps\":[]",
+            "\"steps\":[{\"stepId\":\"first\",\"operationId\":\"getPet\",\"requestBody\":{\"nested\":{\"value\":\"\$env.VALUE\"}}}]",
+        )
+
+        val invalid = assertIs<ArazzoValidationResult.Invalid>(
+            ArazzoValidator.parseAndValidate(withUnsupportedExpression),
+        )
+        assertEquals("unsupported-expression", invalid.diagnostics.single().code)
+        assertEquals(
+            "/workflows/0/steps/0/requestBody/nested/value",
+            invalid.diagnostics.single().location,
+        )
+    }
+
+    @Test
+    fun rejectsUnimplementedReusableComponentDefinitions() {
+        val reusableDefinitions = listOf(
+            "\"inputs\":{\"user\":{\"type\":\"object\"}}",
+            "\"parameters\":{\"userId\":{\"name\":\"userId\",\"in\":\"path\",\"value\":1}}",
+        )
+        reusableDefinitions.forEach { definition ->
+            val withComponents = document.replace(
+                "\"workflows\":[{\"workflowId\":\"wf\",\"steps\":[]}]",
+                "\"workflows\":[{\"workflowId\":\"wf\",\"steps\":[]}],\"components\":{$definition}",
+            )
+
+            val invalid = assertIs<ArazzoValidationResult.Invalid>(
+                ArazzoValidator.parseAndValidate(withComponents),
+            )
+            assertTrue(
+                invalid.diagnostics.any {
+                    it.code == "unsupported-feature" && it.location == "/components"
+                },
+            )
+        }
     }
 
     @Test
