@@ -81,6 +81,7 @@ kotlin {
             dependencies {
                 implementation(libs.kotlinx.serialization.json)
                 implementation(project(":core"))
+                api(project(":orchestration:arazzo"))
                 api(project(":clients:ktor"))
                 implementation(project(":koas"))
                 implementation(libs.ktor.client.core)

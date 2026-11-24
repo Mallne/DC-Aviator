@@ -216,13 +216,25 @@ object ArazzoValidator {
         document.sourceDescriptions.forEachIndexed { index, model ->
             (sourceElements?.getOrNull(index) as? JsonObject)?.let { model.extensions = it.extensionValues() }
         }
+        (root["components"] as? JsonObject)?.let { components ->
+            document.components?.extensions = components.extensionValues()
+        }
         val workflowElements = root["workflows"] as? kotlinx.serialization.json.JsonArray
         document.workflows.forEachIndexed { wi, workflow ->
             val workflowObject = workflowElements?.getOrNull(wi) as? JsonObject ?: return@forEachIndexed
             workflow.extensions = workflowObject.extensionValues()
             val steps = workflowObject["steps"] as? kotlinx.serialization.json.JsonArray
-            workflow.steps.forEachIndexed { si, step ->
-                (steps?.getOrNull(si) as? JsonObject)?.let { step.extensions = it.extensionValues() }
+            workflow.steps.forEachIndexed stepLoop@ { si, step ->
+                val stepObject = steps?.getOrNull(si) as? JsonObject ?: return@stepLoop
+                step.extensions = stepObject.extensionValues()
+                val parameters = stepObject["parameters"] as? JsonArray
+                step.parameters.forEachIndexed { index, parameter ->
+                    (parameters?.getOrNull(index) as? JsonObject)?.let { parameter.extensions = it.extensionValues() }
+                }
+                val criteria = stepObject["successCriteria"] as? JsonArray
+                step.successCriteria?.forEachIndexed { index, criterion ->
+                    (criteria?.getOrNull(index) as? JsonObject)?.let { criterion.extensions = it.extensionValues() }
+                }
             }
         }
     }
